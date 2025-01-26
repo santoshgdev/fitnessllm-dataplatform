@@ -5,7 +5,7 @@ description = ""
 authors = ["Santosh Gummidipundi"]
 
 [tool.poetry.dependencies]
-python = "3.12"
+python = "3.12.2"
 cloudpathlib = {extras = ["gs"], version = "^0.20.0"}
 typing-extensions = "^4.12.2"
 fire = "^0.7.0"

@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "fitnessllm-dataplatform"
+name = "fitnessllm_dataplatform"
 version = "0.1.0"
 description = ""
 authors = ["Santosh Gummidipundi"]
@@ -12,8 +12,9 @@ fire = "^0.7.0"
 google-cloud-secret-manager = "^2.22.1"
 pandas = "^2.2.3"
 numpy = "^2.2.2"
-pandas-gbq = "^0.26.1"
 tqdm = "^4.67.1"
+pandas-gbq = "^0.26.1"
+api-dev = {path = "../api_dev", develop = true}
 
 [tool.poetry.dev-dependencies]
 

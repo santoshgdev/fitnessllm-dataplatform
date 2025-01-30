@@ -3,7 +3,7 @@ from enum import Enum
 
 from cloudpathlib import GSPath
 
-from stream.strava.entities.enums import StravaStreams
+from fitnessllm_dataplatform.stream.strava.entities.enums import StravaStreams
 
 
 def get_strava_storage_path(
@@ -25,7 +25,7 @@ def get_strava_storage_path(
     """
     path = f"gs://{bucket.value}/strava/athlete_id={athlete_id}/"
 
-    if isinstance(strava_model, StravaStreams):
+    if strava_model in StravaStreams:
         path += f"{strava_model.value}/{get_json_activity_name(kwargs['activity_id']) if 'activity_id' in kwargs else ''}"
     return GSPath(path)
 

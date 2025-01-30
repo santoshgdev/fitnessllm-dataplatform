@@ -2,11 +2,11 @@ from os import environ
 
 import fire
 
-from entities.enums import DynamicEnum
-from enums import FitnessLLMDataStreams
-from stream.strava.etl_utils import load_json_into_bq
-from utils.task_utils import load_into_env_vars
-from utils.cloud_utils import get_secret
+from fitnessllm_dataplatform.entities.enums import DynamicEnum
+from fitnessllm_dataplatform.entities.enums import FitnessLLMDataStreams
+from fitnessllm_dataplatform.stream.strava.etl_utils import load_json_into_bq
+from fitnessllm_dataplatform.utils.task_utils import load_into_env_vars
+from fitnessllm_dataplatform.utils.cloud_utils import get_secret
 
 
 def handler(options: dict) -> None:

@@ -1,6 +1,8 @@
 """Strava specific enums."""
 from enum import Enum
 
+from fitnessllm_dataplatform.entities.enums import FitnessLLMDataStream
+
 
 class StravaURLs(Enum):
     """Strava specific URLs."""
@@ -17,7 +19,7 @@ class StravaKeys(Enum):
     STRAVA_ACCESS_TOKEN = "strava_access_token"
 
 
-class StravaStreams(Enum):
+class StravaStreams(FitnessLLMDataStream):
     """Strava specific steams."""
     ACTIVITY="activity"
     STREAM="heartstream"

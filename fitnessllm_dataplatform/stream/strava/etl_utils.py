@@ -27,7 +27,7 @@ from fitnessllm_dataplatform.stream.strava.entities.enums import StravaStreams
 from fitnessllm_dataplatform.utils.logging_utils import logger
 
 
-def load_json_into_bq(InfrastructureNames: Enum, athlete_id: str):
+def load_json_into_bq(InfrastructureNames: Enum, athlete_id: str, data_streams: list[str]):
     partial_strava_storage = partial(
         get_strava_storage_path,
         bucket=InfrastructureNames.bronze_bucket,
@@ -42,21 +42,21 @@ def load_json_into_bq(InfrastructureNames: Enum, athlete_id: str):
     client = bigquery.Client()
 
     streams = [
-        element.name for element in partial_strava_storage(strava_model=None).iterdir()
+        element.name for element in partial_strava_storage(strava_model=None).iterdir() if element.name in data_streams
     ]
     for stream in streams:
+        stream_enum = StravaStreams[stream.upper()]
         activity_ids = client.query(get_activities(athlete_id=athlete_id,
                                                    data_source=FitnessLLMDataSource.STRAVA,
                                                    data_stream=stream_enum)).to_dataframe()['activity_id'].values
-        stream_enum = StravaStreams[stream.upper()]
+
         module_strava_json_list = list(itertools.islice(partial_strava_storage(strava_model=stream_enum).iterdir(), int(environ['SAMPLE']))) if environ.get('SAMPLE') else list(partial_strava_storage(strava_model=stream_enum).iterdir())
+        filtered_module_strava_json_list = [file for file in module_strava_json_list if file.stem.split("=")[1] not in activity_ids]
 
-
-
-        with tqdm_joblib(tqdm(desc=f"Processing {stream}", total=len(module_strava_json_list))):
-            result = Parallel(n_jobs=mp.cpu_count(), backend="threading")(
+        with tqdm_joblib(tqdm(desc=f"Processing {stream}", total=len(filtered_module_strava_json_list))):
+            result = Parallel(n_jobs=1, backend="threading")(
                 delayed(partial_load_json_into_dataframe)(file=json_file, data_stream=stream)
-                for json_file in module_strava_json_list
+                for json_file in filtered_module_strava_json_list
             )
 
         dataframes = pd.concat([result["dataframe"] for result in result])
@@ -72,26 +72,28 @@ def load_json_into_bq(InfrastructureNames: Enum, athlete_id: str):
                            timestamp=timestamp,
                            status=Status.SUCCESS)
         except Exception as e:
-            logger.error(f"Error while inserting for {stream.value} for {athlete_id}: {e}")
+            logger.error(f"Error while inserting for {stream_enum.value} for {athlete_id}: {e}")
             insert_metrics(metrics_list=metrics,
                            destination=f"dev_strava.metrics",
                            timestamp=timestamp,
                            status=Status.FAILURE)
 
 
-def filter_activity_jsons()
-
 
 def insert_metrics(metrics_list: list[Metrics],
                    destination: str,
                    timestamp: datetime,
                    status: Status):
-    client = bigquery.Client()
-    metrics_list = [asdict(metrics.update(bq_insert_timestamp=timestamp, status=status.value)) for metrics in metrics_list]
-    dataframe = pd.DataFrame(metrics_list)
-    client.load_table_from_dataframe(dataframe=dataframe,
-                                     destination=destination,
-                                     job_config=bigquery.LoadJobConfig(write_disposition=bigquery.WriteDisposition.WRITE_APPEND))
+    try:
+        client = bigquery.Client()
+        metrics_list = [asdict(metrics.update(bq_insert_timestamp=timestamp, status=status.value)) for metrics in metrics_list]
+        dataframe = pd.DataFrame(metrics_list)
+        client.load_table_from_dataframe(dataframe=dataframe,
+                                         destination=destination,
+                                         job_config=bigquery.LoadJobConfig(write_disposition=bigquery.WriteDisposition.WRITE_APPEND))
+    except Exception as e:
+        logger.error("Unable to write metrics to BigQuery.")
+        raise e
 
 
 
@@ -135,7 +137,7 @@ def load_json_into_dataframe(
                               data_source=data_source.value,
                               data_stream=data_stream)
 
-    if not isinstance(processed_list_of_jsons[0], list):
+    if isinstance(processed_list_of_jsons, list):
         dataframe = DataFrame(processed_list_of_jsons)
         return {"dataframe": dataframe, "metrics": partial_metrics(record_count=dataframe.shape[0])}
     output = list(itertools.chain(*processed_list_of_jsons))

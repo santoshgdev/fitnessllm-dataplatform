@@ -7,5 +7,5 @@ def get_activities(athlete_id: str,
     return f"""
         SELECT DISTINCT activity_id
         FROM dev_metrics.metrics
-        WHERE athlete_id = '{athlete_id}' and data_source = '{data_source.value}' and data_stream = '{data_stream.value}'
+        WHERE athlete_id = '{athlete_id}' and data_source = '{data_source.value}' and data_stream = '{data_stream.value}' and status = 'SUCCESS'
     """

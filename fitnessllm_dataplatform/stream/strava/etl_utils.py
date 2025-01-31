@@ -130,16 +130,18 @@ def load_json_into_dataframe(
         "activity_id": file.stem.split("=")[1],
         "data": json.loads(file.read_text()),
     }
-    processed_list_of_jsons = process_json(loaded_json)
+    processed_jsons = process_json(loaded_json)
     partial_metrics = partial(Metrics,
                               athlete_id=athlete_id,
                               activity_id=file.stem.split("=")[1],
                               data_source=data_source.value,
                               data_stream=data_stream)
 
-    if isinstance(processed_list_of_jsons, list):
-        dataframe = DataFrame(processed_list_of_jsons)
+    if isinstance(processed_jsons, list):
+        if isinstance(processed_jsons[0], list):
+            dataframe = DataFrame(list(itertools.chain(*processed_jsons)))
+            return {"dataframe": dataframe, "metrics": partial_metrics(record_count=dataframe.shape[0])}
+        dataframe = DataFrame(processed_jsons)
         return {"dataframe": dataframe, "metrics": partial_metrics(record_count=dataframe.shape[0])}
-    output = list(itertools.chain(*processed_list_of_jsons))
-    dataframe = DataFrame(output)
+    dataframe = DataFrame(processed_jsons, index=[0])
     return {"dataframe": dataframe, "metrics": partial_metrics(record_count=dataframe.shape[0])}

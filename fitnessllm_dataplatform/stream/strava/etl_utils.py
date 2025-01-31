@@ -1,89 +1,143 @@
+"""ETL Utilities for Strava Data Source."""
+import itertools
 import json
-from dataclasses import dataclass
+from dataclasses import asdict
+from datetime import datetime
 from enum import Enum
 from functools import partial
-import itertools
+from os import environ
 
-from pandas import DataFrame
-from redis.typing import FieldT
-from tqdm import tqdm
+import pandas as pd
 from cloudpathlib import GSPath
+from google.cloud import bigquery
+from joblib import Parallel, delayed
+from pandas import DataFrame
+from tqdm import tqdm
+from tqdm_joblib import tqdm_joblib
+import multiprocessing as mp
 
-from fitnessllm_dataplatform.entities.enums import FitnessLLMDataStreams
+from fitnessllm_dataplatform.entities.dataclasses import Metrics
+from fitnessllm_dataplatform.entities.enums import (
+    FitnessLLMDataSource,
+    FitnessLLMDataStream, Status,
+)
+from fitnessllm_dataplatform.entities.queries import get_activities
 from fitnessllm_dataplatform.stream.strava.cloud_utils import get_strava_storage_path
 from fitnessllm_dataplatform.stream.strava.entities.enums import StravaStreams
-from google.cloud import bigquery
+from fitnessllm_dataplatform.utils.logging_utils import logger
+
 
 def load_json_into_bq(InfrastructureNames: Enum, athlete_id: str):
-    partial_strava_storage = partial(get_strava_storage_path,
-                                     bucket=InfrastructureNames.bronze_bucket,
-                                     athlete_id=athlete_id)
+    partial_strava_storage = partial(
+        get_strava_storage_path,
+        bucket=InfrastructureNames.bronze_bucket,
+        athlete_id=athlete_id,
+    )
+
+    partial_load_json_into_dataframe = partial(
+        load_json_into_dataframe,
+        athlete_id=athlete_id,
+        data_source=FitnessLLMDataSource.STRAVA,
+    )
     client = bigquery.Client()
 
-    streams = [element.name for element in partial_strava_storage(strava_model=None).iterdir()]
+    streams = [
+        element.name for element in partial_strava_storage(strava_model=None).iterdir()
+    ]
     for stream in streams:
+        activity_ids = client.query(get_activities(athlete_id=athlete_id,
+                                                   data_source=FitnessLLMDataSource.STRAVA,
+                                                   data_stream=stream_enum)).to_dataframe()['activity_id'].values
         stream_enum = StravaStreams[stream.upper()]
-        module_strava_json_list = list(partial_strava_storage(strava_model=stream_enum).iterdir())
-        for json_file in tqdm(module_strava_json_list, desc = f"{stream}"):
-            batched_dataframe = load_batch_jsons_into_dataframe(athlete_id=athlete_id,
-                                                                file=json_file,
-                                                                data_source = FitnessLLMDataStreams.STRAVA,
-                                                                data)
-            client.load_table_from_dataframe(dataframe=batched_dataframe,
+        module_strava_json_list = list(itertools.islice(partial_strava_storage(strava_model=stream_enum).iterdir(), int(environ['SAMPLE']))) if environ.get('SAMPLE') else list(partial_strava_storage(strava_model=stream_enum).iterdir())
+
+
+
+        with tqdm_joblib(tqdm(desc=f"Processing {stream}", total=len(module_strava_json_list))):
+            result = Parallel(n_jobs=mp.cpu_count(), backend="threading")(
+                delayed(partial_load_json_into_dataframe)(file=json_file, data_stream=stream)
+                for json_file in module_strava_json_list
+            )
+
+        dataframes = pd.concat([result["dataframe"] for result in result])
+        metrics = [result["metrics"] for result in result]
+        timestamp = datetime.now()
+
+        try:
+            client.load_table_from_dataframe(dataframe=dataframes,
                                              destination=f"dev_strava.{stream}",
                                              job_config=bigquery.LoadJobConfig(write_disposition=bigquery.WriteDisposition.WRITE_APPEND))
+            insert_metrics(metrics_list=metrics,
+                           destination=f"dev_strava.metrics",
+                           timestamp=timestamp,
+                           status=Status.SUCCESS)
+        except Exception as e:
+            logger.error(f"Error while inserting for {stream.value} for {athlete_id}: {e}")
+            insert_metrics(metrics_list=metrics,
+                           destination=f"dev_strava.metrics",
+                           timestamp=timestamp,
+                           status=Status.FAILURE)
 
-@dataclass
-class Metrics:
-    athlete_id: str
-    activity_id: str
-    data_source: str
-    stream: str
-    record_count: int
-    status: str
-    bq_insert_timestamp: str
+
+def filter_activity_jsons()
 
 
-def insert_metrics(**kwargs):
-
-    athlete_id = kwargs.get('athlete_id')
-    activity_id = kwargs.get('activity_id')
-    data_source = kwargs.get('data_source')
-    stream = kwargs.get('stream')
-    record_count = kwargs.get('record_count')
-    status = kwargs.get('status')
-    bq_insert_timestamp = kwargs.get('bq_insert_timestamp')
+def insert_metrics(metrics_list: list[Metrics],
+                   destination: str,
+                   timestamp: datetime,
+                   status: Status):
+    client = bigquery.Client()
+    metrics_list = [asdict(metrics.update(bq_insert_timestamp=timestamp, status=status.value)) for metrics in metrics_list]
+    dataframe = pd.DataFrame(metrics_list)
+    client.load_table_from_dataframe(dataframe=dataframe,
+                                     destination=destination,
+                                     job_config=bigquery.LoadJobConfig(write_disposition=bigquery.WriteDisposition.WRITE_APPEND))
 
 
 
 
 def process_json(input_dict: dict) -> dict:
-    if isinstance(input_dict['data'], dict):
-        data = input_dict['data']
-        if data.get('map'):
-            del data['map']
-        if data.get('athlete'):
-            del data['athlete']
+    if isinstance(input_dict["data"], dict):
+        data = input_dict["data"]
+        if data.get("map"):
+            del data["map"]
+        if data.get("athlete"):
+            del data["athlete"]
 
-        data['athlete_id'] = input_dict['athlete_id']
-        data['activity_id'] = input_dict['activity_id']
+        data["athlete_id"] = input_dict["athlete_id"]
+        data["activity_id"] = input_dict["activity_id"]
         for k, v in data.items():
             if type(v) in [list]:
                 data[k] = str(v)
         return data
-    if isinstance(input_dict['data'], list):
-        for element in input_dict['data']:
-            element['athlete_id'] = input_dict['athlete_id'];
-            element['activity_id'] = input_dict['activity_id']
+    if isinstance(input_dict["data"], list):
+        for element in input_dict["data"]:
+            element["athlete_id"] = input_dict["athlete_id"]
+            element["activity_id"] = input_dict["activity_id"]
             for k, v in element.items():
                 if type(v) in [list]:
                     element[k] = str(v)
-        return input_dict['data']
+        return input_dict["data"]
 
-def load_batch_jsons_into_dataframe(athlete_id: str, file: GSPath, data_source = FitnessLLMDataStreams.STRAVA) -> DataFrame:
-    loaded_json = {'athlete_id': athlete_id, 'activity_id': file.stem.split("=")[1], 'data': json.loads(file.read_text())}
+
+def load_json_into_dataframe(
+    athlete_id: str, file: GSPath, data_source, data_stream: FitnessLLMDataStream
+) -> dict[str, DataFrame| Metrics]:
+    loaded_json = {
+        "athlete_id": athlete_id,
+        "activity_id": file.stem.split("=")[1],
+        "data": json.loads(file.read_text()),
+    }
     processed_list_of_jsons = process_json(loaded_json)
+    partial_metrics = partial(Metrics,
+                              athlete_id=athlete_id,
+                              activity_id=file.stem.split("=")[1],
+                              data_source=data_source.value,
+                              data_stream=data_stream)
+
     if not isinstance(processed_list_of_jsons[0], list):
-        return DataFrame(processed_list_of_jsons)
+        dataframe = DataFrame(processed_list_of_jsons)
+        return {"dataframe": dataframe, "metrics": partial_metrics(record_count=dataframe.shape[0])}
     output = list(itertools.chain(*processed_list_of_jsons))
-    return DataFrame(output), Metrics(athlete_id=athlete_id, activity_id=file.stem.split("=")[1])
+    dataframe = DataFrame(output)
+    return {"dataframe": dataframe, "metrics": partial_metrics(record_count=dataframe.shape[0])}

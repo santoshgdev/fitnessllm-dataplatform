@@ -19,9 +19,9 @@ def handler(options: dict) -> None:
         get_secret(environ["INFRASTRUCTURE_SECRET"])[environ["STAGE"]]
     )
 
-    if options['data_stream'] == FitnessLLMDataSource.STRAVA.value:
+    if options['data_source'] == FitnessLLMDataSource.STRAVA.value:
         athlete_id = options['athlete_id']
-        load_json_into_bq(InfrastructureNames=InfrastructureNames, athlete_id=athlete_id)
+        load_json_into_bq(InfrastructureNames=InfrastructureNames, athlete_id=athlete_id, data_streams=options['data_streams'])
 
 
 if __name__ == '__main__':

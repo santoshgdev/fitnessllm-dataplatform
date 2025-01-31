@@ -1566,6 +1566,21 @@ slack = ["slack-sdk"]
 telegram = ["requests"]
 
 [[package]]
+name = "tqdm-joblib"
+version = "0.0.4"
+description = "Tracking progress of joblib.Parallel execution"
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "tqdm_joblib-0.0.4-py3-none-any.whl", hash = "sha256:786f4423f2282701db7959a2b4449d1e3ab60b4841f5a6d03ec49e8cb8946e0b"},
+    {file = "tqdm_joblib-0.0.4.tar.gz", hash = "sha256:8588e0d04aa5d51a0fae3ce68206045a8117ec695daddeaea3012dfd8869d2a5"},
+]
+
+[package.dependencies]
+tqdm = "*"
+
+[[package]]
 name = "types-cffi"
 version = "1.16.0.20241221"
 description = "Typing stubs for cffi"
@@ -1702,4 +1717,4 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 [metadata]
 lock-version = "2.1"
 python-versions = "3.12.2"
-content-hash = "f48166daec19f725bd6494fb9b7609669c3c692ec720a6ec401ff469a1332d06"
+content-hash = "a7100344e8a04a5403f55a0500f116d3b14025afa6c1eea8d33fed10eaf2f050"

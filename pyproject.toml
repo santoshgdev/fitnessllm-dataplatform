@@ -13,7 +13,6 @@ typing-extensions = "^4.12.2"
 fire = "^0.7.0"
 google-cloud-secret-manager = "^2.22.1"
 tqdm = "^4.67.1"
-api-dev = {path = "../api_dev", develop = true}
 numpy = "^2.2.2"
 pandas = "^2.2.3"
 google-cloud-bigquery = {extras = ["pandas"], version = "^3.29.0"}

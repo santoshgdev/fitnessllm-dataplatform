@@ -1,0 +1,13 @@
+services:
+  fitnessllm-dataplatform:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILDKIT_PROGRESS: plain
+    volumes:
+      - ~/.config/gcloud:/root/.config/gcloud
+      - .:/app/fitnessllm-dataplatform  # Your main project
+      - ../api_dev:/app/api_dev  # The additional repository
+    environment:
+      - PYTHONPATH=/app

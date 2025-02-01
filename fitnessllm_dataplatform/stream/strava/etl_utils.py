@@ -14,7 +14,6 @@ from joblib import Parallel, delayed
 from pandas import DataFrame
 from tqdm import tqdm
 from tqdm_joblib import tqdm_joblib
-import multiprocessing as mp
 
 from fitnessllm_dataplatform.entities.dataclasses import Metrics
 from fitnessllm_dataplatform.entities.enums import (

@@ -2,8 +2,6 @@ FROM python:3.12.2-slim
 
 RUN ["apt-get", "update"]
 RUN ["apt-get", "install", "-y", "zsh"]
-RUN wget https://github.com/robbyrussell/oh-my-zsh/raw/master/tools/install.sh -O - | zsh || true
-
 
 # Python configuration
 ENV PYTHONUNBUFFERED=1 \
@@ -22,12 +20,13 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/* \
     && curl -sSL https://install.python-poetry.org | python3 - --version ${POETRY_VERSION}
 
-#RUN mkdir /app/fitnessllm-dataplatform -p
-#WORKDIR /app/fitnessllm-dataplatform
-#COPY poetry.lock .
-WORKDIR /app
+WORKDIR /opt
 COPY pyproject.toml .
 RUN poetry config virtualenvs.in-project true
 RUN poetry install --no-root
+
+RUN mkdir /app
+WORKDIR /app
+
 
 CMD ["tail", "-f", "/dev/null"]

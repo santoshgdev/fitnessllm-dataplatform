@@ -25,7 +25,7 @@ from fitnessllm_dataplatform.entities.queries import get_activities
 from fitnessllm_dataplatform.stream.strava.cloud_utils import get_strava_storage_path
 from fitnessllm_dataplatform.stream.strava.entities.enums import StravaStreams
 from fitnessllm_dataplatform.utils.logging_utils import logger
-
+import multiprocessing as mp
 
 def upsert_to_bigquery(
     client: bigquery.Client,
@@ -102,7 +102,7 @@ def convert_stream_json_to_dataframe(
     with tqdm_joblib(
         tqdm(desc=f"Processing {stream}", total=len(filtered_module_strava_json_list))
     ):
-        result = Parallel(n_jobs=1, backend="threading")(
+        result = Parallel(n_jobs=int(environ.get('WORKER')) if environ.get('WORKER') else mp.cpu_count(), backend="threading")(
             delayed(partial_load_json_into_dataframe)(
                 file=json_file, data_stream=stream
             )

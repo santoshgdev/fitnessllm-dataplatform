@@ -26,7 +26,10 @@ from fitnessllm_dataplatform.stream.strava.entities.enums import StravaStreams
 from fitnessllm_dataplatform.utils.logging_utils import logger
 
 
-def load_json_into_bq(InfrastructureNames: Enum, athlete_id: str, data_streams: list[str]):
+def convert_stream_json_to_dataframe(stream_json):
+
+
+def load_json_into_bq(InfrastructureNames: Enum, athlete_id: str, data_streams: list[str] | None):
     partial_strava_storage = partial(
         get_strava_storage_path,
         bucket=InfrastructureNames.bronze_bucket,
@@ -41,8 +44,11 @@ def load_json_into_bq(InfrastructureNames: Enum, athlete_id: str, data_streams: 
     client = bigquery.Client()
 
     streams = [
-        element.name for element in partial_strava_storage(strava_model=None).iterdir() if element.name in data_streams
+        element.name for element in partial_strava_storage(strava_model=None).iterdir()
     ]
+    if data_streams:
+        streams = [stream for stream in streams if stream in data_streams]
+
     for stream in streams:
         stream_enum = StravaStreams[stream.upper()]
         activity_ids = client.query(get_activities(athlete_id=athlete_id,
@@ -67,13 +73,13 @@ def load_json_into_bq(InfrastructureNames: Enum, athlete_id: str, data_streams: 
                                              destination=f"dev_strava.{stream}",
                                              job_config=bigquery.LoadJobConfig(write_disposition=bigquery.WriteDisposition.WRITE_APPEND))
             insert_metrics(metrics_list=metrics,
-                           destination=f"dev_strava.metrics",
+                           destination="dev_metrics.metrics",
                            timestamp=timestamp,
                            status=Status.SUCCESS)
         except Exception as e:
             logger.error(f"Error while inserting for {stream_enum.value} for {athlete_id}: {e}")
             insert_metrics(metrics_list=metrics,
-                           destination=f"dev_strava.metrics",
+                           destination=f"dev_metrics.metrics",
                            timestamp=timestamp,
                            status=Status.FAILURE)
 

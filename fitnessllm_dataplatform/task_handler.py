@@ -21,7 +21,7 @@ def handler(options: dict) -> None:
 
     if options['data_source'] == FitnessLLMDataSource.STRAVA.value:
         athlete_id = options['athlete_id']
-        load_json_into_bq(InfrastructureNames=InfrastructureNames, athlete_id=athlete_id, data_streams=options['data_streams'])
+        load_json_into_bq(InfrastructureNames=InfrastructureNames, athlete_id=athlete_id, data_streams=options.get('data_streams'))
 
 
 if __name__ == '__main__':

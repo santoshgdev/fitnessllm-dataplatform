@@ -3,6 +3,7 @@ from enum import Enum
 from os import environ
 
 from google.auth.transport import requests
+from stravalib import Client
 from tqdm import tqdm
 
 from fitnessllm_dataplatform.services.api_interface import APIInterface
@@ -10,7 +11,7 @@ from fitnessllm_dataplatform.stream.strava.cloud_utils import get_strava_storage
 from fitnessllm_dataplatform.stream.strava.entities.enums import StravaKeys, StravaURLs, StravaStreams
 from fitnessllm_dataplatform.utils.cloud_utils import get_secret, write_json_to_storage
 from fitnessllm_dataplatform.utils.logging_utils import logger
-from stravalib import Client
+
 
 class RedisConnect:
     pass
@@ -52,7 +53,7 @@ class StravaAPIInterface(APIInterface):
         else:
             logger.info("Strava token still valid")
 
-    def write_refreshed_access_token_to_redis(self):
+    def write_refreshed_access_token_to_redis(self) -> None:
         """Writes retrieved strava access token to redis."""
         logger.info("Refreshing strava access token")
         strava_secret_token = get_secret(environ["STRAVA_SECRET"])

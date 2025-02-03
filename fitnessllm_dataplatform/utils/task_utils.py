@@ -11,7 +11,7 @@ def load_into_env_vars(options: dict):
     """
     for key, value in options.items():
         if type(value) in [str, int, float, bool]:
-            os.environ[key] = value
+            os.environ[key] = str(value)
 
 def get_enum_values_from_list(enum: list[Enum]):
     return [member.value for member in enum]

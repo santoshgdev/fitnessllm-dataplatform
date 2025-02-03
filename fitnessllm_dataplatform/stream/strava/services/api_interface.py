@@ -18,7 +18,7 @@ from fitnessllm_dataplatform.stream.strava.entities.enums import (
 )
 from fitnessllm_dataplatform.utils.cloud_utils import get_secret, write_json_to_storage
 from fitnessllm_dataplatform.utils.logging_utils import logger
-from fitnessllm_dataplatform.utils.reques_utils import handle_status_code
+from fitnessllm_dataplatform.utils.request_utils import handle_status_code
 from fitnessllm_dataplatform.utils.task_utils import get_enum_values_from_list
 
 

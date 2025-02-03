@@ -20,16 +20,23 @@ class StravaKeys(Enum):
 
 
 class StravaStreams(FitnessLLMDataStream):
-    """Strava specific steams."""
-    ACTIVITY="activity"
-    STREAM="heartstream"
+    ACTIVITY = "activity"
+    ATHLETE_SUMMARY = "athlete_summary"
     TIME = "time"
-    HEARTRATE = "heartrate"
     DISTANCE = "distance"
     LATLNG = "latlng"
+    ALTITUDE = "altitude"
     VELOCITY_SMOOTH = "velocity_smooth"
+    HEARTRATE = "heartrate"
     CADENCE = "cadence"
     WATTS = "watts"
     TEMP = "temp"
     MOVING = "moving"
     GRADE_SMOOTH = "grade_smooth"
+
+    @classmethod
+    def filter_streams(cls, include=None, exclude=None) -> list[Enum]:
+        if include:
+            return [member for member in cls if member.name in include]
+        if exclude:
+            return [member for member in cls if member.name not in exclude]

@@ -1,37 +1,50 @@
 import json
 from enum import Enum
+from functools import partial
 from os import environ
 
-from google.auth.transport import requests
+import requests
 from stravalib import Client
+from stravalib.model import Stream
 from tqdm import tqdm
 
+from fitnessllm_dataplatform.infrastructure.RedisConnect import RedisConnect
 from fitnessllm_dataplatform.services.api_interface import APIInterface
 from fitnessllm_dataplatform.stream.strava.cloud_utils import get_strava_storage_path
 from fitnessllm_dataplatform.stream.strava.entities.enums import StravaKeys, StravaURLs, StravaStreams
 from fitnessllm_dataplatform.utils.cloud_utils import get_secret, write_json_to_storage
 from fitnessllm_dataplatform.utils.logging_utils import logger
-
-
-class RedisConnect:
-    pass
+from fitnessllm_dataplatform.utils.reques_utils import handle_status_code
+from fitnessllm_dataplatform.utils.task_utils import get_enum_values_from_list
 
 
 class StravaAPIInterface(APIInterface):
-    def __init__(self):
+    def __init__(self, redis = None):
         super().__init__()
-        self.redis = RedisConnect()
+        self.client = None
+        self.redis = redis or RedisConnect()
         self.refresh_access_token_at_expiration()
-        self.client = Client()
-        pass
+        strava_access_token_dict = self.redis.read_redis(StravaKeys.STRAVA_ACCESS_TOKEN.value)
+        self.instantiate_strava_lib(strava_access_token_dict)
 
-    def get_strava_access_token(
-            client_id: str,
-            client_secret: str,
-            code: str,
-            grant_type: str = "authorization_code",
-    ) -> dict:
-        """Retrieve strava access token."""
+
+    @staticmethod
+    def get_strava_access_token(client_id: str,
+                                client_secret: str,
+                                code: str,
+                                grant_type: str = "authorization_code",
+                                ) -> dict:
+        """Retrieve strava access token.
+
+        Args:
+            client_id: Client ID.
+            client_secret: Client secret.
+            code: Authorization code.
+            grant_type: Grant type.
+
+        Returns:
+            dict: Access token.
+        """
         payload = {
             "client_id": client_id,
             "client_secret": client_secret,
@@ -43,7 +56,7 @@ class StravaAPIInterface(APIInterface):
             raise Exception(
                 f"Request to strava failed with status {response.status_code}: {response.text}"
             )
-        return response.json()
+        return handle_status_code(response)
 
     def refresh_access_token_at_expiration(self):
         """Refreshes strava access token if it happens to be expired."""
@@ -69,13 +82,10 @@ class StravaAPIInterface(APIInterface):
             ttl=strava_access_token["expires_in"] - 60,
         )
         logger.info("Refreshed strava access token")
-
-    def get_all_data(self, InfrastructureNames: Enum) -> str | None:
-        """Get all activities."""
-        redis = RedisConnect()
-        strava_access_dict_from_redis = redis.read_redis(
-            StravaKeys.STRAVA_ACCESS_TOKEN.value
-        )
+    
+    
+    def instantiate_strava_lib(self, strava_access_dict_from_redis: dict):
+        """Instantiate strava client."""
         strava_access_token = (
             strava_access_dict_from_redis["access_token"]
             if strava_access_dict_from_redis
@@ -83,37 +93,36 @@ class StravaAPIInterface(APIInterface):
         )
         if not strava_access_token:
             return None
-        client = Client(access_token=strava_access_token)
-        activities = list(client.get_activities())
+        self.client = Client(access_token=strava_access_token)
+    
+    
+    def get_all_data(self, InfrastructureNames: Enum) -> str | None:
+        """Get all activities."""
+        athlete = self.client.get_athlete()
+        athlete_id = athlete.id
+        partial_get_strava_storage = partial(
+            get_strava_storage_path,
+            bucket=InfrastructureNames.bronze_bucket,
+            athlete_id=athlete_id
+        )
+
+        path = partial_get_strava_storage(strava_model=StravaStreams.ATHLETE_SUMMARY)
+        write_json_to_storage(path, athlete.model_dump_json())
+
+        activities = list(self.client.get_activities())
         for activity in tqdm(activities, desc="Getting activities"):
             activity_dump = activity.model_dump()
             athlete_id, activity_id = activity_dump["athlete"]["id"], activity_dump["id"]
-            path = get_strava_storage_path(
-                bucket=InfrastructureNames.bronze_bucket,
-                athlete_id=athlete_id,
-                strava_model=StravaStreams.ACTIVITY,
-                activity_id=activity_id,
-            )
+            path = partial_get_strava_storage(strava_model=StravaStreams.ACTIVITY, activity_id=activity_id)
             write_json_to_storage(path, json.loads(activity.model_dump_json()))
 
-            streams = client.get_activity_streams(
-                activity_id=activity_id, types=[e.value for e in StravaStreams]
+            non_activity_streams = StravaStreams.filter_streams(exclude=['ACTIVITY','ATHLETE_SUMMARY'])
+            streams = self.client.get_activity_streams(
+                activity_id=activity_id, types=get_enum_values_from_list(non_activity_streams)
             )
-            stream_time = streams.get(StravaStreams.TIME.value, Stream()).data
-            for stream in StravaStreams:
-                stream_type = stream.value
-                stream_data = streams.get(stream_type, Stream()).data
-                if stream != StravaStreams.TIME and stream_data is not None:
-                    paired_streams = [
-                        {"time": t, stream_type: d}
-                        for t, d in zip(stream_time, stream_data)
-                    ]
-                    path = get_strava_storage_path(
-                        bucket=InfrastructureNames.bronze_bucket,
-                        athlete_id=athlete_id,
-                        strava_model=stream,
-                        activity_id=activity_id,
-                    )
-                    write_json_to_storage(path, paired_streams)
+            for stream in non_activity_streams:
+                stream_data = streams.get(stream.value, Stream())
+                path = partial_get_strava_storage(strava_model=stream, activity_id=activity_id)
+                write_json_to_storage(path, stream_data.model_dump_json())
         return athlete_id
 

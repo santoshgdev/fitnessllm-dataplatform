@@ -137,5 +137,5 @@ class StravaAPIInterface(APIInterface):
                 path = partial_get_strava_storage(
                     strava_model=stream, activity_id=activity_id
                 )
-                write_json_to_storage(path, stream_data.model_dump_json())
+                write_json_to_storage(path, json.loads(stream_data.model_dump_json()))
         return athlete_id

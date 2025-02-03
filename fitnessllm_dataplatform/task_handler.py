@@ -38,9 +38,9 @@ class Startup:
         """
         if data_source not in [member.value for member in FitnessLLMDataSource]:
             raise ValueError(f"Unsupported data source: {data_source}")
-        strava_api_interface = StravaAPIInterface()
+        strava_api_interface = StravaAPIInterface(self.InfrastructureNames)
         try:
-            strava_api_interface.get_all_data(self.InfrastructureNames)
+            strava_api_interface.get_all_data()
         except Exception as e:
             raise RuntimeError(f"Failed to get data from Strava API: {e}") from e
 

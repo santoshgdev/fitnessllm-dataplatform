@@ -68,7 +68,10 @@ class StravaAPIInterface(APIInterface):
         return handle_status_code(response)
 
     def refresh_access_token_at_expiration(self):
-        """Refreshes strava access token if it happens to be expired."""
+        """Refreshes strava access token if it happens to be expired.
+
+        TTL of the current token is retrieved. If it happens to not exist or is less than 0, a new token is retrieved.
+        """
         redis_ttl = self.redis.get_ttl(StravaKeys.STRAVA_ACCESS_TOKEN.value)
         if redis_ttl is None or redis_ttl < 0:
             self.write_refreshed_access_token_to_redis()
@@ -112,9 +115,11 @@ class StravaAPIInterface(APIInterface):
             bucket=self.InfrastructureNames.bronze_bucket,
             athlete_id=athlete.id,
         )
-        write_json_to_storage(self.partial_get_strava_storage(strava_model=StravaStreams.ATHLETE_SUMMARY), athlete.model_dump_json())
+        write_json_to_storage(
+            self.partial_get_strava_storage(strava_model=StravaStreams.ATHLETE_SUMMARY),
+            athlete.model_dump_json(),
+        )
         return athlete.id
-
 
     def get_activity_summary(self, activity: SummaryActivity) -> str:
         """Get activity summary."""
@@ -124,8 +129,6 @@ class StravaAPIInterface(APIInterface):
         )
         write_json_to_storage(path, json.loads(activity.model_dump_json()))
         return activity_dump["id"]
-
-
 
     def get_athlete_activity_streams(self, activity: SummaryActivity) -> None:
         """Get athlete stream."""

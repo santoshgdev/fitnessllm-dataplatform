@@ -7,7 +7,7 @@ RUN ["apt-get", "install", "-y", "zsh"]
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     POETRY_VERSION=2.0.1 \
-    POETRY_HOME="/opt/poetry" \
+    POETRY_HOME="/var/poetry" \
     #POETRY_VIRTUALENVS_IN_PROJECT=false \
     POETRY_NO_INTERACTION=1
 
@@ -20,7 +20,8 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/* \
     && curl -sSL https://install.python-poetry.org | python3 - --version ${POETRY_VERSION}
 
-WORKDIR /opt
+RUN mkdir /venv
+WORKDIR /venv
 COPY pyproject.toml .
 RUN poetry config virtualenvs.in-project true
 RUN poetry install --no-root

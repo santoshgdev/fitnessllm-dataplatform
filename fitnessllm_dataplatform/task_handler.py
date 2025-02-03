@@ -18,15 +18,36 @@ class Startup(object):
         GSClient().set_as_default_client()
 
     def ingest(self, options: dict) -> None:
-        """Entry point for downloading JSONs from API."""
-        InfrastructureNames = DynamicEnum.from_dict(
-            get_secret(environ["INFRASTRUCTURE_SECRET"])[environ["STAGE"]]
-        )
+        """Entry point for downloading JSONs from API.
 
-        if options['data_source'] == FitnessLLMDataSource.STRAVA.value:
+        Args:
+            options: Dictionary containing configuration options.
+                Required keys:
+                - data_source: Source of the data (e.g., STRAVA).
+
+        Raises:
+            KeyError: If required options or environment variables are missing.
+            ValueError: If data source is not supported.
+        """
+        if 'data_source' not in options:
+            raise KeyError("Missing required option: data_source")
+
+        try:
+            InfrastructureNames = DynamicEnum.from_dict(
+                get_secret(environ["INFRASTRUCTURE_SECRET"])[environ["STAGE"]],
+            )
+        except KeyError as e:
+            raise KeyError(f"Missing environment variable: {e}")
+
+        data_source = options['data_source']
+        if data_source == FitnessLLMDataSource.STRAVA.value:
             strava_api_interface = StravaAPIInterface()
-            strava_api_interface.get_all_data(InfrastructureNames)
-
+            try:
+                strava_api_interface.get_all_data(InfrastructureNames)
+            except Exception as e:
+                raise RuntimeError(f"Failed to get data from Strava API: {e}")
+        else:
+            raise ValueError(f"Unsupported data source: {data_source}")
 
     def etl(self, options: dict, InfrastructureNames: DynamicEnum) -> None:
         """Entry point for loading JSONs into BigQuery."""

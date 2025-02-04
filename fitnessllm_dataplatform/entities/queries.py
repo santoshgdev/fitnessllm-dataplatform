@@ -4,7 +4,7 @@ from fitnessllm_dataplatform.entities.enums import (
 )
 
 
-def get_activities(
+def create_activities_query(
     athlete_id: str,
     data_source: FitnessLLMDataSource,
     data_stream: FitnessLLMDataStream,

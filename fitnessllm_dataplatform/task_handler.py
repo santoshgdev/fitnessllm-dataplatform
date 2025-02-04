@@ -1,18 +1,18 @@
 from os import environ
 
 import fire
+from beartype import beartype
 from cloudpathlib import GSClient
 
 from fitnessllm_dataplatform.entities.enums import DynamicEnum, FitnessLLMDataSource
 from fitnessllm_dataplatform.infrastructure.RedisConnect import RedisConnect
-from fitnessllm_dataplatform.stream.strava.entities.enums import StravaStreams
-from fitnessllm_dataplatform.stream.strava.etl_utils import load_json_into_bq
 from fitnessllm_dataplatform.stream.strava.services.api_interface import (
     StravaAPIInterface,
 )
+from fitnessllm_dataplatform.stream.strava.services.etl_interface import StravaETLInterface
 from fitnessllm_dataplatform.utils.cloud_utils import get_secret
 from fitnessllm_dataplatform.utils.logging_utils import logger
-from beartype import beartype
+
 
 class Startup:
     def _startUp(self) -> None:
@@ -47,16 +47,15 @@ class Startup:
 
     @beartype
     def etl(
-        self, data_source: str, athlete_id: str, data_streams: list[str] | None
-    ) -> None:
+        self, data_source: str, athlete_id: int, data_streams: list[str] | None
+    = None) -> None:
         """Entry point for loading JSONs into BigQuery."""
 
         if data_source == FitnessLLMDataSource.STRAVA.value:
-            load_json_into_bq(
-                InfrastructureNames=self.InfrastructureNames,
-                athlete_id=athlete_id,
-                data_streams=data_streams,
-            )
+            strava_etl_interface = StravaETLInterface(infrastructure_names=self.InfrastructureNames,
+                                                      athlete_id=str(athlete_id),
+                                                      data_streams=data_streams)
+            strava_etl_interface.load_json_into_bq()
         else:
             raise ValueError(f"Unsupported data source: {data_source}")
 

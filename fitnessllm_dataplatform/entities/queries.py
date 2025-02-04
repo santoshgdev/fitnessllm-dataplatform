@@ -1,9 +1,14 @@
-from fitnessllm_dataplatform.entities.enums import FitnessLLMDataSource, FitnessLLMDataStream
+from fitnessllm_dataplatform.entities.enums import (
+    FitnessLLMDataSource,
+    FitnessLLMDataStream,
+)
 
 
-def get_activities(athlete_id: str,
-                   data_source: FitnessLLMDataSource,
-                   data_stream: FitnessLLMDataStream):
+def get_activities(
+    athlete_id: str,
+    data_source: FitnessLLMDataSource,
+    data_stream: FitnessLLMDataStream,
+):
     return f"""
         SELECT DISTINCT activity_id
         FROM dev_metrics.metrics

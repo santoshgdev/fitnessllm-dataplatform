@@ -3,6 +3,7 @@ from enum import Enum
 
 class DynamicEnum(Enum):
     """A blank enum that adds members via initialization function."""
+
     pass
 
     @classmethod
@@ -16,7 +17,8 @@ class FitnessLLMDataStream(Enum):
 
 
 class FitnessLLMDataSource(Enum):
-    STRAVA="STRAVA"
+    STRAVA = "STRAVA"
+
 
 class Status(Enum):
     SUCCESS = "SUCCESS"

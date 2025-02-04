@@ -4,11 +4,12 @@ import json
 import multiprocessing as mp
 from dataclasses import asdict
 from datetime import datetime
-from enum import Enum
+from enum import Enum, EnumType
 from functools import partial
 from os import environ
 
 import pandas as pd
+from beartype import beartype
 from cloudpathlib import GSPath
 from google.cloud import bigquery
 from joblib import Parallel, delayed
@@ -27,13 +28,13 @@ from fitnessllm_dataplatform.stream.strava.cloud_utils import get_strava_storage
 from fitnessllm_dataplatform.stream.strava.entities.enums import StravaStreams
 from fitnessllm_dataplatform.utils.logging_utils import logger
 
-
+@beartype
 def upsert_to_bigquery(
     client: bigquery.Client,
     athlete_id: str,
     stream: StravaStreams,
     dataframes: list[pd.DataFrame],
-    metrics: list[dict],
+    metrics: list[Metrics],
 ):
     timestamp = datetime.now()
     try:
@@ -59,7 +60,7 @@ def upsert_to_bigquery(
             status=Status.FAILURE,
         )
 
-
+@beartype
 def convert_stream_json_to_dataframe(
     stream: StravaStreams,
     client: bigquery.Client,
@@ -119,9 +120,9 @@ def convert_stream_json_to_dataframe(
     metrics = [result["metrics"] for result in result]
     return dataframes, metrics
 
-
+@beartype
 def load_json_into_bq(
-    InfrastructureNames: Enum, athlete_id: str, data_streams: list[str] | None
+    InfrastructureNames: EnumType, athlete_id: str, data_streams: list[str] | None
 ):
     partial_strava_storage = partial(
         get_strava_storage_path,
@@ -131,10 +132,15 @@ def load_json_into_bq(
 
     client = bigquery.Client()
 
-    streams = [
-        StravaStreams[element.name.upper()]
-        for element in partial_strava_storage(strava_model=None).iterdir()
-    ]
+    try:
+        streams = [
+            StravaStreams[element.name.upper()]
+            for element in partial_strava_storage(strava_model=None).iterdir()
+        ]
+    except KeyError as exc:
+        logger.error(f"User defined data_streams for Strava not found: {data_streams}: {exc}")
+        raise exc
+
     if data_streams:
         streams = [stream for stream in streams if stream.value in data_streams]
 
@@ -153,7 +159,7 @@ def load_json_into_bq(
             metrics=metrics,
         )
 
-
+@beartype
 def insert_metrics(
     metrics_list: list[Metrics], destination: str, timestamp: datetime, status: Status
 ):
@@ -198,6 +204,7 @@ def process_json(input_dict: dict) -> dict:
                 if type(v) in [list]:
                     element[k] = str(v)
         return input_dict["data"]
+    return {}
 
 
 def load_json_into_dataframe(

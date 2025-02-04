@@ -1,14 +1,15 @@
 """API Interface for Strava."""
 import json
+from enum import EnumType
 from functools import partial
 from os import environ
 
 import requests
+from beartype import beartype
 from stravalib import Client
 from stravalib.model import Stream, SummaryActivity
 from tqdm import tqdm
 
-from fitnessllm_dataplatform.entities.enums import DynamicEnum
 from fitnessllm_dataplatform.infrastructure.RedisConnect import RedisConnect
 from fitnessllm_dataplatform.services.api_interface import APIInterface
 from fitnessllm_dataplatform.stream.strava.cloud_utils import get_strava_storage_path
@@ -25,8 +26,12 @@ from fitnessllm_dataplatform.utils.task_utils import get_enum_values_from_list
 
 class StravaAPIInterface(APIInterface):
     """API Interface for Strava."""
+    redis: RedisConnect
+    client: Client
+    partial_get_strava_storage: partial
 
-    def __init__(self, infrastructure_names: DynamicEnum, redis=None):
+    @beartype
+    def __init__(self, infrastructure_names: EnumType, redis=None):
         super().__init__()
         self.redis = redis or RedisConnect()
         self.refresh_access_token_at_expiration()
@@ -37,6 +42,7 @@ class StravaAPIInterface(APIInterface):
         self.InfrastructureNames = infrastructure_names
         self.athlete_id = self.get_athlete_summary()
 
+    @beartype
     @staticmethod
     def get_strava_access_token(
         client_id: str,
@@ -68,7 +74,8 @@ class StravaAPIInterface(APIInterface):
             )
         return handle_status_code(response)
 
-    def refresh_access_token_at_expiration(self):
+    @beartype
+    def refresh_access_token_at_expiration(self) -> None:
         """Refreshes strava access token if it happens to be expired.
 
         TTL of the current token is retrieved. If it happens to not exist or is less than 0, a new token is retrieved.
@@ -79,6 +86,7 @@ class StravaAPIInterface(APIInterface):
         else:
             logger.info("Strava token still valid")
 
+    @beartype
     def write_refreshed_access_token_to_redis(self) -> None:
         """Writes retrieved strava access token to redis."""
         logger.info("Refreshing strava access token")
@@ -96,6 +104,7 @@ class StravaAPIInterface(APIInterface):
         )
         logger.info("Refreshed strava access token")
 
+    @beartype
     def instantiate_strava_lib(self, strava_access_dict_from_redis: dict):
         """Instantiate strava client."""
         strava_access_token = (
@@ -107,7 +116,8 @@ class StravaAPIInterface(APIInterface):
             return None
         self.client = Client(access_token=strava_access_token)
 
-    def get_athlete_summary(self) -> int:
+    @beartype
+    def get_athlete_summary(self) -> str:
         """Get athlete summary.
 
         The current athlete summary is retrieved based on the applied authorization token. The summary is saved to
@@ -124,8 +134,9 @@ class StravaAPIInterface(APIInterface):
             self.partial_get_strava_storage(strava_model=StravaStreams.ATHLETE_SUMMARY),
             athlete.model_dump_json(),
         )
-        return athlete.id
+        return str(athlete.id)
 
+    @beartype
     def get_activity_summary(self, activity: SummaryActivity) -> str:
         """Get activity summary.
 
@@ -136,8 +147,9 @@ class StravaAPIInterface(APIInterface):
             strava_model=StravaStreams.ACTIVITY, activity_id=activity_dump["id"]
         )
         write_json_to_storage(path, json.loads(activity.model_dump_json()))
-        return activity_dump["id"]
+        return str(activity_dump["id"])
 
+    @beartype
     def get_athlete_activity_streams(self, activity: SummaryActivity) -> None:
         """Get athlete stream.
 
@@ -149,7 +161,7 @@ class StravaAPIInterface(APIInterface):
             exclude=["ACTIVITY", "ATHLETE_SUMMARY"]
         )
         streams = self.client.get_activity_streams(
-            activity_id=activity_id,
+            activity_id=int(activity_id),
             types=get_enum_values_from_list(non_activity_streams),
         )
         for stream in non_activity_streams:
@@ -159,6 +171,7 @@ class StravaAPIInterface(APIInterface):
             )
             write_json_to_storage(path, json.loads(stream_data.model_dump_json()))
 
+    @beartype
     def get_all_activities(self) -> None:
         """Get all activities."""
         activities = list(self.client.get_activities())

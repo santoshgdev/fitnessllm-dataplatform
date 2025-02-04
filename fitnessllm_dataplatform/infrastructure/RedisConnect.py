@@ -5,7 +5,7 @@ import redis
 
 from fitnessllm_dataplatform.utils.cloud_utils import get_secret
 from fitnessllm_dataplatform.utils.logging_utils import logger
-
+from beartype import beartype
 
 class RedisConnect:
     """Infrastructure Redis Connect."""
@@ -30,6 +30,7 @@ class RedisConnect:
         self.interface.close()
         logger.debug("Closed redis connection.")
 
+    @beartype
     def write_redis(self, key: str, value: dict, ttl: None | int = None) -> None:
         """Write key-value to redis db specified in interface.
 
@@ -55,6 +56,7 @@ class RedisConnect:
             self.close_connection()
             return
 
+    @beartype
     def read_redis(self, key: str) -> dict:
         """Read from redis interface given a key.
 
@@ -81,6 +83,7 @@ class RedisConnect:
         finally:
             self.close_connection()
 
+    @beartype
     def get_ttl(self, key: str) -> int | None:
         """Get TTL for particular key in Redis.
 

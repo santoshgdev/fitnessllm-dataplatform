@@ -5,13 +5,14 @@ from cloudpathlib import GSClient
 
 from fitnessllm_dataplatform.entities.enums import DynamicEnum, FitnessLLMDataSource
 from fitnessllm_dataplatform.infrastructure.RedisConnect import RedisConnect
+from fitnessllm_dataplatform.stream.strava.entities.enums import StravaStreams
 from fitnessllm_dataplatform.stream.strava.etl_utils import load_json_into_bq
 from fitnessllm_dataplatform.stream.strava.services.api_interface import (
     StravaAPIInterface,
 )
 from fitnessllm_dataplatform.utils.cloud_utils import get_secret
 from fitnessllm_dataplatform.utils.logging_utils import logger
-
+from beartype import beartype
 
 class Startup:
     def _startUp(self) -> None:
@@ -25,6 +26,7 @@ class Startup:
     def __init__(self) -> None:
         self._startUp()
 
+    @beartype
     def ingest(self, data_source: str) -> None:
         """Entry point for downloading JSONs from API.
 
@@ -43,8 +45,9 @@ class Startup:
         except Exception as e:
             raise RuntimeError(f"Failed to get data from Strava API: {e}") from e
 
+    @beartype
     def etl(
-        self, data_source: str, athlete_id: str, data_streams: list[str]
+        self, data_source: str, athlete_id: str, data_streams: list[str] | None
     ) -> None:
         """Entry point for loading JSONs into BigQuery."""
 

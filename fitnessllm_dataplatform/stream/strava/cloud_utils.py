@@ -1,11 +1,13 @@
 """Cloud utils specific for Strava API."""
 from enum import Enum
 
+from beartype import beartype
 from cloudpathlib import GSPath
 
 from fitnessllm_dataplatform.stream.strava.entities.enums import StravaStreams
 
 
+@beartype
 def get_strava_storage_path(
     bucket: Enum,
     athlete_id: str,
@@ -26,9 +28,11 @@ def get_strava_storage_path(
     path = f"gs://{bucket.value}/strava/athlete_id={athlete_id}/"
 
     if strava_model in StravaStreams and strava_model:
-        path += f"{strava_model.value}/{get_json_activity_name(kwargs.get('activity_id', ''))}"
+        path += f"{strava_model.value}/{get_json_activity_name(kwargs.get('activity_id'))}"
     return GSPath(path)
 
-
-def get_json_activity_name(activity_id: str) -> str:
-    return f"activity_id={activity_id}.json"
+@beartype
+def get_json_activity_name(activity_id: str | None) -> str:
+    if activity_id:
+        return f"activity_id={activity_id}.json"
+    return ''

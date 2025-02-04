@@ -9,7 +9,7 @@ from os import environ
 from beartype import beartype
 from cloudpathlib import GSPath
 from google.cloud import bigquery
-from joblib import delayed, Parallel
+from joblib import Parallel, delayed
 from joblib._multiprocessing_helpers import mp
 from pandas import DataFrame
 from tqdm import tqdm
@@ -54,6 +54,7 @@ class StravaETLInterface(ETLInterface):
             streams = [stream for stream in streams if stream.value in self.data_streams]
 
         for stream in streams:
+            logger.info(f"Loading {stream} for {self.athlete_id}")
             dataframes, metrics = self.convert_stream_json_to_dataframe(
                 stream=stream
             )
@@ -68,7 +69,7 @@ class StravaETLInterface(ETLInterface):
             self,
             stream: StravaStreams
     ):
-
+        sample = environ.get('SAMPLE')
         activity_ids = (
             self.client.query(
                 create_activities_query(
@@ -80,17 +81,22 @@ class StravaETLInterface(ETLInterface):
             .to_dataframe()["activity_id"]
             .values
         )
+        logger.info(f"Extracted {len(activity_ids)} activity ids for {stream}")
 
         module_strava_json_list = (
             list(
                 itertools.islice(
                     self.partial_strava_storage(strava_model=stream).iterdir(),
-                    int(environ["SAMPLE"]),
+                    int(sample),
                 )
             )
-            if environ.get("SAMPLE")
+            if sample
             else list(self.partial_strava_storage(strava_model=stream).iterdir())
         )
+        if sample:
+            logger.info(f"Sampling has been turned on: {sample}")
+
+
         filtered_module_strava_json_list = [
             file
             for file in module_strava_json_list
@@ -112,19 +118,25 @@ class StravaETLInterface(ETLInterface):
                 for json_file in filtered_module_strava_json_list
             )
 
+        # result = [self.load_json_into_dataframe(file=json_file, data_stream=stream) for json_file in filtered_module_strava_json_list]
+
+
         dataframes = [result["dataframe"] for result in result]
         metrics = [result["metrics"] for result in result]
         return dataframes, metrics
 
+    @beartype
     def load_json_into_dataframe(
             self, file: GSPath, data_stream: FitnessLLMDataStream
     ) -> dict[str, DataFrame | Metrics]:
+        logger.debug("Starting to process %s", file)
         loaded_json = {
             "athlete_id": self.athlete_id,
             "activity_id": file.stem.split("=")[1],
             "data": json.loads(file.read_text()),
         }
         processed_jsons = self.process_json(loaded_json)
+        logger.debug("Processed json for %s", file)
         partial_metrics = partial(
             Metrics,
             athlete_id=self.athlete_id,
@@ -135,16 +147,19 @@ class StravaETLInterface(ETLInterface):
 
         if isinstance(processed_jsons, list):
             if isinstance(processed_jsons[0], list):
+                logger.debug("Processing multiple jsons for %s", file)
                 dataframe = DataFrame(list(itertools.chain(*processed_jsons)))
                 return {
                     "dataframe": dataframe,
                     "metrics": partial_metrics(record_count=dataframe.shape[0]),
                 }
+            logger.debug("Processing single json for %s", file)
             dataframe = DataFrame(processed_jsons)
             return {
                 "dataframe": dataframe,
                 "metrics": partial_metrics(record_count=dataframe.shape[0]),
             }
+        logger.debug("Processing single json for %s", file)
         dataframe = DataFrame(processed_jsons, index=[0])
         return {
             "dataframe": dataframe,

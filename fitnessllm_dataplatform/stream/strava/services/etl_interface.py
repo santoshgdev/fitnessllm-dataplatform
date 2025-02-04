@@ -6,17 +6,19 @@ from enum import EnumType
 from functools import partial
 from os import environ
 
+import numpy as np
+import pandas as pd
 from beartype import beartype
 from cloudpathlib import GSPath
 from google.cloud import bigquery
-from joblib import Parallel, delayed
-from joblib._multiprocessing_helpers import mp
 from pandas import DataFrame
-from tqdm import tqdm
-from tqdm_joblib import tqdm_joblib
 
 from fitnessllm_dataplatform.entities.dataclasses import Metrics
-from fitnessllm_dataplatform.entities.enums import FitnessLLMDataSource, FitnessLLMDataStream, Status
+from fitnessllm_dataplatform.entities.enums import (
+    FitnessLLMDataSource,
+    FitnessLLMDataStream,
+    Status,
+)
 from fitnessllm_dataplatform.entities.queries import create_activities_query
 from fitnessllm_dataplatform.services.etl_interface import ETLInterface
 from fitnessllm_dataplatform.stream.strava.cloud_utils import get_strava_storage_path
@@ -26,7 +28,12 @@ from fitnessllm_dataplatform.utils.logging_utils import logger
 
 class StravaETLInterface(ETLInterface):
 
-    def __init__(self, infrastructure_names: EnumType, athlete_id: str, data_streams: list[str] | None = None):
+    def __init__(
+        self,
+        infrastructure_names: EnumType,
+        athlete_id: str,
+        data_streams: list[str] | None = None,
+    ):
         super().__init__()
         self.data_source = FitnessLLMDataSource.STRAVA
         self.athlete_id = athlete_id
@@ -47,17 +54,19 @@ class StravaETLInterface(ETLInterface):
                 for element in self.partial_strava_storage(strava_model=None).iterdir()
             ]
         except KeyError as exc:
-            logger.error(f"User defined data_streams for Strava not found: {self.data_streams}: {exc}")
+            logger.error(
+                f"User defined data_streams for Strava not found: {self.data_streams}: {exc}"
+            )
             raise exc
 
         if self.data_streams:
-            streams = [stream for stream in streams if stream.value in self.data_streams]
+            streams = [
+                stream for stream in streams if stream.value in self.data_streams
+            ]
 
         for stream in streams:
             logger.info(f"Loading {stream} for {self.athlete_id}")
-            dataframes, metrics = self.convert_stream_json_to_dataframe(
-                stream=stream
-            )
+            dataframes, metrics = self.convert_stream_json_to_dataframe(stream=stream)
             self.upsert_to_bigquery(
                 stream=stream,
                 dataframes=dataframes,
@@ -65,11 +74,8 @@ class StravaETLInterface(ETLInterface):
             )
 
     @beartype
-    def convert_stream_json_to_dataframe(
-            self,
-            stream: StravaStreams
-    ):
-        sample = environ.get('SAMPLE')
+    def convert_stream_json_to_dataframe(self, stream: StravaStreams):
+        sample = environ.get("SAMPLE")
         activity_ids = (
             self.client.query(
                 create_activities_query(
@@ -96,47 +102,67 @@ class StravaETLInterface(ETLInterface):
         if sample:
             logger.info(f"Sampling has been turned on: {sample}")
 
-
         filtered_module_strava_json_list = [
             file
             for file in module_strava_json_list
             if file.stem.split("=")[1] not in activity_ids
         ]
 
-        with tqdm_joblib(
-                tqdm(desc=f"Processing {stream}", total=len(filtered_module_strava_json_list))
-        ):
-            result = Parallel(
-                n_jobs=int(environ.get("WORKER"))
-                if environ.get("WORKER")
-                else mp.cpu_count(),
-                backend="threading",
-            )(
-                delayed(self.load_json_into_dataframe)(
-                    file=json_file, data_stream=stream
-                )
-                for json_file in filtered_module_strava_json_list
-            )
+        # with tqdm_joblib(
+        #         tqdm(desc=f"Processing {stream}", total=len(filtered_module_strava_json_list))
+        # ):
+        #     result = Parallel(
+        #         n_jobs=int(environ.get("WORKER"))
+        #         if environ.get("WORKER")
+        #         else mp.cpu_count(),
+        #         backend="threading",
+        #     )(
+        #         delayed(self.load_json_into_dataframe)(
+        #             file=json_file, data_stream=stream
+        #         )
+        #         for json_file in filtered_module_strava_json_list
+        #     )
 
-        # result = [self.load_json_into_dataframe(file=json_file, data_stream=stream) for json_file in filtered_module_strava_json_list]
-
+        result = [
+            self.load_json_into_dataframe(file=json_file, data_stream=stream)
+            for json_file in filtered_module_strava_json_list
+        ]
 
         dataframes = [result["dataframe"] for result in result]
         metrics = [result["metrics"] for result in result]
         return dataframes, metrics
 
+    @staticmethod
+    def clean_column_names(df):
+        df.columns = df.columns.str.replace(
+            r"\.", "_", regex=True
+        )  # Replace dot with underscore
+        df.columns = df.columns.str.replace(
+            r"[^a-zA-Z0-9_]", "", regex=True
+        )  # Remove special characters
+        df.columns = df.columns.str.strip()  # Remove leading/trailing spaces
+        return df
+
+    @staticmethod
+    @beartype
+    def process_other_json(data_dict: dict) -> DataFrame:
+        data = data_dict["data"]
+        data = DataFrame({"data": data})
+        data = data.reset_index(inplace=False, drop=True)
+        data["index"] = np.arange(1, len(data) + 1)
+        data["original_size"] = data_dict["original_size"]
+        data["series_type"] = data_dict["series_type"]
+        return data
+
     @beartype
     def load_json_into_dataframe(
-            self, file: GSPath, data_stream: FitnessLLMDataStream
+        self, file: GSPath, data_stream: FitnessLLMDataStream
     ) -> dict[str, DataFrame | Metrics]:
         logger.debug("Starting to process %s", file)
-        loaded_json = {
-            "athlete_id": self.athlete_id,
-            "activity_id": file.stem.split("=")[1],
-            "data": json.loads(file.read_text()),
-        }
-        processed_jsons = self.process_json(loaded_json)
-        logger.debug("Processed json for %s", file)
+        data_dict = json.loads(file.read_text())
+        if isinstance(data_dict, str):
+            data_dict = json.loads(data_dict)
+
         partial_metrics = partial(
             Metrics,
             athlete_id=self.athlete_id,
@@ -145,52 +171,20 @@ class StravaETLInterface(ETLInterface):
             data_stream=data_stream,
         )
 
-        if isinstance(processed_jsons, list):
-            if isinstance(processed_jsons[0], list):
-                logger.debug("Processing multiple jsons for %s", file)
-                dataframe = DataFrame(list(itertools.chain(*processed_jsons)))
-                return {
-                    "dataframe": dataframe,
-                    "metrics": partial_metrics(record_count=dataframe.shape[0]),
-                }
-            logger.debug("Processing single json for %s", file)
-            dataframe = DataFrame(processed_jsons)
-            return {
-                "dataframe": dataframe,
-                "metrics": partial_metrics(record_count=dataframe.shape[0]),
-            }
-        logger.debug("Processing single json for %s", file)
-        dataframe = DataFrame(processed_jsons, index=[0])
+        if data_stream in [StravaStreams.ATHLETE_SUMMARY, StravaStreams.ACTIVITY]:
+            df = pd.json_normalize(data_dict)
+            df.rename(columns={"id": "athlete_id"}, inplace=True)
+            df = self.clean_column_names(df)
+        else:
+            df = self.process_other_json(data_dict)
+            df["athlete_id"] = self.athlete_id
+            df["activity_id"] = file.stem.split("=")[1]
+
         return {
-            "dataframe": dataframe,
-            "metrics": partial_metrics(record_count=dataframe.shape[0]),
+            "dataframe": df,
+            "metrics": partial_metrics(record_count=df.shape[0]),
         }
 
-    @staticmethod
-    @beartype
-    def process_json(input_dict: dict) -> dict:
-        if isinstance(input_dict["data"], dict):
-            data = input_dict["data"]
-            if data.get("map"):
-                del data["map"]
-            if data.get("athlete"):
-                del data["athlete"]
-
-            data["athlete_id"] = input_dict["athlete_id"]
-            data["activity_id"] = input_dict["activity_id"]
-            for k, v in data.items():
-                if type(v) in [list]:
-                    data[k] = str(v)
-            return data
-        if isinstance(input_dict["data"], list):
-            for element in input_dict["data"]:
-                element["athlete_id"] = input_dict["athlete_id"]
-                element["activity_id"] = input_dict["activity_id"]
-                for k, v in element.items():
-                    if type(v) in [list]:
-                        element[k] = str(v)
-            return input_dict["data"]
-        return {}
 
     @beartype
     def upsert_to_bigquery(
@@ -215,7 +209,9 @@ class StravaETLInterface(ETLInterface):
                 status=Status.SUCCESS,
             )
         except Exception as e:
-            logger.error(f"Error while inserting for {stream.value} for {self.athlete_id}: {e}")
+            logger.error(
+                f"Error while inserting for {stream.value} for {self.athlete_id}: {e}"
+            )
             self.insert_metrics(
                 metrics_list=metrics,
                 destination="dev_metrics.metrics",
@@ -225,11 +221,17 @@ class StravaETLInterface(ETLInterface):
 
     @beartype
     def insert_metrics(
-            self, metrics_list: list[Metrics], destination: str, timestamp: datetime, status: Status
+        self,
+        metrics_list: list[Metrics],
+        destination: str,
+        timestamp: datetime,
+        status: Status,
     ):
         try:
             metrics_list = [
-                asdict(metrics.update(bq_insert_timestamp=timestamp, status=status.value))
+                asdict(
+                    metrics.update(bq_insert_timestamp=timestamp, status=status.value)
+                )
                 for metrics in metrics_list
             ]
             dataframe = DataFrame(metrics_list)

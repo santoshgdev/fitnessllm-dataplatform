@@ -1,3 +1,4 @@
+"""API Interface for Strava."""
 import json
 from functools import partial
 from os import environ
@@ -13,8 +14,8 @@ from fitnessllm_dataplatform.services.api_interface import APIInterface
 from fitnessllm_dataplatform.stream.strava.cloud_utils import get_strava_storage_path
 from fitnessllm_dataplatform.stream.strava.entities.enums import (
     StravaKeys,
-    StravaURLs,
     StravaStreams,
+    StravaURLs,
 )
 from fitnessllm_dataplatform.utils.cloud_utils import get_secret, write_json_to_storage
 from fitnessllm_dataplatform.utils.logging_utils import logger
@@ -23,10 +24,10 @@ from fitnessllm_dataplatform.utils.task_utils import get_enum_values_from_list
 
 
 class StravaAPIInterface(APIInterface):
+    """API Interface for Strava."""
+
     def __init__(self, infrastructure_names: DynamicEnum, redis=None):
         super().__init__()
-        self.partial_get_strava_storage = None
-        self.client = None
         self.redis = redis or RedisConnect()
         self.refresh_access_token_at_expiration()
         strava_access_token_dict = self.redis.read_redis(
@@ -106,8 +107,12 @@ class StravaAPIInterface(APIInterface):
             return None
         self.client = Client(access_token=strava_access_token)
 
-    def get_athlete_summary(self) -> str:
-        """Get athlete summary."""
+    def get_athlete_summary(self) -> int:
+        """Get athlete summary.
+
+        The current athlete summary is retrieved based on the applied authorization token. The summary is saved to
+        storage and the id is returned.
+        """
         athlete = self.client.get_athlete()
 
         self.partial_get_strava_storage = partial(
@@ -122,7 +127,10 @@ class StravaAPIInterface(APIInterface):
         return athlete.id
 
     def get_activity_summary(self, activity: SummaryActivity) -> str:
-        """Get activity summary."""
+        """Get activity summary.
+
+        For a particular athlete's activity, the summary is retrieved and saved to storage. The id is returned.
+        """
         activity_dump = activity.model_dump()
         path = self.partial_get_strava_storage(
             strava_model=StravaStreams.ACTIVITY, activity_id=activity_dump["id"]
@@ -131,7 +139,10 @@ class StravaAPIInterface(APIInterface):
         return activity_dump["id"]
 
     def get_athlete_activity_streams(self, activity: SummaryActivity) -> None:
-        """Get athlete stream."""
+        """Get athlete stream.
+
+        For a particular athlete's activity, the streams are retrieved and saved to storage.
+        """
         activity_id = self.get_activity_summary(activity)
 
         non_activity_streams = StravaStreams.filter_streams(
@@ -148,7 +159,7 @@ class StravaAPIInterface(APIInterface):
             )
             write_json_to_storage(path, json.loads(stream_data.model_dump_json()))
 
-    def get_all_data(self) -> None:
+    def get_all_activities(self) -> None:
         """Get all activities."""
         activities = list(self.client.get_activities())
         for activity in tqdm(activities, desc="Getting activities"):

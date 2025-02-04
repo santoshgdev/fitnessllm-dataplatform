@@ -55,7 +55,7 @@ class RedisConnect:
             self.close_connection()
             return
 
-    def read_redis(self, key: str) -> dict | None:
+    def read_redis(self, key: str) -> dict:
         """Read from redis interface given a key.
 
         Args:
@@ -72,14 +72,12 @@ class RedisConnect:
             value = self.interface.get(key)
 
             if value is None:
-                logger.info(f"Failed to get key '{key}'; does not exist")
-                return None
+                raise redis.RedisError(f"Failed to get key '{key}'; does not exist")
             else:
                 return json.loads(value)
 
         except redis.RedisError as exc:
-            logger.error(f"Failed to get key '{key}': {exc}")
-            return None
+            raise redis.RedisError(f"Failed to get key '{key}': {exc}")
         finally:
             self.close_connection()
 

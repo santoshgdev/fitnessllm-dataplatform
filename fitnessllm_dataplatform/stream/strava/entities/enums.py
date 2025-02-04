@@ -35,8 +35,9 @@ class StravaStreams(FitnessLLMDataStream):
     GRADE_SMOOTH = "grade_smooth"
 
     @classmethod
-    def filter_streams(cls, include=None, exclude=None) -> list[Enum]:
+    def filter_streams(cls, include=None, exclude=None) -> list:
         if include:
             return [member for member in cls if member.name in include]
         if exclude:
             return [member for member in cls if member.name not in exclude]
+        return []

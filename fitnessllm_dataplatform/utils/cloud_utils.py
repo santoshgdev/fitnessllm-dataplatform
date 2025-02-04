@@ -27,6 +27,18 @@ def get_secret(name: str) -> dict:
 
 
 def write_json_to_storage(path: CloudPath, data: dict | list) -> None:
-    """Write json to storage."""
-    with path.open("w") as f:
-        json.dump(data, f)
+    """Write dict as a json to storage.
+
+    Args:
+        path (CloudPath): CloudPath object.
+        data (dict | list): Data to be written.
+
+    Raises:
+        Exception: If writing to storage fails.
+    """
+    try:
+        with path.open("w") as f:
+            json.dump(data, f)
+    except Exception as e:
+        logger.error(f"Failed to write data to storage: {e}")
+        raise e

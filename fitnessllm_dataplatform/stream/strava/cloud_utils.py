@@ -25,9 +25,10 @@ def get_strava_storage_path(
     """
     path = f"gs://{bucket.value}/strava/athlete_id={athlete_id}/"
 
-    if strava_model in StravaStreams:
-        path += f"{strava_model.value}/{get_json_activity_name(kwargs['activity_id']) if 'activity_id' in kwargs else ''}"
+    if strava_model in StravaStreams and strava_model:
+        path += f"{strava_model.value}/{get_json_activity_name(kwargs.get('activity_id', ''))}"
     return GSPath(path)
+
 
 def get_json_activity_name(activity_id: str) -> str:
     return f"activity_id={activity_id}.json"

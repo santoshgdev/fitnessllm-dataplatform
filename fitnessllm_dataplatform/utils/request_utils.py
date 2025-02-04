@@ -14,4 +14,6 @@ def handle_status_code(response: requests.models.Response) -> dict:
     elif response.status_code == 404:
         raise FileNotFoundError(f"Not found: {response.text}")
     else:
-        raise Exception(f"Request to strava failed with status {response.status_code}: {response.text}")
+        raise Exception(
+            f"Request to strava failed with status {response.status_code}: {response.text}"
+        )

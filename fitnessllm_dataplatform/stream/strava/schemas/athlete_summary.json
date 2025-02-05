@@ -1,0 +1,234 @@
+[
+  {
+    "name": "athlete_id",
+    "type": "INTEGER"
+  },
+  {
+    "name": "city",
+    "type": "STRING"
+  },
+  {
+    "name": "country",
+    "type": "STRING"
+  },
+  {
+    "name": "created_at",
+    "type": "STRING"
+  },
+  {
+    "name": "firstname",
+    "type": "STRING"
+  },
+  {
+    "name": "lastname",
+    "type": "STRING"
+  },
+  {
+    "name": "premium",
+    "type": "BOOLEAN"
+  },
+  {
+    "name": "profile",
+    "type": "STRING"
+  },
+  {
+    "name": "profile_medium",
+    "type": "STRING"
+  },
+  {
+    "name": "resource_state",
+    "type": "INTEGER"
+  },
+  {
+    "name": "sex",
+    "type": "STRING"
+  },
+  {
+    "name": "state",
+    "type": "STRING"
+  },
+  {
+    "name": "summit",
+    "type": "BOOLEAN"
+  },
+  {
+    "name": "updated_at",
+    "type": "STRING"
+  },
+  {
+    "name": "bikes",
+    "type": "STRING"
+  },
+  {
+    "name": "clubs",
+    "type": "STRING"
+  },
+  {
+    "name": "follower_count",
+    "type": "STRING"
+  },
+  {
+    "name": "friend_count",
+    "type": "STRING"
+  },
+  {
+    "name": "ftp",
+    "type": "STRING"
+  },
+  {
+    "name": "measurement_preference",
+    "type": "STRING"
+  },
+  {
+    "name": "shoes",
+    "type": "STRING"
+  },
+  {
+    "name": "weight",
+    "type": "STRING"
+  },
+  {
+    "name": "athlete_type",
+    "type": "STRING"
+  },
+  {
+    "name": "friend",
+    "type": "STRING"
+  },
+  {
+    "name": "follower",
+    "type": "STRING"
+  },
+  {
+    "name": "approve_followers",
+    "type": "STRING"
+  },
+  {
+    "name": "badge_type_id",
+    "type": "INTEGER"
+  },
+  {
+    "name": "mutual_friend_count",
+    "type": "STRING"
+  },
+  {
+    "name": "date_preference",
+    "type": "STRING"
+  },
+  {
+    "name": "email",
+    "type": "STRING"
+  },
+  {
+    "name": "super_user",
+    "type": "STRING"
+  },
+  {
+    "name": "email_language",
+    "type": "STRING"
+  },
+  {
+    "name": "max_heartrate",
+    "type": "STRING"
+  },
+  {
+    "name": "username",
+    "type": "STRING"
+  },
+  {
+    "name": "description",
+    "type": "STRING"
+  },
+  {
+    "name": "instagram_username",
+    "type": "STRING"
+  },
+  {
+    "name": "offer_in_app_payment",
+    "type": "STRING"
+  },
+  {
+    "name": "global_privacy",
+    "type": "STRING"
+  },
+  {
+    "name": "receive_newsletter",
+    "type": "STRING"
+  },
+  {
+    "name": "email_kom_lost",
+    "type": "STRING"
+  },
+  {
+    "name": "dateofbirth",
+    "type": "STRING"
+  },
+  {
+    "name": "facebook_sharing_enabled",
+    "type": "STRING"
+  },
+  {
+    "name": "profile_original",
+    "type": "STRING"
+  },
+  {
+    "name": "premium_expiration_date",
+    "type": "STRING"
+  },
+  {
+    "name": "email_send_follower_notices",
+    "type": "STRING"
+  },
+  {
+    "name": "plan",
+    "type": "STRING"
+  },
+  {
+    "name": "agreed_to_terms",
+    "type": "STRING"
+  },
+  {
+    "name": "follower_request_count",
+    "type": "STRING"
+  },
+  {
+    "name": "email_facebook_twitter_friend_joins",
+    "type": "STRING"
+  },
+  {
+    "name": "receive_kudos_emails",
+    "type": "STRING"
+  },
+  {
+    "name": "receive_follower_feed_emails",
+    "type": "STRING"
+  },
+  {
+    "name": "receive_comment_emails",
+    "type": "STRING"
+  },
+  {
+    "name": "sample_race_distance",
+    "type": "STRING"
+  },
+  {
+    "name": "sample_race_time",
+    "type": "STRING"
+  },
+  {
+    "name": "membership",
+    "type": "STRING"
+  },
+  {
+    "name": "admin",
+    "type": "STRING"
+  },
+  {
+    "name": "owner",
+    "type": "STRING"
+  },
+  {
+    "name": "subscription_permissions",
+    "type": "STRING"
+  }
+]

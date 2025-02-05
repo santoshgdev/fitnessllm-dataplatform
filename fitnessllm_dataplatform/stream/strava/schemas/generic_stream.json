@@ -1,0 +1,26 @@
+[
+  {
+    "name": "data",
+    "type": "INTEGER"
+  },
+  {
+    "name": "index",
+    "type": "INTEGER"
+  },
+  {
+    "name": "original_size",
+    "type": "INTEGER"
+  },
+  {
+    "name": "series_type",
+    "type": "STRING"
+  },
+  {
+    "name": "athlete_id",
+    "type": "STRING"
+  },
+  {
+    "name": "activity_id",
+    "type": "STRING"
+  }
+]

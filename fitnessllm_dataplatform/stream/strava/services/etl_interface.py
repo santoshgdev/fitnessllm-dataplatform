@@ -153,7 +153,7 @@ class StravaETLInterface(ETLInterface):
     @beartype
     def process_other_json(data_dict: dict) -> DataFrame:
         data = data_dict["data"]
-        data = DataFrame(data={"data": data}, index=[0])
+        data = DataFrame(data={"data": [] if data is None else data})
         data = data.reset_index(inplace=False, drop=True)
         data["index"] = np.arange(1, len(data) + 1)
         data["original_size"] = data_dict["original_size"]
@@ -218,7 +218,7 @@ class StravaETLInterface(ETLInterface):
                 self.insert_metrics(
                     metrics_list=metrics,
                     destination=f"{self.client.project}.dev_metrics.metrics",
-                    timestamp=result.create,
+                    timestamp=result.created,
                     status=Status.SUCCESS,
                 )
                 return

@@ -128,10 +128,10 @@ class StravaAPIInterface(APIInterface):
         self.partial_get_strava_storage = partial(
             get_strava_storage_path,
             bucket=self.InfrastructureNames.bronze_bucket,
-            athlete_id=athlete.id,
+            athlete_id=str(athlete.id),
         )
         write_json_to_storage(
-            self.partial_get_strava_storage(strava_model=StravaStreams.ATHLETE_SUMMARY),
+            self.partial_get_strava_storage(strava_model=StravaStreams.ATHLETE_SUMMARY, activity_id=str(0)),
             athlete.model_dump_json(),
         )
         return str(athlete.id)
@@ -144,7 +144,7 @@ class StravaAPIInterface(APIInterface):
         """
         activity_dump = activity.model_dump()
         path = self.partial_get_strava_storage(
-            strava_model=StravaStreams.ACTIVITY, activity_id=activity_dump["id"]
+            strava_model=StravaStreams.ACTIVITY, activity_id=str(activity_dump["id"])
         )
         write_json_to_storage(path, json.loads(activity.model_dump_json()))
         return str(activity_dump["id"])
@@ -167,7 +167,7 @@ class StravaAPIInterface(APIInterface):
         for stream in non_activity_streams:
             stream_data = streams.get(stream.value, Stream())
             path = self.partial_get_strava_storage(
-                strava_model=stream, activity_id=activity_id
+                strava_model=stream, activity_id=str(activity_id)
             )
             write_json_to_storage(path, json.loads(stream_data.model_dump_json()))
 

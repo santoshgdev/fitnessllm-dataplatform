@@ -1,0 +1,44 @@
+[
+  {
+    "name": "data",
+    "type": "RECORD",
+    "mode": "NULLABLE",
+    "fields": [
+      {
+        "name": "latitude",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "longitude",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+      }
+    ]
+  },
+  {
+    "name": "index",
+    "type": "INTEGER",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "original_size",
+    "type": "INTEGER",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "series_type",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "athlete_id",
+    "type": "INTEGER",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "activity_id",
+    "type": "INTEGER",
+    "mode": "NULLABLE"
+  }
+]

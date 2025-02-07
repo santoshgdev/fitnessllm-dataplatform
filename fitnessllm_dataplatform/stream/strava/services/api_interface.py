@@ -37,6 +37,7 @@ class StravaAPIInterface(APIInterface):
 
     # @beartype
     def __init__(self, infrastructure_names: EnumType, redis=None):
+        """Initializes Strava API Interface."""
         super().__init__()
         self.redis = redis or RedisConnect()
         self.refresh_access_token_at_expiration()

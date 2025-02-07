@@ -36,6 +36,7 @@ def get_strava_storage_path(
 
 @beartype
 def get_json_activity_name(activity_id: str | None) -> str:
+    """Returns the name of the JSON file for a specific activity."""
     if activity_id:
         return f"activity_id={activity_id}.json"
     return ""

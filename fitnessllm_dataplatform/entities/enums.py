@@ -1,3 +1,4 @@
+"""Enums for the FitnessLLM Data Platform."""
 from enum import Enum
 
 
@@ -13,13 +14,19 @@ class DynamicEnum(Enum):
 
 
 class FitnessLLMDataStream(Enum):
+    """Data streams for the FitnessLLM Data Platform."""
+
     pass
 
 
 class FitnessLLMDataSource(Enum):
+    """Data sources for the FitnessLLM Data Platform."""
+
     STRAVA = "STRAVA"
 
 
 class Status(Enum):
+    """Statuses for the FitnessLLM Data Platform."""
+
     SUCCESS = "SUCCESS"
     FAILURE = "FAILURE"

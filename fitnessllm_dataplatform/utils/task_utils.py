@@ -25,10 +25,12 @@ def load_into_env_vars(options: dict):
 
 
 def get_enum_values_from_list(enum: list[Enum]):
+    """Returns a list of values from an Enum list."""
     return [member.value for member in enum]
 
 
 def dataclass_convertor(data):
+    """Converts attributes."""
     if isinstance(data, Enum):
         return data.value
     if isinstance(data, datetime):
@@ -39,6 +41,7 @@ def dataclass_convertor(data):
 def get_schema_path(
     data_source: FitnessLLMDataSource | None, data_stream: FitnessLLMDataStream | None
 ) -> str:
+    """Returns the path to the schema file."""
     if data_source and data_stream:
         schema_name = (
             "generic_stream"
@@ -55,6 +58,7 @@ def get_schema_path(
 def load_schema_from_json(
     data_source: FitnessLLMDataSource, data_stream: FitnessLLMDataStream
 ) -> list[bigquery.SchemaField]:
+    """Loads schema from JSON file."""
     with open(get_schema_path(data_source, data_stream)) as f:
         schema_json = json.load(f)
 

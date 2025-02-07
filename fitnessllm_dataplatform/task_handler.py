@@ -1,3 +1,4 @@
+"""Main entry point for the data platform."""
 from os import environ
 
 import fire
@@ -17,7 +18,10 @@ from fitnessllm_dataplatform.utils.logging_utils import logger
 
 
 class Startup:
+    """Main entry point for the data platform."""
+
     def _startUp(self) -> None:
+        """Resources agnostic of service."""
         logger.info("Starting up...")
         GSClient().set_as_default_client()
         self.InfrastructureNames = DynamicEnum.from_dict(
@@ -26,6 +30,7 @@ class Startup:
         self.redis = RedisConnect()
 
     def __init__(self) -> None:
+        """Initializes the data platform."""
         self._startUp()
 
     @beartype
@@ -52,7 +57,6 @@ class Startup:
         self, data_source: str, athlete_id: int, data_streams: list[str] | None = None
     ) -> None:
         """Entry point for loading JSONs into BigQuery."""
-
         if data_source == FitnessLLMDataSource.STRAVA.value:
             strava_etl_interface = StravaETLInterface(
                 infrastructure_names=self.InfrastructureNames,

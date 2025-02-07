@@ -1,3 +1,4 @@
+"""ETL Interface for Strava data."""
 import itertools
 import json
 import tempfile
@@ -35,12 +36,15 @@ from fitnessllm_dataplatform.utils.task_utils import load_schema_from_json
 
 
 class StravaETLInterface(ETLInterface):
+    """ETL Interface for Strava data."""
+
     def __init__(
         self,
         infrastructure_names: EnumType,
         athlete_id: str,
         data_streams: list[str] | None = None,
     ):
+        """Initializes Strava ETL Interface."""
         super().__init__()
         self.data_source = FitnessLLMDataSource.STRAVA
         self.athlete_id = athlete_id
@@ -55,6 +59,7 @@ class StravaETLInterface(ETLInterface):
 
     @beartype
     def load_json_into_bq(self) -> None:
+        """Loads JSONs into BigQuery."""
         try:
             streams = [
                 StravaStreams[element.name.upper()]
@@ -85,6 +90,7 @@ class StravaETLInterface(ETLInterface):
 
     @beartype
     def convert_stream_json_to_dataframe(self, stream: StravaStreams):
+        """Converts JSONs to DataFrames."""
         sample = environ.get("SAMPLE")
         activity_ids = (
             self.client.query(
@@ -127,7 +133,7 @@ class StravaETLInterface(ETLInterface):
                 )
             ):
                 result = Parallel(
-                    n_jobs=int(environ.get("WORKER"))
+                    n_jobs=int(environ.get("WORKER", 1))
                     if environ.get("WORKER")
                     else mp.cpu_count(),
                     backend="threading",
@@ -149,6 +155,7 @@ class StravaETLInterface(ETLInterface):
 
     @staticmethod
     def clean_column_names(df):
+        """Cleans column names."""
         df.columns = df.columns.str.replace(
             r"\.", "_", regex=True
         )  # Replace dot with underscore
@@ -161,6 +168,7 @@ class StravaETLInterface(ETLInterface):
     @staticmethod
     @beartype
     def process_other_json(data_dict: dict) -> DataFrame:
+        """Processes JSONs other than activity and athlete summary."""
         data = data_dict["data"]
         data = DataFrame(data={"data": [] if data is None else data})
         data = data.reset_index(inplace=False, drop=True)
@@ -173,6 +181,7 @@ class StravaETLInterface(ETLInterface):
     def load_json_into_dataframe(
         self, file: GSPath, data_stream: FitnessLLMDataStream
     ) -> dict[str, DataFrame | Metrics]:
+        """Loads JSON into DataFrame."""
         logger.debug("Starting to process %s", file)
         data_dict = json.loads(file.read_text())
         if isinstance(data_dict, str):
@@ -216,6 +225,7 @@ class StravaETLInterface(ETLInterface):
         dataframes: list[DataFrame],
         metrics: list[Metrics],
     ) -> None:
+        """Upserts DataFrames into BigQuery."""
         timestamp = datetime.now()
         df = pd.concat(dataframes)
         df["metadata_insert_timestamp"] = pd.to_datetime(timestamp)
@@ -260,6 +270,7 @@ class StravaETLInterface(ETLInterface):
         timestamp: datetime,
         status: Status,
     ):
+        """Inserts metrics into BigQuery."""
         try:
             metrics_list_converted = [
                 metrics.update(

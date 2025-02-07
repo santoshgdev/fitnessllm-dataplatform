@@ -20,6 +20,8 @@ class StravaKeys(Enum):
 
 
 class StravaStreams(FitnessLLMDataStream):
+    """Strava specific streams."""
+
     ACTIVITY = "activity"
     ATHLETE_SUMMARY = "athlete_summary"
     TIME = "time"
@@ -36,6 +38,7 @@ class StravaStreams(FitnessLLMDataStream):
 
     @classmethod
     def filter_streams(cls, include=None, exclude=None) -> list:
+        """Filters streams based on include or exclude list."""
         if include:
             return [member for member in cls if member.name in include]
         if exclude:

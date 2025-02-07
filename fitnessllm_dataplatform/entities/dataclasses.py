@@ -1,3 +1,4 @@
+"""Dataclasses for the entities in the FitnessLLM Data Platform."""
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from typing import Optional
@@ -11,6 +12,8 @@ from fitnessllm_dataplatform.utils.task_utils import dataclass_convertor
 
 @dataclass
 class Metrics:
+    """Metrics dataclass."""
+
     athlete_id: str
     activity_id: str
     data_source: FitnessLLMDataSource
@@ -20,11 +23,13 @@ class Metrics:
     bq_insert_timestamp: Optional[datetime] = None
 
     def as_dict(self):
+        """Converts dataclass to dict."""
         return asdict(
             self, dict_factory=lambda x: {k: dataclass_convertor(v) for k, v in x}
         )
 
     def update(self, **kwargs):
+        """Updates dataclass attributes."""
         for key, value in kwargs.items():
             if hasattr(self, key):
                 setattr(self, key, value)

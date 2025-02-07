@@ -1,3 +1,4 @@
+"""This module contains queries for the Strava stream."""
 from beartype import beartype
 
 from fitnessllm_dataplatform.entities.enums import (
@@ -12,6 +13,7 @@ def create_activities_query(
     data_source: FitnessLLMDataSource,
     data_stream: FitnessLLMDataStream,
 ) -> str:
+    """Create a query to get all activities for a specific athlete."""
     return f"""
         SELECT DISTINCT activity_id
         FROM dev_metrics.metrics
@@ -21,6 +23,7 @@ def create_activities_query(
 
 @beartype
 def create_get_latest_activity_date_query(athlete_id: str) -> str:
+    """Create a query to get the latest activity date for a specific athlete."""
     return f"""
         SELECT MAX(start_date)
         FROM dev_strava.activity

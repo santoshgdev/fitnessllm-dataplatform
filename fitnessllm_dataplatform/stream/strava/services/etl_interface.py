@@ -73,11 +73,14 @@ class StravaETLInterface(ETLInterface):
         for stream in streams:
             logger.info(f"Loading {stream} for {self.athlete_id}")
             dataframes, metrics = self.convert_stream_json_to_dataframe(stream=stream)
-            self.upsert_to_bigquery(
-                stream=stream,
-                dataframes=dataframes,
-                metrics=metrics,
-            )
+            if dataframes and metrics:
+                self.upsert_to_bigquery(
+                    stream=stream,
+                    dataframes=dataframes,
+                    metrics=metrics,
+                )
+            else:
+                logger.info(f"No new data for {stream} for {self.athlete_id}")
 
     @beartype
     def convert_stream_json_to_dataframe(self, stream: StravaStreams):
@@ -113,7 +116,8 @@ class StravaETLInterface(ETLInterface):
             for file in module_strava_json_list
             if file.stem.split("=")[1] not in activity_ids
         ]
-
+        if not filtered_module_strava_json_list:
+            return [], []
         if int(environ.get('WORKER', 1)) > 1 or environ.get('WORKER') is None:
             with tqdm_joblib(
                     tqdm(desc=f"Processing {stream}", total=len(filtered_module_strava_json_list))

@@ -8,12 +8,18 @@ from fitnessllm_dataplatform.stream.strava.entities.enums import StravaStreams
 def latlng_etl(df: DataFrame) -> DataFrame:
     df['latitude'] = df['data'].apply(lambda x: x[0])
     df['longitude'] = df['data'].apply(lambda x: x[1])
-    return df.drop(columns=['data'])
+    df.drop(columns=['data'], inplace=True)
+    return df
 
 @beartype
 def activity_etl(df: DataFrame) -> DataFrame:
-    df['max_watts'] = df['max_watts'].astype(float)
-    df['average_watts'] = df['average_watts'].astype(float)
+    # df['max_watts'] = df['max_watts'].astype(float)
+    # df['average_watts'] = df['average_watts'].astype(float)
+    df['start_latitude'] = df['start_latlng'].apply(lambda x: x[0] if x else None)
+    df['start_longitude'] = df['start_latlng'].apply(lambda x: x[1] if x else None)
+    df['end_latitude'] = df['end_latlng'].apply(lambda x: x[0] if x else None)
+    df['end_longitude'] = df['end_latlng'].apply(lambda x: x[1] if x else None)
+    df.drop(columns=['start_latlng', 'end_latlng'], inplace=True)
     return df
 
 

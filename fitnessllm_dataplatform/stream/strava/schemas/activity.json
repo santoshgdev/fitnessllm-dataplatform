@@ -1,7 +1,7 @@
 [
   {
     "name": "activity_id",
-    "type": "INTEGER",
+    "type": "STRING",
     "mode": "REQUIRED"
   },
   {
@@ -21,7 +21,7 @@
   },
   {
     "name": "average_watts",
-    "type": "STRING",
+    "type": "FLOAT",
     "mode": "NULLABLE"
   },
   {
@@ -36,7 +36,7 @@
   },
   {
     "name": "device_watts",
-    "type": "STRING",
+    "type": "BOOLEAN",
     "mode": "NULLABLE"
   },
   {
@@ -111,7 +111,7 @@
   },
   {
     "name": "max_watts",
-    "type": "STRING",
+    "type": "INTEGER",
     "mode": "NULLABLE"
   },
   {
@@ -191,7 +191,7 @@
   },
   {
     "name": "weighted_average_watts",
-    "type": "STRING",
+    "type": "INTEGER",
     "mode": "NULLABLE"
   },
   {
@@ -261,8 +261,8 @@
   },
   {
     "name": "athlete_id",
-    "type": "INTEGER",
-    "mode": "NULLABLE"
+    "type": "STRING",
+    "mode": "REQUIRED"
   },
   {
     "name": "athlete_resource_state",
@@ -283,5 +283,10 @@
     "name": "map_summary_polyline",
     "type": "STRING",
     "mode": "NULLABLE"
+  },
+  {
+    "name": "metadata_insert_timestamp",
+    "type": "TIMESTAMP",
+    "mode": "REQUIRED"
   }
 ]

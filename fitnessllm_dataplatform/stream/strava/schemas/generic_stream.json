@@ -1,26 +1,37 @@
 [
   {
     "name": "data",
-    "type": "FLOAT"
+    "type": "FLOAT",
+    "mode": "NULLABLE"
   },
   {
     "name": "index",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "mode": "NULLABLE"
   },
   {
     "name": "original_size",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "mode": "NULLABLE"
   },
   {
     "name": "series_type",
-    "type": "STRING"
+    "type": "STRING",
+    "mode": "REQUIRED"
   },
   {
     "name": "athlete_id",
-    "type": "STRING"
+    "type": "STRING",
+    "mode": "REQUIRED"
   },
   {
     "name": "activity_id",
-    "type": "STRING"
+    "type": "STRING",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "metadata_insert_timestamp",
+    "type": "TIMESTAMP",
+    "mode": "REQUIRED"
   }
 ]

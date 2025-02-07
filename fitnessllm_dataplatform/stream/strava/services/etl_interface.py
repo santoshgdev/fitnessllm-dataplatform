@@ -27,6 +27,7 @@ from fitnessllm_dataplatform.entities.queries import create_activities_query
 from fitnessllm_dataplatform.services.etl_interface import ETLInterface
 from fitnessllm_dataplatform.stream.strava.cloud_utils import get_strava_storage_path
 from fitnessllm_dataplatform.stream.strava.entities.enums import StravaStreams
+from fitnessllm_dataplatform.stream.strava.etl_utils import execute_etl_func
 from fitnessllm_dataplatform.utils.logging_utils import logger
 from fitnessllm_dataplatform.utils.task_utils import load_schema_from_json
 
@@ -180,14 +181,20 @@ class StravaETLInterface(ETLInterface):
         if data_stream in [StravaStreams.ATHLETE_SUMMARY, StravaStreams.ACTIVITY]:
             df = pd.json_normalize(data_dict)
             if data_stream == StravaStreams.ACTIVITY:
+                df = self.clean_column_names(df)
                 df.rename(columns={"id": "activity_id"}, inplace=True)
+                df['athlete_id'] = df['athlete_id'].astype(str)
+                df['activity_id'] = df['activity_id'].astype(str)
             if data_stream == StravaStreams.ATHLETE_SUMMARY:
+                df = self.clean_column_names(df)
                 df.rename(columns={"id": "athlete_id"}, inplace=True)
-            df = self.clean_column_names(df)
+                df['athlete_id'] = df['athlete_id'].astype(str)
         else:
             df = self.process_other_json(data_dict)
             df["athlete_id"] = self.athlete_id
             df["activity_id"] = file.stem.split("=")[1]
+
+        df = execute_etl_func(stream=data_stream, df=df)
 
         return {
             "dataframe": df,
@@ -203,10 +210,12 @@ class StravaETLInterface(ETLInterface):
         metrics: list[Metrics],
     ) -> None:
         timestamp = datetime.now()
+        df = pd.concat(dataframes)
+        df['metadata_insert_timestamp'] = pd.to_datetime(timestamp)
         try:
             with tempfile.TemporaryDirectory():
                 job = self.client.load_table_from_dataframe(
-                    dataframe=pd.concat(dataframes),
+                    dataframe=df,
                     destination=f"{self.client.project}.dev_strava.{stream.value}",
                     job_config=bigquery.LoadJobConfig(
                         write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
@@ -218,7 +227,7 @@ class StravaETLInterface(ETLInterface):
                 self.insert_metrics(
                     metrics_list=metrics,
                     destination=f"{self.client.project}.dev_metrics.metrics",
-                    timestamp=result.created,
+                    timestamp=timestamp,
                     status=Status.SUCCESS,
                 )
                 return

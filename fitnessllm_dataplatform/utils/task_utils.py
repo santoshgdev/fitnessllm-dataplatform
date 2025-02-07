@@ -35,7 +35,7 @@ def dataclass_convertor(data):
 
 def get_schema_path(data_source: FitnessLLMDataSource | None, data_stream: FitnessLLMDataStream | None) -> str:
     if data_source and data_stream:
-        schema_name = "generic_stream" if data_stream in StravaStreams.filter_streams(exclude=['ACTIVITY','ATHLETE_SUMMARY']) else data_stream.value.lower()
+        schema_name = "generic_stream" if data_stream in StravaStreams.filter_streams(exclude=['ACTIVITY','ATHLETE_SUMMARY','LATLNG']) else data_stream.value.lower()
         return f"fitnessllm_dataplatform/stream/{data_source.value.lower()}/schemas/{schema_name}.json"
     return "fitnessllm_dataplatform/schemas/metrics.json"
 

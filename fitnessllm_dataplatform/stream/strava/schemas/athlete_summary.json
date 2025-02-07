@@ -1,7 +1,8 @@
 [
   {
     "name": "athlete_id",
-    "type": "INTEGER"
+    "type": "STRING",
+    "mode": "REQUIRED"
   },
   {
     "name": "city",
@@ -230,5 +231,10 @@
   {
     "name": "subscription_permissions",
     "type": "STRING"
+  },
+  {
+    "name": "metadata_insert_timestamp",
+    "type": "TIMESTAMP",
+    "mode": "REQUIRED"
   }
 ]

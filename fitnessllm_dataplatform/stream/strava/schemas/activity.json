@@ -60,11 +60,6 @@
     "mode": "NULLABLE"
   },
   {
-    "name": "end_latlng",
-    "type": "STRING",
-    "mode": "NULLABLE"
-  },
-  {
     "name": "external_id",
     "type": "STRING",
     "mode": "NULLABLE"
@@ -91,7 +86,7 @@
   },
   {
     "name": "kilojoules",
-    "type": "STRING",
+    "type": "FLOAT",
     "mode": "NULLABLE"
   },
   {
@@ -150,8 +145,23 @@
     "mode": "NULLABLE"
   },
   {
-    "name": "start_latlng",
-    "type": "STRING",
+    "name": "start_latitude",
+    "type": "FLOAT",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "start_longitude",
+    "type": "FLOAT",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "end_latitude",
+    "type": "FLOAT",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "end_longitude",
+    "type": "FLOAT",
     "mode": "NULLABLE"
   },
   {
@@ -196,7 +206,7 @@
   },
   {
     "name": "workout_type",
-    "type": "STRING",
+    "type": "INTEGER",
     "mode": "NULLABLE"
   },
   {
@@ -246,7 +256,7 @@
   },
   {
     "name": "average_cadence",
-    "type": "STRING",
+    "type": "FLOAT",
     "mode": "NULLABLE"
   },
   {

@@ -23,10 +23,10 @@ from fitnessllm_dataplatform.entities.enums import (
     FitnessLLMDataStream,
     Status,
 )
-from fitnessllm_dataplatform.entities.queries import create_activities_query
 from fitnessllm_dataplatform.services.etl_interface import ETLInterface
 from fitnessllm_dataplatform.stream.strava.cloud_utils import get_strava_storage_path
 from fitnessllm_dataplatform.stream.strava.entities.enums import StravaStreams
+from fitnessllm_dataplatform.stream.strava.entities.queries import create_activities_query
 from fitnessllm_dataplatform.stream.strava.etl_utils import execute_etl_func
 from fitnessllm_dataplatform.utils.logging_utils import logger
 from fitnessllm_dataplatform.utils.task_utils import load_schema_from_json

@@ -6,6 +6,7 @@ from os import environ
 
 import requests
 from beartype import beartype
+from google.cloud import bigquery
 from stravalib import Client
 from stravalib.model import Stream, SummaryActivity
 from tqdm import tqdm
@@ -18,6 +19,7 @@ from fitnessllm_dataplatform.stream.strava.entities.enums import (
     StravaStreams,
     StravaURLs,
 )
+from fitnessllm_dataplatform.stream.strava.entities.queries import create_get_latest_activity_date_query
 from fitnessllm_dataplatform.utils.cloud_utils import get_secret, write_json_to_storage
 from fitnessllm_dataplatform.utils.logging_utils import logger
 from fitnessllm_dataplatform.utils.request_utils import handle_status_code
@@ -30,7 +32,7 @@ class StravaAPIInterface(APIInterface):
     client: Client
     partial_get_strava_storage: partial
 
-    @beartype
+    #@beartype
     def __init__(self, infrastructure_names: EnumType, redis=None):
         super().__init__()
         self.redis = redis or RedisConnect()
@@ -41,6 +43,7 @@ class StravaAPIInterface(APIInterface):
         self.instantiate_strava_lib(strava_access_token_dict)
         self.InfrastructureNames = infrastructure_names
         self.athlete_id = self.get_athlete_summary()
+        self.client = bigquery.Client()
 
     @beartype
     @staticmethod
@@ -114,7 +117,7 @@ class StravaAPIInterface(APIInterface):
         )
         if not strava_access_token:
             return None
-        self.client = Client(access_token=strava_access_token)
+        self.strava_client = Client(access_token=strava_access_token)
 
     @beartype
     def get_athlete_summary(self) -> str:
@@ -123,7 +126,7 @@ class StravaAPIInterface(APIInterface):
         The current athlete summary is retrieved based on the applied authorization token. The summary is saved to
         storage and the id is returned.
         """
-        athlete = self.client.get_athlete()
+        athlete = self.strava_client.get_athlete()
 
         self.partial_get_strava_storage = partial(
             get_strava_storage_path,
@@ -160,7 +163,7 @@ class StravaAPIInterface(APIInterface):
         non_activity_streams = StravaStreams.filter_streams(
             exclude=["ACTIVITY", "ATHLETE_SUMMARY"]
         )
-        streams = self.client.get_activity_streams(
+        streams = self.strava_client.get_activity_streams(
             activity_id=int(activity_id),
             types=get_enum_values_from_list(non_activity_streams),
         )
@@ -174,6 +177,7 @@ class StravaAPIInterface(APIInterface):
     @beartype
     def get_all_activities(self) -> None:
         """Get all activities."""
-        activities = list(self.client.get_activities())
+        latest_activity_date = self.client.query(create_get_latest_activity_date_query(self.athlete_id)).to_dataframe().iloc[0, 0]
+        activities = list(self.strava_client.get_activities(after=latest_activity_date))
         for activity in tqdm(activities, desc="Getting activities"):
             self.get_athlete_activity_streams(activity)

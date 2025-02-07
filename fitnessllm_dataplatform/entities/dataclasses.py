@@ -1,8 +1,11 @@
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from typing import Optional
 
-from fitnessllm_dataplatform.entities.enums import FitnessLLMDataStream, FitnessLLMDataSource
+from fitnessllm_dataplatform.entities.enums import (
+    FitnessLLMDataSource,
+    FitnessLLMDataStream,
+)
 from fitnessllm_dataplatform.utils.task_utils import dataclass_convertor
 
 
@@ -17,7 +20,9 @@ class Metrics:
     bq_insert_timestamp: Optional[datetime] = None
 
     def as_dict(self):
-        return asdict(self, dict_factory=lambda x: {k: dataclass_convertor(v) for k, v in x})
+        return asdict(
+            self, dict_factory=lambda x: {k: dataclass_convertor(v) for k, v in x}
+        )
 
     def update(self, **kwargs):
         for key, value in kwargs.items():

@@ -2,10 +2,11 @@
 import json
 
 import redis
+from beartype import beartype
 
 from fitnessllm_dataplatform.utils.cloud_utils import get_secret
 from fitnessllm_dataplatform.utils.logging_utils import logger
-from beartype import beartype
+
 
 class RedisConnect:
     """Infrastructure Redis Connect."""

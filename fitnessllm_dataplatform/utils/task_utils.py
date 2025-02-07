@@ -6,7 +6,10 @@ from enum import Enum
 
 from google.cloud import bigquery
 
-from fitnessllm_dataplatform.entities.enums import FitnessLLMDataSource, FitnessLLMDataStream
+from fitnessllm_dataplatform.entities.enums import (
+    FitnessLLMDataSource,
+    FitnessLLMDataStream,
+)
 from fitnessllm_dataplatform.stream.strava.entities.enums import StravaStreams
 
 
@@ -33,22 +36,34 @@ def dataclass_convertor(data):
     return data
 
 
-def get_schema_path(data_source: FitnessLLMDataSource | None, data_stream: FitnessLLMDataStream | None) -> str:
+def get_schema_path(
+    data_source: FitnessLLMDataSource | None, data_stream: FitnessLLMDataStream | None
+) -> str:
     if data_source and data_stream:
-        schema_name = "generic_stream" if data_stream in StravaStreams.filter_streams(exclude=['ACTIVITY','ATHLETE_SUMMARY','LATLNG']) else data_stream.value.lower()
+        schema_name = (
+            "generic_stream"
+            if data_stream
+            in StravaStreams.filter_streams(
+                exclude=["ACTIVITY", "ATHLETE_SUMMARY", "LATLNG"]
+            )
+            else data_stream.value.lower()
+        )
         return f"fitnessllm_dataplatform/stream/{data_source.value.lower()}/schemas/{schema_name}.json"
     return "fitnessllm_dataplatform/schemas/metrics.json"
 
 
-def load_schema_from_json(data_source: FitnessLLMDataSource, data_stream: FitnessLLMDataStream) -> list[bigquery.SchemaField]:
-    with open(get_schema_path(data_source, data_stream), 'r') as f:
+def load_schema_from_json(
+    data_source: FitnessLLMDataSource, data_stream: FitnessLLMDataStream
+) -> list[bigquery.SchemaField]:
+    with open(get_schema_path(data_source, data_stream)) as f:
         schema_json = json.load(f)
 
     return [
         bigquery.SchemaField(
-            name=field['name'],
-            field_type=field['type'],
-            mode=field.get('mode', 'NULLABLE'),
-            description=field.get('description', '')
-        ) for field in schema_json
+            name=field["name"],
+            field_type=field["type"],
+            mode=field.get("mode", "NULLABLE"),
+            description=field.get("description", ""),
+        )
+        for field in schema_json
     ]

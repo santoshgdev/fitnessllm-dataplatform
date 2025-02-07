@@ -19,7 +19,9 @@ from fitnessllm_dataplatform.stream.strava.entities.enums import (
     StravaStreams,
     StravaURLs,
 )
-from fitnessllm_dataplatform.stream.strava.entities.queries import create_get_latest_activity_date_query
+from fitnessllm_dataplatform.stream.strava.entities.queries import (
+    create_get_latest_activity_date_query,
+)
 from fitnessllm_dataplatform.utils.cloud_utils import get_secret, write_json_to_storage
 from fitnessllm_dataplatform.utils.logging_utils import logger
 from fitnessllm_dataplatform.utils.request_utils import handle_status_code
@@ -28,11 +30,12 @@ from fitnessllm_dataplatform.utils.task_utils import get_enum_values_from_list
 
 class StravaAPIInterface(APIInterface):
     """API Interface for Strava."""
+
     redis: RedisConnect
     client: Client
     partial_get_strava_storage: partial
 
-    #@beartype
+    # @beartype
     def __init__(self, infrastructure_names: EnumType, redis=None):
         super().__init__()
         self.redis = redis or RedisConnect()
@@ -134,7 +137,9 @@ class StravaAPIInterface(APIInterface):
             athlete_id=str(athlete.id),
         )
         write_json_to_storage(
-            self.partial_get_strava_storage(strava_model=StravaStreams.ATHLETE_SUMMARY, activity_id=str(0)),
+            self.partial_get_strava_storage(
+                strava_model=StravaStreams.ATHLETE_SUMMARY, activity_id=str(0)
+            ),
             athlete.model_dump_json(),
         )
         return str(athlete.id)
@@ -177,7 +182,11 @@ class StravaAPIInterface(APIInterface):
     @beartype
     def get_all_activities(self) -> None:
         """Get all activities."""
-        latest_activity_date = self.client.query(create_get_latest_activity_date_query(self.athlete_id)).to_dataframe().iloc[0, 0]
+        latest_activity_date = (
+            self.client.query(create_get_latest_activity_date_query(self.athlete_id))
+            .to_dataframe()
+            .iloc[0, 0]
+        )
         activities = list(self.strava_client.get_activities(after=latest_activity_date))
         for activity in tqdm(activities, desc="Getting activities"):
             self.get_athlete_activity_streams(activity)

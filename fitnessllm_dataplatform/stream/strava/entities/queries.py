@@ -20,9 +20,7 @@ def create_activities_query(
 
 
 @beartype
-def create_get_latest_activity_date_query(
-        athlete_id: str
-) -> str:
+def create_get_latest_activity_date_query(athlete_id: str) -> str:
     return f"""
         SELECT MAX(start_date)
         FROM dev_strava.activity

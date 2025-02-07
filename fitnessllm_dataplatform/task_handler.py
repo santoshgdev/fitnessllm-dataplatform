@@ -9,7 +9,9 @@ from fitnessllm_dataplatform.infrastructure.RedisConnect import RedisConnect
 from fitnessllm_dataplatform.stream.strava.services.api_interface import (
     StravaAPIInterface,
 )
-from fitnessllm_dataplatform.stream.strava.services.etl_interface import StravaETLInterface
+from fitnessllm_dataplatform.stream.strava.services.etl_interface import (
+    StravaETLInterface,
+)
 from fitnessllm_dataplatform.utils.cloud_utils import get_secret
 from fitnessllm_dataplatform.utils.logging_utils import logger
 
@@ -47,14 +49,16 @@ class Startup:
 
     @beartype
     def etl(
-        self, data_source: str, athlete_id: int, data_streams: list[str] | None
-    = None) -> None:
+        self, data_source: str, athlete_id: int, data_streams: list[str] | None = None
+    ) -> None:
         """Entry point for loading JSONs into BigQuery."""
 
         if data_source == FitnessLLMDataSource.STRAVA.value:
-            strava_etl_interface = StravaETLInterface(infrastructure_names=self.InfrastructureNames,
-                                                      athlete_id=str(athlete_id),
-                                                      data_streams=data_streams)
+            strava_etl_interface = StravaETLInterface(
+                infrastructure_names=self.InfrastructureNames,
+                athlete_id=str(athlete_id),
+                data_streams=data_streams,
+            )
             strava_etl_interface.load_json_into_bq()
         else:
             raise ValueError(f"Unsupported data source: {data_source}")

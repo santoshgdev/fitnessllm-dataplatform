@@ -26,14 +26,15 @@ from fitnessllm_dataplatform.entities.enums import (
 from fitnessllm_dataplatform.services.etl_interface import ETLInterface
 from fitnessllm_dataplatform.stream.strava.cloud_utils import get_strava_storage_path
 from fitnessllm_dataplatform.stream.strava.entities.enums import StravaStreams
-from fitnessllm_dataplatform.stream.strava.entities.queries import create_activities_query
+from fitnessllm_dataplatform.stream.strava.entities.queries import (
+    create_activities_query,
+)
 from fitnessllm_dataplatform.stream.strava.etl_utils import execute_etl_func
 from fitnessllm_dataplatform.utils.logging_utils import logger
 from fitnessllm_dataplatform.utils.task_utils import load_schema_from_json
 
 
 class StravaETLInterface(ETLInterface):
-
     def __init__(
         self,
         infrastructure_names: EnumType,
@@ -118,9 +119,12 @@ class StravaETLInterface(ETLInterface):
         ]
         if not filtered_module_strava_json_list:
             return [], []
-        if int(environ.get('WORKER', 1)) > 1 or environ.get('WORKER') is None:
+        if int(environ.get("WORKER", 1)) > 1 or environ.get("WORKER") is None:
             with tqdm_joblib(
-                    tqdm(desc=f"Processing {stream}", total=len(filtered_module_strava_json_list))
+                tqdm(
+                    desc=f"Processing {stream}",
+                    total=len(filtered_module_strava_json_list),
+                )
             ):
                 result = Parallel(
                     n_jobs=int(environ.get("WORKER"))
@@ -187,12 +191,12 @@ class StravaETLInterface(ETLInterface):
             if data_stream == StravaStreams.ACTIVITY:
                 df = self.clean_column_names(df)
                 df.rename(columns={"id": "activity_id"}, inplace=True)
-                df['athlete_id'] = df['athlete_id'].astype(str)
-                df['activity_id'] = df['activity_id'].astype(str)
+                df["athlete_id"] = df["athlete_id"].astype(str)
+                df["activity_id"] = df["activity_id"].astype(str)
             if data_stream == StravaStreams.ATHLETE_SUMMARY:
                 df = self.clean_column_names(df)
                 df.rename(columns={"id": "athlete_id"}, inplace=True)
-                df['athlete_id'] = df['athlete_id'].astype(str)
+                df["athlete_id"] = df["athlete_id"].astype(str)
         else:
             df = self.process_other_json(data_dict)
             df["athlete_id"] = self.athlete_id
@@ -205,7 +209,6 @@ class StravaETLInterface(ETLInterface):
             "metrics": partial_metrics(record_count=df.shape[0]),
         }
 
-
     @beartype
     def upsert_to_bigquery(
         self,
@@ -215,7 +218,7 @@ class StravaETLInterface(ETLInterface):
     ) -> None:
         timestamp = datetime.now()
         df = pd.concat(dataframes)
-        df['metadata_insert_timestamp'] = pd.to_datetime(timestamp)
+        df["metadata_insert_timestamp"] = pd.to_datetime(timestamp)
         try:
             with tempfile.TemporaryDirectory():
                 job = self.client.load_table_from_dataframe(
@@ -223,11 +226,13 @@ class StravaETLInterface(ETLInterface):
                     destination=f"{self.client.project}.dev_strava.{stream.value}",
                     job_config=bigquery.LoadJobConfig(
                         write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
-                        schema=load_schema_from_json(data_source=self.data_source, data_stream=stream)
+                        schema=load_schema_from_json(
+                            data_source=self.data_source, data_stream=stream
+                        ),
                     ),
                 )
                 result = job.result()
-            if result.state == 'DONE':
+            if result.state == "DONE":
                 self.insert_metrics(
                     metrics_list=metrics,
                     destination=f"{self.client.project}.dev_metrics.metrics",
@@ -257,11 +262,15 @@ class StravaETLInterface(ETLInterface):
     ):
         try:
             metrics_list_converted = [
-                metrics.update(bq_insert_timestamp=timestamp, status=status.value).as_dict()
+                metrics.update(
+                    bq_insert_timestamp=timestamp, status=status.value
+                ).as_dict()
                 for metrics in metrics_list
             ]
             dataframe = DataFrame(metrics_list_converted)
-            dataframe['bq_insert_timestamp'] = pd.to_datetime(dataframe['bq_insert_timestamp'])
+            dataframe["bq_insert_timestamp"] = pd.to_datetime(
+                dataframe["bq_insert_timestamp"]
+            )
             with tempfile.TemporaryDirectory():
                 job = self.client.load_table_from_dataframe(
                     dataframe=dataframe,
@@ -271,7 +280,7 @@ class StravaETLInterface(ETLInterface):
                     ),
                 )
                 result = job.result()
-            if result.state != 'DONE':
+            if result.state != "DONE":
                 logger.error("Unable to insert metrics into BigQuery.")
         except Exception as e:
             logger.error("Unable to write metrics to BigQuery.")

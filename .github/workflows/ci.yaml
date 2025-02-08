@@ -2,10 +2,8 @@ name: CI Checks
 
 on:
   push:
-#    branches:
-#      - 'FIT-**'
-  pull_request:
-    branches: [main]
+    branches:
+      - 'FIT-**'
 
 jobs:
   quality-checks:

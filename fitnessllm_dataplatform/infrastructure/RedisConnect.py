@@ -13,7 +13,6 @@ class RedisConnect:
 
     def __init__(self):
         """Init function."""
-        pass
 
     def open_connection(self):
         """Open Redis connection."""
@@ -43,18 +42,18 @@ class RedisConnect:
         Raises:
             RedisError
         """
-        self.open_connection()
         try:
+            self.open_connection()
             self.interface.set(name=key, value=json.dumps(value))
             if ttl:
                 self.interface.setex(name=key, value=json.dumps(value), time=ttl)
                 logger.debug(f"Wrote key with ttl {ttl}")
             logger.debug(f"Set {key} to redis")
-
         except redis.RedisError as exc:
             logger.error(f"Failed to set key '{key}': {exc}")
         finally:
-            self.close_connection()
+            if hasattr(self, 'interface'):
+                self.close_connection()
             return
 
     @beartype
@@ -76,8 +75,7 @@ class RedisConnect:
 
             if value is None:
                 raise redis.RedisError(f"Failed to get key '{key}'; does not exist")
-            else:
-                return json.loads(value)
+            return json.loads(value)
 
         except redis.RedisError as exc:
             raise redis.RedisError(f"Failed to get key '{key}': {exc}")

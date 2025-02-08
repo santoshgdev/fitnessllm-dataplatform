@@ -7,7 +7,7 @@ build:
 
 run:
 	docker run -it -v ${CODE_PATH}/fitnessllm-dataplatform:/app/fitnessllm-dataplatform \
-				   -v /Users/santoshg/.config/gcloud:/root/.config/gcloud \
+				   -v ~/.config/gcloud:/root/.config/gcloud \
 				   fitnessllm-dp:latest \
 				   zsh
 

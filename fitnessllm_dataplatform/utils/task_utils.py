@@ -26,6 +26,8 @@ def load_into_env_vars(options: dict):
 
 def get_enum_values_from_list(enum: list[Enum]):
     """Returns a list of values from an Enum list."""
+    if not all(isinstance(item, Enum) for item in enum):
+        raise TypeError("All items in the list must be Enum instances")
     return [member.value for member in enum]
 
 
@@ -59,8 +61,22 @@ def load_schema_from_json(
     data_source: FitnessLLMDataSource, data_stream: FitnessLLMDataStream
 ) -> list[bigquery.SchemaField]:
     """Loads schema from JSON file."""
-    with open(get_schema_path(data_source, data_stream)) as f:
-        schema_json = json.load(f)
+    schema_path = get_schema_path(data_source, data_stream)
+    try:
+        with open(schema_path) as f:
+            schema_json = json.load(f)
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Schema file not found: {schema_path}")
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Invalid JSON in schema file {schema_path}: {e}")
+
+    required_fields = {"name", "type"}
+    for field in schema_json:
+        if not isinstance(field, dict):
+            raise ValueError(f"Invalid field in schema: {field}")
+        missing_fields = required_fields - set(field.keys())
+        if missing_fields:
+            raise ValueError(f"Missing required fields {missing_fields} in field: {field}")
 
     return [
         bigquery.SchemaField(

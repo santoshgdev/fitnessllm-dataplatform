@@ -12,8 +12,17 @@ from fitnessllm_dataplatform.utils.task_utils import dataclass_convertor
 
 @dataclass
 class Metrics:
-    """Metrics dataclass."""
+    """A dataclass for storing metrics data from various data sources.
 
+    Attributes:
+        athlete_id: Unique identifier for the athlete.
+        activity_id: Unique identifier for the activity.
+        data_source: Source of the data (e.g., Strava).
+        data_stream: Type of data stream (e.g., heartrate, cadence).
+        record_count: Number of records in the data stream.
+        status: Optional status of the data processing.
+        bq_insert_timestamp: Optional timestamp of BigQuery insertion.
+    """
     athlete_id: str
     activity_id: str
     data_source: FitnessLLMDataSource

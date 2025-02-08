@@ -6,4 +6,3 @@ class ETLInterface:
 
     def __init__(self):
         """Initializes ETL Interface."""
-        pass

@@ -52,7 +52,7 @@ class RedisConnect:
         except redis.RedisError as exc:
             logger.error(f"Failed to set key '{key}': {exc}")
         finally:
-            if hasattr(self, 'interface'):
+            if hasattr(self, "interface"):
                 self.close_connection()
             return
 

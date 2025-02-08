@@ -22,7 +22,9 @@ def get_secret(name: str) -> dict:
     logger.debug(f"Getting secret for {name}")
     try:
         response = client.access_secret_version(
-            request={"name": create_resource_path(environ["PROJECT_ID"], "secrets", name)}
+            request={
+                "name": create_resource_path(environ["PROJECT_ID"], "secrets", name)
+            }
         )
         logger.debug(f"Retrieved secret {name}")
         secret_payload = response.payload.data.decode("UTF-8")

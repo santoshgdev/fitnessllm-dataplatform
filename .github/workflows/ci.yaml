@@ -1,0 +1,40 @@
+name: CI Checks
+
+on:
+  push:
+    branches:
+      - 'FIT-**'
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality-checks:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: ${{ github.workspace }}
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12.2'
+        cache: 'pip'
+
+    - name: Cache pre-commit
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pre-commit
+        key: precommit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+
+    - name: Install dependencies
+      run: |
+        pip install -e .
+        pip install pre-commit pytest
+
+    - name: Run pre-commit
+      run: pre-commit run --show-diff-on-failure --all-files
+
+    - name: Run pytest
+      run: pytest tests/

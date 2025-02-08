@@ -88,8 +88,8 @@ jobs:
 
     - name: Build Docker image
       run: |
-        docker build . -t us-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ env.PROJECT_NAME }}/${{ env.PROJECT_NAME }}:main
+        docker build . -t us-west1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.PROJECT_NAME }}/${{ env.PROJECT_NAME }}:main
 
     - name: Push Docker image to Artifact Registry
       run: |
-        docker push us-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ env.PROJECT_NAME }}/${{ env.PROJECT_NAME }}:main
+        docker push us-west1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.PROJECT_NAME }}/${{ env.PROJECT_NAME }}:main

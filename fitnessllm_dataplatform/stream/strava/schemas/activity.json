@@ -1,0 +1,302 @@
+[
+  {
+    "name": "activity_id",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "achievement_count",
+    "type": "INTEGER",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "athlete_count",
+    "type": "INTEGER",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "average_speed",
+    "type": "FLOAT",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "average_watts",
+    "type": "FLOAT",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "comment_count",
+    "type": "INTEGER",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "commute",
+    "type": "BOOLEAN",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "device_watts",
+    "type": "BOOLEAN",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "distance",
+    "type": "FLOAT",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "elapsed_time",
+    "type": "INTEGER",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "elev_high",
+    "type": "FLOAT",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "elev_low",
+    "type": "FLOAT",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "external_id",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "flagged",
+    "type": "BOOLEAN",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "gear_id",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "has_kudoed",
+    "type": "BOOLEAN",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "hide_from_home",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "kilojoules",
+    "type": "FLOAT",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "kudos_count",
+    "type": "INTEGER",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "manual",
+    "type": "BOOLEAN",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "max_speed",
+    "type": "FLOAT",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "max_watts",
+    "type": "INTEGER",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "moving_time",
+    "type": "INTEGER",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "name",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "photo_count",
+    "type": "INTEGER",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "private",
+    "type": "BOOLEAN",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sport_type",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "start_date",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "start_date_local",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "start_latitude",
+    "type": "FLOAT",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "start_longitude",
+    "type": "FLOAT",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "end_latitude",
+    "type": "FLOAT",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "end_longitude",
+    "type": "FLOAT",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "timezone",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "total_elevation_gain",
+    "type": "FLOAT",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "total_photo_count",
+    "type": "INTEGER",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "trainer",
+    "type": "BOOLEAN",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "type",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "upload_id",
+    "type": "INTEGER",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "upload_id_str",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "weighted_average_watts",
+    "type": "INTEGER",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "workout_type",
+    "type": "INTEGER",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "utc_offset",
+    "type": "FLOAT",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "location_city",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "location_state",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "location_country",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "pr_count",
+    "type": "INTEGER",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "suffer_score",
+    "type": "INTEGER",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "has_heartrate",
+    "type": "BOOLEAN",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "average_heartrate",
+    "type": "FLOAT",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "max_heartrate",
+    "type": "INTEGER",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "average_cadence",
+    "type": "FLOAT",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "from_accepted_tag",
+    "type": "BOOLEAN",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "visibility",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "athlete_id",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "athlete_resource_state",
+    "type": "INTEGER",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "map_id",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "map_polyline",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "map_summary_polyline",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "metadata_insert_timestamp",
+    "type": "TIMESTAMP",
+    "mode": "REQUIRED"
+  }
+]

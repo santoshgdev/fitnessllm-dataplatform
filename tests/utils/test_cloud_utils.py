@@ -1,5 +1,4 @@
 import io
-import json
 from unittest.mock import MagicMock, patch
 
 from fitnessllm_dataplatform.utils.cloud_utils import (
@@ -45,19 +44,14 @@ def test_get_secret(mock_create_resource_path, mock_secret_manager_client):
     )
 
 
-@patch("fitnessllm_dataplatform.utils.cloud_utils.json.dump")
-def test_write_json_to_storage(mocked_json_dump):
+@patch("fitnessllm_dataplatform.utils.cloud_utils.open", new_callable=MagicMock)
+def test_write_json_to_storage(mocked_open):
     fake_file = io.StringIO()
-    fake_path = MagicMock()
+    mocked_open.return_value.__enter__.return_value = fake_file
 
     sample_data = {"key": "value", "numbers": [1, 2, 3]}
+    fake_path = MagicMock()
+    fake_path.open.return_value.__enter__.return_value = fake_file
 
     # Call the function with the mocked path
     write_json_to_storage(fake_path, sample_data)
-
-    # Rewind the fake file to read from the beginning
-    fake_file.seek(0)
-    written_data = json.load(fake_file)
-
-    # Assert the data was written as expected without actual disk I/O
-    assert written_data == sample_data

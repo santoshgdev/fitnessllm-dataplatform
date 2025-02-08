@@ -42,7 +42,7 @@ jobs:
 
     - name: Install dependencies
       if: success()
-      run: poetry install --no-interaction --with dev
+      run: poetry install --no-interaction
 
     - name: Run pytest
       if: success()

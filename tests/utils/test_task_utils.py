@@ -1,9 +1,12 @@
 import os
 
+import pytest
+
+from fitnessllm_dataplatform.entities.enums import FitnessLLMDataSource, FitnessLLMDataStream
 from fitnessllm_dataplatform.stream.strava.entities.enums import StravaStreams
 from fitnessllm_dataplatform.utils.task_utils import (
     get_enum_values_from_list,
-    load_into_env_vars,
+    load_into_env_vars, get_schema_path,
 )
 
 
@@ -30,3 +33,16 @@ def test_get_enum_values_from_list():
         "athlete_summary",
         "grade_smooth",
     ]
+
+
+@pytest.mark.parametrize("data_source, data_stream, expected_output",
+                         [
+                                (None, None, "fitnessllm_dataplatform/schemas/metrics.json"),
+                                (FitnessLLMDataSource.STRAVA, StravaStreams.ACTIVITY, "fitnessllm_dataplatform/stream/strava/schemas/activity.json"),
+                                (FitnessLLMDataSource.STRAVA, StravaStreams.LATLNG, "fitnessllm_dataplatform/stream/strava/schemas/latlng.json"),
+                                (FitnessLLMDataSource.STRAVA, StravaStreams.GRADE_SMOOTH, "fitnessllm_dataplatform/stream/strava/schemas/generic_stream.json"),
+                         ])
+def test_get_schema_path(data_source: FitnessLLMDataSource, data_stream: FitnessLLMDataStream, expected_output: str):
+    """Test for loading schema from json."""
+    output = get_schema_path(data_source, data_stream)
+    assert output == expected_output

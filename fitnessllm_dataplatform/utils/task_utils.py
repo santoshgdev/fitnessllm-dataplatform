@@ -76,7 +76,9 @@ def load_schema_from_json(
             raise ValueError(f"Invalid field in schema: {field}")
         missing_fields = required_fields - set(field.keys())
         if missing_fields:
-            raise ValueError(f"Missing required fields {missing_fields} in field: {field}")
+            raise ValueError(
+                f"Missing required fields {missing_fields} in field: {field}"
+            )
 
     return [
         bigquery.SchemaField(

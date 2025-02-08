@@ -31,7 +31,7 @@ RUN poetry install --no-root
 RUN mkdir /app
 WORKDIR /app
 
-RUN chown -R appuser:appuser /venv /app
+RUN chown -R appuser:appuser /venv /app /root
 
 USER appuser
 

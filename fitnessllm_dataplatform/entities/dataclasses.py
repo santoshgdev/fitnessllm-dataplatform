@@ -23,6 +23,7 @@ class Metrics:
         status: Optional status of the data processing.
         bq_insert_timestamp: Optional timestamp of BigQuery insertion.
     """
+
     athlete_id: str
     activity_id: str
     data_source: FitnessLLMDataSource

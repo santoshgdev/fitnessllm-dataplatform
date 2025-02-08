@@ -3,7 +3,7 @@ name: CI Checks
 on:
   push:
     branches:
-      - 'feature/**'  # Matches all feature branches
+      - 'FIT-**'
   pull_request:
     branches: [main]
 

@@ -1,0 +1,11 @@
+[
+  {
+    "name": "index",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "original_size",
+    "type": "INTEGER",
+    "mode": "NULLABLE"
+  }
+]

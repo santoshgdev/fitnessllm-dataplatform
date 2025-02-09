@@ -1,6 +1,9 @@
 import io
 from unittest.mock import MagicMock, patch
 
+import pytest
+from cloudpathlib import CloudPath
+
 from fitnessllm_dataplatform.utils.cloud_utils import (
     create_resource_path,
     get_secret,
@@ -44,6 +47,30 @@ def test_get_secret(mock_create_resource_path, mock_secret_manager_client):
     )
 
 
+def test_get_secret_error():
+    with pytest.raises(KeyError):
+        get_secret("test_secret")
+
+
+@patch(
+    "fitnessllm_dataplatform.utils.cloud_utils.secretmanager.SecretManagerServiceClient"
+)
+@patch.dict("os.environ", {"PROJECT_ID": "test_project"})
+def test_get_secret_decode_exception(mock_secret_manager_client, caplog):
+    response = MagicMock()
+    response.payload = MagicMock()
+    response.payload.data = MagicMock()
+    response.payload.data.decode.return_value = '{"key": "value"'
+    mock_secret_manager_client.access_secret_version.return_value = response
+
+    with pytest.raises(Exception):
+        get_secret("test_secret_name")
+    assert (
+        "Failed to retrieve or decode secret test_secret_name: the JSON object must be str, bytes or bytearray, not MagicMock"
+        in caplog.messages
+    )
+
+
 @patch("fitnessllm_dataplatform.utils.cloud_utils.open", new_callable=MagicMock)
 def test_write_json_to_storage(mocked_open):
     fake_file = io.StringIO()
@@ -55,3 +82,14 @@ def test_write_json_to_storage(mocked_open):
 
     # Call the function with the mocked path
     write_json_to_storage(fake_path, sample_data)
+
+
+@patch("fitnessllm_dataplatform.utils.cloud_utils.open", new_callable=MagicMock)
+def test_write_json_to_storage_error(mocked_open):
+    mock_path = MagicMock(spec=CloudPath)
+    mock_path.open.side_effect = Exception("Simulated write failure")
+
+    data = {"key": "value"}
+
+    with pytest.raises(Exception, match="Simulated write failure"):
+        write_json_to_storage(mock_path, data)

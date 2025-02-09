@@ -5,6 +5,12 @@ clean:
 build:
 	docker build . -t fitnessllm-dp
 
+test:
+	poetry run pytest --cov --cov-branch --cov-report=html
+
+coverage:
+	coverage
+
 run:
 	docker run -it -v ${CODE_PATH}/fitnessllm-dataplatform:/app/fitnessllm-dataplatform \
 				   -v ~/.config/gcloud:/root/.config/gcloud \

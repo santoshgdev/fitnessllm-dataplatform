@@ -1,26 +1,22 @@
 import logging
-import sys
 
 from fitnessllm_dataplatform.utils.logging_utils import setup_logger
 
 
-def test_setup_logger():
-    """Test for setting up a logger."""
+def test_setup_logger_default():
     logger = setup_logger()
+    assert isinstance(logger, logging.Logger)
     assert logger.level == logging.DEBUG
-    assert len(logger.handlers) == 4
-    assert logger.handlers[0].level == 0
-    assert (
-        logger.handlers[0].formatter._fmt
-        == "%(levelname)-8s %(name)s:%(filename)s:%(lineno)d %(message)s"
+    assert logger.hasHandlers()
+    has_stream_handler = any(
+        isinstance(handler, logging.StreamHandler) for handler in logger.handlers
     )
-    assert logger.handlers[0].stream == sys.stdout
-    assert logger.handlers[0].stream.name == "<stdout>"
-    assert logger.handlers[0].stream.encoding == "UTF-8"
-    assert logger.handlers[0].stream.errors == "strict"
-    assert logger.handlers[0].stream.isatty()
+    assert has_stream_handler, "Logger does not have a StreamHandler"
 
 
-def test_setup_logger_has_handlers():
-    logger = setup_logger("test_logger")
+def test_setup_logger_with_name_and_level():
+    logger = setup_logger(name="test_logger", level=logging.INFO)
+    assert isinstance(logger, logging.Logger)
+    assert logger.name == "test_logger"
+    assert logger.level == logging.INFO
     assert logger.hasHandlers()

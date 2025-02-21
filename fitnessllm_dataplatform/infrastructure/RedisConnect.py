@@ -49,6 +49,9 @@ class RedisConnect:
                 self.interface.setex(name=key, value=json.dumps(value), time=ttl)
                 logger.debug(f"Wrote key with ttl {ttl}")
             logger.debug(f"Set {key} to redis")
+        except redis.exceptions.AuthenticationError as exc:
+            logger.error(f"Failed to authenticate to Redis: {exc}")
+            raise
         except redis.RedisError as exc:
             logger.error(f"Failed to set key '{key}': {exc}")
         finally:
@@ -57,7 +60,7 @@ class RedisConnect:
             return
 
     @beartype
-    def read_redis(self, key: str) -> dict:
+    def read_redis(self, key: str) -> dict | None:
         """Read from redis interface given a key.
 
         Args:
@@ -72,13 +75,15 @@ class RedisConnect:
         self.open_connection()
         try:
             value = self.interface.get(key)
-
             if value is None:
-                raise redis.RedisError(f"Failed to get key '{key}'; does not exist")
+                return value
             return json.loads(value)
-
-        except redis.RedisError as exc:
-            raise redis.RedisError(f"Failed to get key '{key}': {exc}")
+        except redis.exceptions.AuthenticationError as exc:
+            logger.error(f"Failed to authenticate to Redis: {exc}")
+            raise
+        except redis.RedisError:
+            logger.debug(f"Failed to get key '{key}'; does not exist")
+            return None
         finally:
             self.close_connection()
 
@@ -98,8 +103,11 @@ class RedisConnect:
         self.open_connection()
         try:
             return self.interface.ttl(key)
+        except redis.exceptions.AuthenticationError as exc:
+            logger.error(f"Failed to authenticate to Redis: {exc}")
+            raise
         except redis.RedisError as exc:
             logger.error(f"Failed to get key '{key}' ttl: {exc}")
-            return None
+            raise
         finally:
             self.close_connection()

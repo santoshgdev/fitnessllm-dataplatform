@@ -3,7 +3,7 @@ name: CI Checks
 on:
   push:
     branches:
-      - 'FIT-**'
+      - '*FIT-**'
 
 jobs:
   quality-checks:

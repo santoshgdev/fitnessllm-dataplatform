@@ -4,7 +4,6 @@ from enum import EnumType
 from functools import partial
 from os import environ
 
-import requests
 from beartype import beartype
 from google.cloud import bigquery
 from stravalib import Client
@@ -17,14 +16,12 @@ from fitnessllm_dataplatform.stream.strava.cloud_utils import get_strava_storage
 from fitnessllm_dataplatform.stream.strava.entities.enums import (
     StravaKeys,
     StravaStreams,
-    StravaURLs,
 )
 from fitnessllm_dataplatform.stream.strava.entities.queries import (
     create_get_latest_activity_date_query,
 )
 from fitnessllm_dataplatform.utils.cloud_utils import get_secret, write_json_to_storage
 from fitnessllm_dataplatform.utils.logging_utils import logger
-from fitnessllm_dataplatform.utils.request_utils import handle_status_code
 from fitnessllm_dataplatform.utils.task_utils import get_enum_values_from_list
 
 
@@ -40,33 +37,30 @@ class StravaAPIInterface(APIInterface):
         """Initializes Strava API Interface."""
         super().__init__()
         self.redis = redis or RedisConnect()
+        self.strava_client = Client()
         strava_secret_token = get_secret(environ["STRAVA_SECRET"])
-        client_id, client_secret, grant_type = (
+        client_id, client_secret = (
             strava_secret_token["client_id"],
             strava_secret_token["client_secret"],
-            strava_secret_token["grant_type"],
         )
-        self.write_strava_var_to_env(
-            client_id=client_id, client_secret=client_secret, grant_type=grant_type
-        )
+        self.write_strava_var_to_env(client_id=client_id, client_secret=client_secret)
         self.refresh_access_token_at_expiration(
-            client_id=client_id, client_secret=client_secret, grant_type=grant_type
+            client_id=client_id, client_secret=client_secret
         )
         strava_access_token_dict = self.redis.read_redis(
             StravaKeys.STRAVA_ACCESS_TOKEN.value
         )
-        self.instantiate_strava_lib(strava_access_token_dict)
+        self.set_strava_access_token(strava_access_token_dict)
         self.InfrastructureNames = infrastructure_names
         self.athlete_id = self.get_athlete_summary()
         self.client = bigquery.Client()
 
     @beartype
-    @staticmethod
     def get_strava_access_token(
+        self,
         client_id: str,
         client_secret: str,
         code: str,
-        grant_type: str = "authorization_code",
     ) -> dict:
         """Retrieve strava access token.
 
@@ -74,53 +68,46 @@ class StravaAPIInterface(APIInterface):
             client_id: Client ID.
             client_secret: Client secret.
             code: Authorization code.
-            grant_type: Grant type.
 
         Returns:
             dict: Access token.
         """
-        payload = {
-            "client_id": client_id,
-            "client_secret": client_secret,
-            "code": code,
-            "grant_type": grant_type,
-        }
-        response = requests.post(StravaURLs.AUTH_URL.value, data=payload)
-        if response.status_code != 200:
-            raise Exception(
-                f"Request to strava failed with status {response.status_code}: {response.text}"
-            )
-        return handle_status_code(response)
+        return self.strava_client.exchange_code_for_token(
+            client_id=int(client_id), client_secret=client_secret, code=code
+        )
 
     @beartype
     def refresh_access_token_at_expiration(
-        self, client_id: str, client_secret: str, grant_type: str
+        self, client_id: str, client_secret: str
     ) -> None:
         """Refreshes strava access token if it happens to be expired.
 
         TTL of the current token is retrieved. If it happens to not exist or is less than 0, a new token is retrieved.
         """
+        if not self.redis.read_redis(StravaKeys.STRAVA_ACCESS_TOKEN.value):
+            self.write_refreshed_access_token_to_redis(
+                client_id=client_id, client_secret=client_secret
+            )
+            logger.info("Strava token not found in redis, writing new token")
         redis_ttl = self.redis.get_ttl(StravaKeys.STRAVA_ACCESS_TOKEN.value)
         if redis_ttl is None or redis_ttl < 0:
             self.write_refreshed_access_token_to_redis(
-                client_id=client_id, client_secret=client_secret, grant_type=grant_type
+                client_id=client_id, client_secret=client_secret
             )
+            logger.info("Strava token expired, writing new token")
         else:
             logger.info("Strava token still valid")
 
     @staticmethod
-    def write_strava_var_to_env(
-        client_id: str, client_secret: str, grant_type: str
-    ) -> None:
+    def write_strava_var_to_env(client_id: str, client_secret: str) -> None:
         """Writes strava secret token to environment."""
         logger.info("Writing strava secret token to environment")
         environ["STRAVA_CLIENT_ID"] = client_id
         environ["STRAVA_CLIENT_SECRET"] = client_secret
-        environ["STRAVA_GRANT_TYPE"] = grant_type
 
     @beartype
     def write_refreshed_access_token_to_redis(
-        self, client_id: str, client_secret: str, grant_type: str
+        self, client_id: str, client_secret: str
     ) -> None:
         """Writes retrieved strava access token to redis."""
         logger.info("Refreshing strava access token")
@@ -128,17 +115,16 @@ class StravaAPIInterface(APIInterface):
             client_id=client_id,
             client_secret=client_secret,
             code=environ["AUTHORIZATION_TOKEN"],
-            grant_type=grant_type,
         )
         self.redis.write_redis(
             key=StravaKeys.STRAVA_ACCESS_TOKEN.value,
             value=strava_access_token,
-            ttl=strava_access_token["expires_in"] - 60,
+            ttl=strava_access_token["expires_at"] - 60,
         )
         logger.info("Refreshed strava access token")
 
     @beartype
-    def instantiate_strava_lib(self, strava_access_dict_from_redis: dict):
+    def set_strava_access_token(self, strava_access_dict_from_redis: dict) -> None:
         """Instantiate strava client."""
         strava_access_token = (
             strava_access_dict_from_redis["access_token"]
@@ -147,7 +133,7 @@ class StravaAPIInterface(APIInterface):
         )
         if not strava_access_token:
             return None
-        self.strava_client = Client(access_token=strava_access_token)
+        self.strava_client.access_token = strava_access_token
 
     @beartype
     def get_athlete_summary(self) -> str:

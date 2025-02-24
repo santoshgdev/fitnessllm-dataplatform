@@ -1,3 +1,6 @@
+setup:
+	brew install pre-commit
+
 clean:
 	poetry env remove --all
 	poetry install --sync
@@ -19,3 +22,6 @@ run:
 
 run_isolated:
 	docker run -it fitnessllm-dp:latest zsh
+
+lint:
+	pre-commit run --all-files

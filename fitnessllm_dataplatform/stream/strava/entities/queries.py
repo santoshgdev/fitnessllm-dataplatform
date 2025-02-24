@@ -16,7 +16,7 @@ def create_activities_query(
     data_stream: FitnessLLMDataStream,
 ) -> str:
     """Create a query to get all activities for a specific athlete."""
-    schema_name = f"{env}_bronze_{data_source.value.lower()}"
+    schema_name = f"{env}_metrics"
     return f"""
         SELECT DISTINCT activity_id
         FROM {schema_name}.metrics

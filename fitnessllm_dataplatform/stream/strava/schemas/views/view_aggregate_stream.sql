@@ -11,9 +11,12 @@ select t.data as time,
        temp.data as temperature,
        vs.data as velocity_smooth,
        w.data as watts,
+       act.name,
+       act.sport_type,
        t.athlete_id,
        t.activity_id
 from ${project}.${schema}.time t
+left join ${project}.${schema}.activity act on t.athlete_id = act.athlete_id and t.activity_id = act.activity_id
 left join ${project}.${schema}.altitude a on t.athlete_id = a.athlete_id and t.activity_id = a.activity_id and t.index = a.index
 left join ${project}.${schema}.cadence c on t.athlete_id = c.athlete_id and t.activity_id = c.activity_id and t.index = c.index
 left join ${project}.${schema}.distance d on t.athlete_id = d.athlete_id and t.activity_id = d.activity_id and t.index = d.index

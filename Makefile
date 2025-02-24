@@ -17,7 +17,6 @@ test:
 	  fitnessllm-dp:latest \
 	  sh -c "cd /app/fitnessllm-dataplatform && /venv/.venv/bin/pytest --cov --cov-branch --cov-report=html"
 
-
 coverage:
 	coverage
 
@@ -26,9 +25,6 @@ run:
 	  -v "$$PWD:/app/fitnessllm-dataplatform" \
 	  fitnessllm-dp:latest \
 	  bash
-
-run_isolated:
-	docker run -it fitnessllm-dp:latest zsh
 
 lint:
 	pre-commit run --all-files

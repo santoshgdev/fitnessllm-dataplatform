@@ -7,11 +7,12 @@ select t.data as time,
        ll.latitude,
        ll.longitude,
        p.data as power,
+       m.data as moving,
        temp.data as temperature,
        vs.data as velocity_smooth,
        w.data as watts,
-       a.athlete_id,
-       a.activity_id
+       t.athlete_id,
+       t.activity_id
 from ${project}.${schema}.time t
 left join ${project}.${schema}.altitude a on t.athlete_id = a.athlete_id and t.activity_id = a.activity_id and t.index = a.index
 left join ${project}.${schema}.cadence c on t.athlete_id = c.athlete_id and t.activity_id = c.activity_id and t.index = c.index

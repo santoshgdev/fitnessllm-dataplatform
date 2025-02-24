@@ -235,7 +235,7 @@ class StravaETLInterface(ETLInterface):
             with tempfile.TemporaryDirectory():
                 job = self.client.load_table_from_dataframe(
                     dataframe=df,
-                    destination=f"{self.client.project}.dev_strava.{stream.value}",
+                    destination=f"{self.client.project}.{self.ENV}_bronze_{self.data_source.value.lower()}.{stream.value}",
                     job_config=bigquery.LoadJobConfig(
                         write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
                         schema=load_schema_from_json(
@@ -247,7 +247,8 @@ class StravaETLInterface(ETLInterface):
             if result.state == "DONE":
                 self.insert_metrics(
                     metrics_list=metrics,
-                    destination=f"{self.client.project}.dev_metrics.metrics",
+                    destination=f"{self.client.project}.{self.ENV
+                    }_metrics.metrics",
                     timestamp=timestamp,
                     status=Status.SUCCESS,
                 )

@@ -20,8 +20,6 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/* \
     && curl -sSL https://install.python-poetry.org | python3 - --version ${POETRY_VERSION}
 
-RUN groupadd -r appuser && useradd -r -g appuser appuser
-
 RUN mkdir /venv
 WORKDIR /venv
 COPY pyproject.toml .
@@ -30,9 +28,5 @@ RUN poetry install --no-root
 
 RUN mkdir /app
 WORKDIR /app
-
-RUN chown -R appuser:appuser /venv /app /root
-
-USER appuser
 
 CMD ["tail", "-f", "/dev/null"]

@@ -47,6 +47,7 @@ class StravaETLInterface(ETLInterface):
         """Initializes Strava ETL Interface."""
         super().__init__()
         self.data_source = FitnessLLMDataSource.STRAVA
+        self.ENV = environ.get("ENV", "dev")
         self.athlete_id = athlete_id
         self.data_streams = data_streams
         self.InfrastructureNames = infrastructure_names
@@ -95,6 +96,7 @@ class StravaETLInterface(ETLInterface):
         activity_ids = (
             self.client.query(
                 create_activities_query(
+                    env=self.ENV,
                     athlete_id=self.athlete_id,
                     data_source=self.data_source,
                     data_stream=stream,

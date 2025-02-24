@@ -9,16 +9,23 @@ build:
 	docker build . -t fitnessllm-dp
 
 test:
-	poetry run pytest --cov --cov-branch --cov-report=html
+	docker run -it \
+	  -e POETRY_VIRTUALENVS_CREATE=false \
+	  -e POETRY_NO_INTERACTION=1 \
+	  -e PYTHONPATH=/app/fitnessllm-dataplatform \
+	  -v "$$PWD:/app/fitnessllm-dataplatform" \
+	  fitnessllm-dp:latest \
+	  sh -c "cd /app/fitnessllm-dataplatform && /venv/.venv/bin/pytest --cov --cov-branch --cov-report=html"
+
 
 coverage:
 	coverage
 
 run:
-	docker run -it -v ${CODE_PATH}/fitnessllm-dataplatform:/app/fitnessllm-dataplatform \
-				   -v ~/.config/gcloud:/root/.config/gcloud \
-				   fitnessllm-dp:latest \
-				   zsh
+	docker run -it \
+	  -v "$$PWD:/app/fitnessllm-dataplatform" \
+	  fitnessllm-dp:latest \
+	  bash
 
 run_isolated:
 	docker run -it fitnessllm-dp:latest zsh

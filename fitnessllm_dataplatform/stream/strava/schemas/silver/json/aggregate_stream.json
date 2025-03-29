@@ -1,0 +1,97 @@
+[
+  {
+    "name": "index",
+    "type": "INTEGER",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "time",
+    "type": "FLOAT",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "altitude",
+    "type": "FLOAT",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "cadence",
+    "type": "FLOAT",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "distance",
+    "type": "FLOAT",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "grade_smooth",
+    "type": "FLOAT",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "heartrate",
+    "type": "FLOAT",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "latitude",
+    "type": "FLOAT",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "longitude",
+    "type": "FLOAT",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "power",
+    "type": "FLOAT",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "moving",
+    "type": "FLOAT",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "temperature",
+    "type": "FLOAT",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "velocity_smooth",
+    "type": "FLOAT",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "watts",
+    "type": "FLOAT",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "name",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sport_type",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "athlete_id",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "activity_id",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "metadata_insert_timestamp",
+    "type": "TIMESTAMP",
+    "mode": "REQUIRED"
+  }
+]

@@ -98,7 +98,6 @@ class StravaAPIInterface(APIInterface):
             )
             logger.info("Strava token not found in redis, writing new token")
         redis_ttl = self.redis.get_ttl(StravaKeys.STRAVA_ACCESS_TOKEN.value)
-        redis_ttl = -1  # TODO: Remove this line when redis is set up
         if redis_ttl < 0:
             self.write_refreshed_access_token_to_redis(
                 client_id=client_id,

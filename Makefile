@@ -28,3 +28,6 @@ run:
 
 lint:
 	pre-commit run --all-files
+
+repomix:
+	repomix --include "**/*.json,**/*.sql,**/*.py,**/Dockerfile,**/*.yml,**/*.ini,**/*.md,**/*.toml"

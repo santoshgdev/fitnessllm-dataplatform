@@ -35,7 +35,7 @@ from fitnessllm_dataplatform.utils.logging_utils import logger
 from fitnessllm_dataplatform.utils.task_utils import load_schema_from_json
 
 
-class StravaETLInterface(ETLInterface):
+class BronzeStravaETLInterface(ETLInterface):
     """ETL Interface for Strava data."""
 
     def __init__(
@@ -47,7 +47,6 @@ class StravaETLInterface(ETLInterface):
         """Initializes Strava ETL Interface."""
         super().__init__()
         self.data_source = FitnessLLMDataSource.STRAVA
-        self.ENV = environ.get("ENV", "dev")
         self.athlete_id = athlete_id
         self.data_streams = data_streams
         self.InfrastructureNames = infrastructure_names
@@ -56,7 +55,7 @@ class StravaETLInterface(ETLInterface):
             bucket=self.InfrastructureNames.bronze_bucket,
             athlete_id=athlete_id,
         )
-        self.client = bigquery.Client()
+
 
     @beartype
     def load_json_into_bq(self) -> None:

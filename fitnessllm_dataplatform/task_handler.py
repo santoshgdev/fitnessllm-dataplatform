@@ -10,9 +10,10 @@ from fitnessllm_dataplatform.infrastructure.FirebaseConnect import FirebaseConne
 from fitnessllm_dataplatform.stream.strava.services.api_interface import (
     StravaAPIInterface,
 )
-from fitnessllm_dataplatform.stream.strava.services.etl_interface import (
-    StravaETLInterface,
+from fitnessllm_dataplatform.stream.strava.services.bronze_etl_interface import (
+    BronzeStravaETLInterface,
 )
+from fitnessllm_dataplatform.stream.strava.services.silver_etl_interface import SilverStravaETLInterface
 from fitnessllm_dataplatform.utils.cloud_utils import get_secret
 from fitnessllm_dataplatform.utils.logging_utils import logger
 
@@ -53,12 +54,12 @@ class Startup:
             raise RuntimeError(f"Failed to get data from Strava API: {e}") from e
 
     @beartype
-    def etl(
-        self, data_source: str, uuid: int, data_streams: list[str] | None = None
+    def bronze_etl(
+        self, data_source: str, athlete_id: int, data_streams: list[str] | None = None
     ) -> None:
-        """Entry point for loading JSONs into BigQuery."""
+        """Entry point for loading JSONs into bronze layer."""
         if data_source == FitnessLLMDataSource.STRAVA.value:
-            strava_etl_interface = StravaETLInterface(
+            strava_etl_interface = BronzeStravaETLInterface(
                 infrastructure_names=self.InfrastructureNames,
                 athlete_id=str(athlete_id),
                 data_streams=data_streams,
@@ -66,6 +67,15 @@ class Startup:
             strava_etl_interface.load_json_into_bq()
         else:
             raise ValueError(f"Unsupported data source: {data_source}")
+
+    @beartype
+    def silver_etl(self, data_source: str, athlete_id: int) -> None:
+        """Entry point for loading data from bronze to silver."""
+        if data_source == FitnessLLMDataSource.STRAVA.value:
+            strava_etl_interface = SilverStravaETLInterface(
+                athlete_id=str(athlete_id),
+            )
+            strava_etl_interface.task_handler()
 
 
 if __name__ == "__main__":

@@ -6,7 +6,7 @@ from beartype import beartype
 from cloudpathlib import GSClient
 
 from fitnessllm_dataplatform.entities.enums import DynamicEnum, FitnessLLMDataSource
-from fitnessllm_dataplatform.infrastructure.RedisConnect import RedisConnect
+from fitnessllm_dataplatform.infrastructure.FirebaseConnect import FirebaseConnect
 from fitnessllm_dataplatform.stream.strava.services.api_interface import (
     StravaAPIInterface,
 )
@@ -27,7 +27,7 @@ class Startup:
         self.InfrastructureNames = DynamicEnum.from_dict(
             get_secret(environ["INFRASTRUCTURE_SECRET"])[environ["STAGE"]],
         )
-        self.redis = RedisConnect()
+        self.firebase = FirebaseConnect()
 
     def __init__(self) -> None:
         """Initializes the data platform."""
@@ -54,7 +54,7 @@ class Startup:
 
     @beartype
     def etl(
-        self, data_source: str, athlete_id: int, data_streams: list[str] | None = None
+        self, data_source: str, uuid: int, data_streams: list[str] | None = None
     ) -> None:
         """Entry point for loading JSONs into BigQuery."""
         if data_source == FitnessLLMDataSource.STRAVA.value:

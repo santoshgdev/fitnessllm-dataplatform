@@ -8,10 +8,11 @@ from fitnessllm_dataplatform.utils.logging_utils import logger
 class FirebaseConnect:
     """Infrastructure Firebase."""
 
-    def __init__(self):
+    def __init__(self, uid):
         """Init function."""
         self.app = firebase_admin.initialize_app()
         self.open_connection()
+        self.uid = uid
 
     def open_connection(self):
         """Open Firebase connection."""
@@ -26,5 +27,5 @@ class FirebaseConnect:
         """Write data to Firebase."""
         pass
 
-    def read_user(self, user_id):
-        return self.interface.collection("users")
+    def read_user(self):
+        return self.interface.collection("users").document(self.uid)

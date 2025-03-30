@@ -6,8 +6,6 @@ from google.cloud import bigquery
 from fitnessllm_dataplatform.entities.enums import FitnessLLMDataSource
 from fitnessllm_dataplatform.services.etl_interface import ETLInterface
 
-from sqlglot import parse_one, exp
-
 from fitnessllm_dataplatform.utils.query_utils import get_parameterized_query, \
     get_transaction_insert_query
 
@@ -31,8 +29,6 @@ class SilverStravaETLInterface(ETLInterface):
             "schema": f"{self.ENV}_bronze_{self.data_source.value.lower()}",
             "athlete_id": self.athlete_id,
         }
-
-
 
         for query in list_of_queries:
             target_destination = f"{self.ENV}_silver_{self.data_source.value.lower()}.{query.split('.')[0]}"

@@ -79,17 +79,17 @@ def test_dataclass_convertor():
         (
             FitnessLLMDataSource.STRAVA,
             StravaStreams.ACTIVITY,
-            "fitnessllm_dataplatform/stream/strava/schemas/activity.json",
+            "fitnessllm_dataplatform/stream/strava/schemas/bronze/json/activity.json",
         ),
         (
             FitnessLLMDataSource.STRAVA,
             StravaStreams.LATLNG,
-            "fitnessllm_dataplatform/stream/strava/schemas/latlng.json",
+            "fitnessllm_dataplatform/stream/strava/schemas/bronze/json/latlng.json",
         ),
         (
             FitnessLLMDataSource.STRAVA,
             StravaStreams.GRADE_SMOOTH,
-            "fitnessllm_dataplatform/stream/strava/schemas/generic_stream.json",
+            "fitnessllm_dataplatform/stream/strava/schemas/bronze/json/generic_stream.json",
         ),
     ],
 )

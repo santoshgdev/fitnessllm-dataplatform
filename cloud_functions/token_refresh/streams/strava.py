@@ -7,9 +7,9 @@ from typing import Any, Dict
 from beartype import beartype
 from google.cloud import firestore
 from stravalib.client import Client
-from .utils.cloud_utils import get_secret
-from .utils.logger_utils import logger
-from .utils.task_utils import decrypt_token, encrypt_token, update_last_refresh
+from ..utils.cloud_utils import get_secret
+from ..utils.logger_utils import logger
+from ..utils.task_utils import decrypt_token, encrypt_token, update_last_refresh
 
 
 @beartype

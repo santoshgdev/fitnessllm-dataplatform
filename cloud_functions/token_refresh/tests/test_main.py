@@ -3,6 +3,7 @@ import sys
 import os
 from unittest.mock import MagicMock, patch
 from flask import Request
+from google.cloud import firestore
 
 import pytest
 
@@ -37,8 +38,15 @@ def mock_strava_secret():
     return {"client_id": "test_client_id", "client_secret": "test_client_secret"}
 
 
+@pytest.fixture
+def mock_firestore_client():
+    """Fixture for Firestore client mock."""
+    mock_client = MagicMock(spec=firestore.Client)
+    return mock_client
+
+
 @pytest.mark.cloud_function
-def test_refresh_token_success(mock_strava_response, mock_strava_secret):
+def test_refresh_token_success(mock_strava_response, mock_strava_secret, mock_firestore_client):
     """Test successful token refresh."""
     # Create test request
     test_request = create_test_request("test_user_123")
@@ -46,15 +54,18 @@ def test_refresh_token_success(mock_strava_response, mock_strava_secret):
     # Mock Firestore client and document
     mock_doc = MagicMock()
     mock_doc.exists = True
-    mock_doc.to_dict.return_value = {"refresh_token": "test_refresh_token"}
+    mock_doc.to_dict.return_value = {
+        "stream=strava": {
+            "refresh_token": "test_refresh_token"
+        }
+    }
 
     mock_ref = MagicMock()
     mock_ref.get.return_value = mock_doc
 
-    mock_db = MagicMock()
-    mock_db.collection.return_value.document.return_value = mock_ref
+    mock_firestore_client.collection.return_value.document.return_value = mock_ref
 
-    with patch("cloud_functions.token_refresh.main.firestore.Client", return_value=mock_db), patch(
+    with patch("cloud_functions.token_refresh.main.firestore.Client", return_value=mock_firestore_client), patch(
         "cloud_functions.token_refresh.streams.strava.Client.refresh_access_token", return_value=mock_strava_response
     ), patch("cloud_functions.token_refresh.utils.cloud_utils.get_secret", return_value=mock_strava_secret):
         # Call the function
@@ -65,7 +76,7 @@ def test_refresh_token_success(mock_strava_response, mock_strava_secret):
         assert result["uid"] == "test_user_123"
 
         # Verify Firestore was called correctly
-        mock_db.collection.assert_called_once_with("users")
+        mock_firestore_client.collection.assert_called_once_with("users")
         mock_ref.get.assert_called_once()
         mock_ref.update.assert_called_once_with(
             {
@@ -77,7 +88,7 @@ def test_refresh_token_success(mock_strava_response, mock_strava_secret):
 
 
 @pytest.mark.cloud_function
-def test_refresh_token_user_not_found():
+def test_refresh_token_user_not_found(mock_firestore_client):
     """Test when user is not found."""
     test_request = create_test_request("nonexistent_user")
 
@@ -88,10 +99,9 @@ def test_refresh_token_user_not_found():
     mock_ref = MagicMock()
     mock_ref.get.return_value = mock_doc
 
-    mock_db = MagicMock()
-    mock_db.collection.return_value.document.return_value = mock_ref
+    mock_firestore_client.collection.return_value.document.return_value = mock_ref
 
-    with patch("cloud_functions.token_refresh.main.firestore.Client", return_value=mock_db):
+    with patch("cloud_functions.token_refresh.main.firestore.Client", return_value=mock_firestore_client):
         # Verify it raises the correct error
         with pytest.raises(ValueError) as exc_info:
             refresh_token(test_request)
@@ -99,23 +109,26 @@ def test_refresh_token_user_not_found():
 
 
 @pytest.mark.cloud_function
-def test_refresh_token_missing_credentials():
+def test_refresh_token_missing_credentials(mock_firestore_client):
     """Test when Strava credentials are missing."""
     test_request = create_test_request("test_user_123")
 
     # Mock Firestore client and document
     mock_doc = MagicMock()
     mock_doc.exists = True
-    mock_doc.to_dict.return_value = {"refresh_token": "test_refresh_token"}
+    mock_doc.to_dict.return_value = {
+        "stream=strava": {
+            "refresh_token": "test_refresh_token"
+        }
+    }
 
     mock_ref = MagicMock()
     mock_ref.get.return_value = mock_doc
 
-    mock_db = MagicMock()
-    mock_db.collection.return_value.document.return_value = mock_ref
+    mock_firestore_client.collection.return_value.document.return_value = mock_ref
 
     # Mock empty secret
-    with patch("cloud_functions.token_refresh.main.firestore.Client", return_value=mock_db), patch(
+    with patch("cloud_functions.token_refresh.main.firestore.Client", return_value=mock_firestore_client), patch(
         "cloud_functions.token_refresh.utils.cloud_utils.get_secret", return_value={}
     ):
         # Verify it raises the correct error

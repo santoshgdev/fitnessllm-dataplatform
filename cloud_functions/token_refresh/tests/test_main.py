@@ -56,7 +56,7 @@ def test_refresh_token_success(mock_strava_response, mock_strava_secret, mock_fi
     mock_doc.exists = True
     mock_doc.to_dict.return_value = {
         "stream=strava": {
-            "refresh_token": "test_refresh_token"
+            "refreshToken": "test_refresh_token"
         }
     }
 
@@ -118,7 +118,7 @@ def test_refresh_token_missing_credentials(mock_firestore_client):
     mock_doc.exists = True
     mock_doc.to_dict.return_value = {
         "stream=strava": {
-            "refresh_token": "test_refresh_token"
+            "refreshToken": "test_refresh_token"
         }
     }
 

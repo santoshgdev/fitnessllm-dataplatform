@@ -7,7 +7,7 @@ import pytest
 
 # Add the parent directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-from cloud_functions.token_refresh.main import refresh_token
+from .main import refresh_token
 
 
 def create_test_event(user_id: str) -> dict:

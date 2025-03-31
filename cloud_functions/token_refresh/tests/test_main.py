@@ -10,6 +10,7 @@ from google.cloud import firestore
 
 # Add the parent directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+# flake8: noqa: E402
 from cloud_functions.token_refresh.main import refresh_token
 
 
@@ -53,9 +54,9 @@ def mock_firestore_client():
 def mock_env():
     """Fixture for environment variables."""
     return {
-        "ENCRYPTION_SECRET": "test_secret",
+        "ENCRYPTION_SECRET": "test_secret",  # pragma: allowlist secret
         "PROJECT_ID": "test-project-id",
-        "STRAVA_SECRET": "test_strava_secret",
+        "STRAVA_SECRET": "test_strava_secret",  # pragma: allowlist secret
     }
 
 
@@ -109,9 +110,9 @@ def test_refresh_token_success(
 
     # Mock get_secret to return different values based on the secret name
     def get_secret_side_effect(secret_name):
-        if secret_name == "test_strava_secret":
+        if secret_name == "test_strava_secret":  # pragma: allowlist secret
             return mock_strava_secret
-        elif secret_name == "test_secret":
+        elif secret_name == "test_secret":  # pragma: allowlist secret
             return mock_encryption_secret
         return {}
 
@@ -189,9 +190,9 @@ def test_refresh_token_user_not_found(
 
     # Mock get_secret to return different values based on the secret name
     def get_secret_side_effect(secret_name):
-        if secret_name == "test_strava_secret":
+        if secret_name == "test_strava_secret":  # pragma: allowlist secret
             return mock_strava_secret
-        elif secret_name == "test_secret":
+        elif secret_name == "test_secret":  # pragma: allowlist secret
             return mock_encryption_secret
         return {}
 
@@ -260,9 +261,9 @@ def test_refresh_token_missing_credentials(
 
     # Mock get_secret to return empty dict for Strava secret
     def get_secret_side_effect(secret_name):
-        if secret_name == "test_strava_secret":
+        if secret_name == "test_strava_secret":  # pragma: allowlist secret
             return {}
-        elif secret_name == "test_secret":
+        elif secret_name == "test_secret":  # pragma: allowlist secret
             return mock_encryption_secret
         return {}
 

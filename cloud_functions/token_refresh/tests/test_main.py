@@ -39,6 +39,12 @@ def mock_strava_secret():
 
 
 @pytest.fixture
+def mock_encryption_secret():
+    """Fixture for encryption secret."""
+    return {"token": "test_encryption_key"}
+
+
+@pytest.fixture
 def mock_firestore_client():
     """Fixture for Firestore client mock."""
     mock_client = MagicMock(spec=firestore.Client)
@@ -46,7 +52,7 @@ def mock_firestore_client():
 
 
 @pytest.mark.cloud_function
-def test_refresh_token_success(mock_strava_response, mock_strava_secret, mock_firestore_client):
+def test_refresh_token_success(mock_strava_response, mock_strava_secret, mock_encryption_secret, mock_firestore_client):
     """Test successful token refresh."""
     # Create test request
     test_request = create_test_request("test_user_123")
@@ -67,7 +73,7 @@ def test_refresh_token_success(mock_strava_response, mock_strava_secret, mock_fi
 
     with patch("cloud_functions.token_refresh.main.firestore.Client", return_value=mock_firestore_client), patch(
         "cloud_functions.token_refresh.streams.strava.Client.refresh_access_token", return_value=mock_strava_response
-    ), patch("cloud_functions.token_refresh.utils.cloud_utils.get_secret", return_value=mock_strava_secret):
+    ), patch("cloud_functions.token_refresh.utils.cloud_utils.get_secret", side_effect=[mock_strava_secret, mock_encryption_secret]), patch.dict(os.environ, {"ENCRYPTION_SECRET": "test_secret"}):
         # Call the function
         result = refresh_token(test_request)
 
@@ -101,7 +107,7 @@ def test_refresh_token_user_not_found(mock_firestore_client):
 
     mock_firestore_client.collection.return_value.document.return_value = mock_ref
 
-    with patch("cloud_functions.token_refresh.main.firestore.Client", return_value=mock_firestore_client):
+    with patch("cloud_functions.token_refresh.main.firestore.Client", return_value=mock_firestore_client), patch.dict(os.environ, {"ENCRYPTION_SECRET": "test_secret"}):
         # Verify it raises the correct error
         with pytest.raises(ValueError) as exc_info:
             refresh_token(test_request)
@@ -109,7 +115,7 @@ def test_refresh_token_user_not_found(mock_firestore_client):
 
 
 @pytest.mark.cloud_function
-def test_refresh_token_missing_credentials(mock_firestore_client):
+def test_refresh_token_missing_credentials(mock_firestore_client, mock_encryption_secret):
     """Test when Strava credentials are missing."""
     test_request = create_test_request("test_user_123")
 
@@ -129,8 +135,8 @@ def test_refresh_token_missing_credentials(mock_firestore_client):
 
     # Mock empty secret
     with patch("cloud_functions.token_refresh.main.firestore.Client", return_value=mock_firestore_client), patch(
-        "cloud_functions.token_refresh.utils.cloud_utils.get_secret", return_value={}
-    ):
+        "cloud_functions.token_refresh.utils.cloud_utils.get_secret", side_effect=[{}, mock_encryption_secret]
+    ), patch.dict(os.environ, {"ENCRYPTION_SECRET": "test_secret"}):
         # Verify it raises the correct error
         with pytest.raises(ValueError) as exc_info:
             refresh_token(test_request)

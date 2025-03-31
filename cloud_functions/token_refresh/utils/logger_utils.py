@@ -1,9 +1,10 @@
 """Logging utilities."""
 import logging
 from logging import Logger
+from typing import Optional
 
 
-def setup_logger(name: str | None = None, level: int = logging.DEBUG) -> Logger:
+def setup_logger(name: Optional[str] = None, level: int = logging.DEBUG) -> Logger:
     """Sets up a logger with a console handler.
 
     Args:

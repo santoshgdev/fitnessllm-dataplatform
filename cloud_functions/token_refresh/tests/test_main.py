@@ -21,9 +21,12 @@ def create_test_request(user_id: str, data_source: str = "strava") -> Request:
     mock_args = MagicMock()
     mock_args.get = lambda key, default=None: {"data_source": data_source}.get(key, default)
     mock_request.args = mock_args
-    # Add headers attribute with mock Authorization header containing the user_id
+    # Add method attribute
+    mock_request.method = "POST"
+    # Add headers attribute with mock Authorization header containing the user_id and Origin
     mock_request.headers = {
-        "Authorization": f"Bearer {user_id}"
+        "Authorization": f"Bearer {user_id}",
+        "Origin": "https://fitnessllm.app"  # Use one of the allowed origins
     }
     return mock_request
 
@@ -155,12 +158,13 @@ def test_refresh_token_success(
         mock_client_instance.refresh_access_token.return_value = mock_strava_response
 
         # Call the function
-        result, status_code = refresh_token(test_request)
+        result, status_code, headers = refresh_token(test_request)
 
         # Verify the result
         assert status_code == 200
         assert result["status"] == "success"
         assert result["uid"] == "test_user_123"
+        assert headers["Access-Control-Allow-Origin"] == "https://fitnessllm.app"
 
         # Verify Firestore was called correctly
         mock_firestore_client.collection.assert_any_call("users")
@@ -237,9 +241,10 @@ def test_refresh_token_user_not_found(
         mock_client_instance.refresh_access_token.return_value = mock_strava_response
 
         # Call the function and verify the error response
-        result, status_code = refresh_token(test_request)
+        result, status_code, headers = refresh_token(test_request)
         assert status_code == 404
         assert result["error"] == "Not Found - User document does not exist"
+        assert headers["Access-Control-Allow-Origin"] == "https://fitnessllm.app"
 
         # Verify Firestore was called correctly
         mock_firestore_client.collection.assert_any_call("users")
@@ -311,9 +316,10 @@ def test_refresh_token_missing_credentials(
         mock_client_instance.refresh_access_token.return_value = mock_strava_response
 
         # Call the function and verify the error response
-        result, status_code = refresh_token(test_request)
+        result, status_code, headers = refresh_token(test_request)
         assert status_code == 400
         assert result["error"] == "Strava credentials not found in Secret Manager"
+        assert headers["Access-Control-Allow-Origin"] == "https://fitnessllm.app"
 
         # Verify Firestore was called correctly
         mock_firestore_client.collection.assert_any_call("users")

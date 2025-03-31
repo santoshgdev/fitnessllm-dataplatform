@@ -2,7 +2,6 @@ import json
 from unittest.mock import MagicMock, patch
 
 import pytest
-from main import refresh_token
 
 
 def create_test_event(user_id: str) -> dict:
@@ -113,15 +112,3 @@ def test_refresh_token_missing_credentials():
         with pytest.raises(ValueError) as exc_info:
             refresh_token(test_event)
         assert str(exc_info.value) == "Strava credentials not found in Secret Manager"
-
-
-if __name__ == "__main__":
-    # For running the function locally with Functions Framework
-    import functions_framework
-
-    @functions_framework.http
-    def test_endpoint(request):
-        """HTTP endpoint for testing the function."""
-        data = request.get_json()
-        event = create_test_event(data.get("user_id"))
-        return refresh_token(event)

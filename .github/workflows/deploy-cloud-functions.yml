@@ -38,7 +38,7 @@ jobs:
 
       - name: Run tests
         run: |
-          pytest tests/ --cov=. --cov-report=xml
+          pytest cloud_functions/ --cov=. --cov-report=xml
 
   deploy:
     needs: test

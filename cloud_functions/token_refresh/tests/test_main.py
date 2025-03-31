@@ -125,6 +125,9 @@ def test_refresh_token_success(
 
     # Mock decrypt_token first to ensure it's mocked before any other operations
     with patch(
+        "firebase_admin.auth.verify_id_token",
+        return_value={"uid": "test_user_123"}
+    ), patch(
         "cloud_functions.token_refresh.streams.strava.decrypt_token",
         return_value="decrypted_refresh_token",
     ), patch(
@@ -152,9 +155,10 @@ def test_refresh_token_success(
         mock_client_instance.refresh_access_token.return_value = mock_strava_response
 
         # Call the function
-        result = refresh_token(test_request)
+        result, status_code = refresh_token(test_request)
 
         # Verify the result
+        assert status_code == 200
         assert result["status"] == "success"
         assert result["uid"] == "test_user_123"
 
@@ -186,9 +190,7 @@ def test_refresh_token_user_not_found(
     # Mock Firestore client and document
     mock_doc = MagicMock()
     mock_doc.exists = False
-    mock_doc.to_dict.return_value = (
-        None  # Document doesn't exist, so to_dict returns None
-    )
+    mock_doc.to_dict.return_value = None  # Document doesn't exist, so to_dict returns None
 
     mock_ref = MagicMock()
     mock_ref.get.return_value = mock_doc
@@ -234,10 +236,10 @@ def test_refresh_token_user_not_found(
         mock_client_instance = mock_client_class.return_value
         mock_client_instance.refresh_access_token.return_value = mock_strava_response
 
-        # Verify it raises the correct error
-        with pytest.raises(TypeError) as exc_info:
-            refresh_token(test_request)
-        assert str(exc_info.value) == "'NoneType' object is not subscriptable"
+        # Call the function and verify the error response
+        result, status_code = refresh_token(test_request)
+        assert status_code == 404
+        assert result["error"] == "Not Found - User document does not exist"
 
         # Verify Firestore was called correctly
         mock_firestore_client.collection.assert_any_call("users")
@@ -308,7 +310,12 @@ def test_refresh_token_missing_credentials(
         mock_client_instance = mock_client_class.return_value
         mock_client_instance.refresh_access_token.return_value = mock_strava_response
 
-        # Verify it raises the correct error
-        with pytest.raises(ValueError) as exc_info:
-            refresh_token(test_request)
-        assert str(exc_info.value) == "Strava credentials not found in Secret Manager"
+        # Call the function and verify the error response
+        result, status_code = refresh_token(test_request)
+        assert status_code == 400
+        assert result["error"] == "Strava credentials not found in Secret Manager"
+
+        # Verify Firestore was called correctly
+        mock_firestore_client.collection.assert_any_call("users")
+        mock_ref.get.assert_called_once()
+        mock_ref.update.assert_not_called()

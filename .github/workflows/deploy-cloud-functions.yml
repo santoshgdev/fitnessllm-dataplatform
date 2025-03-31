@@ -65,4 +65,4 @@ jobs:
           --timeout 60s \
           --min-instances 0 \
           --max-instances 10 \
-          --set-env-vars PROJECT_ID=${{ env.PROJECT_ID }} ENCRYPTION_SECRET=${{ env.ENCRYPTION_SECRET }} STRAVA_SECRET=${{ env.STRAVA_SECRET }}
+          --set-env-vars "PROJECT_ID=${{ env.PROJECT_ID }},ENCRYPTION_SECRET=${{ env.ENCRYPTION_SECRET }},STRAVA_SECRET=${{ env.STRAVA_SECRET }}"  # pragma: allowlist secret

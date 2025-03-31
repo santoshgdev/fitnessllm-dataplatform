@@ -1,1 +1,1 @@
-"""Token refresh Cloud Function package.""" 
+"""Token refresh Cloud Function package."""

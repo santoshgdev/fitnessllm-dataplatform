@@ -2,6 +2,7 @@ import json
 import sys
 import os
 from unittest.mock import MagicMock, patch
+from flask import Request
 
 import pytest
 
@@ -10,11 +11,14 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from cloud_functions.token_refresh.main import refresh_token
 
 
-def create_test_event(user_id: str) -> dict:
-    """Create a test Cloud Event."""
-    return {
-        "data": {"message": {"data": json.dumps({"user_id": user_id}).encode("utf-8")}}
+def create_test_request(user_id: str, data_source: str = "strava") -> Request:
+    """Create a test Flask request object."""
+    mock_request = MagicMock(spec=Request)
+    mock_request.args = {
+        "uid": user_id,
+        "data_source": data_source
     }
+    return mock_request
 
 
 @pytest.fixture
@@ -36,8 +40,8 @@ def mock_strava_secret():
 @pytest.mark.cloud_function
 def test_refresh_token_success(mock_strava_response, mock_strava_secret):
     """Test successful token refresh."""
-    # Create test event
-    test_event = create_test_event("test_user_123")
+    # Create test request
+    test_request = create_test_request("test_user_123")
 
     # Mock Firestore client and document
     mock_doc = MagicMock()
@@ -54,11 +58,11 @@ def test_refresh_token_success(mock_strava_response, mock_strava_secret):
         "cloud_functions.token_refresh.streams.strava.Client.refresh_access_token", return_value=mock_strava_response
     ), patch("cloud_functions.token_refresh.utils.cloud_utils.get_secret", return_value=mock_strava_secret):
         # Call the function
-        result = refresh_token(test_event)
+        result = refresh_token(test_request)
 
         # Verify the result
         assert result["status"] == "success"
-        assert result["user_id"] == "test_user_123"
+        assert result["uid"] == "test_user_123"
 
         # Verify Firestore was called correctly
         mock_db.collection.assert_called_once_with("users")
@@ -75,7 +79,7 @@ def test_refresh_token_success(mock_strava_response, mock_strava_secret):
 @pytest.mark.cloud_function
 def test_refresh_token_user_not_found():
     """Test when user is not found."""
-    test_event = create_test_event("nonexistent_user")
+    test_request = create_test_request("nonexistent_user")
 
     # Mock Firestore client and document
     mock_doc = MagicMock()
@@ -90,14 +94,14 @@ def test_refresh_token_user_not_found():
     with patch("cloud_functions.token_refresh.main.firestore.Client", return_value=mock_db):
         # Verify it raises the correct error
         with pytest.raises(ValueError) as exc_info:
-            refresh_token(test_event)
+            refresh_token(test_request)
         assert str(exc_info.value) == "User nonexistent_user not found"
 
 
 @pytest.mark.cloud_function
 def test_refresh_token_missing_credentials():
     """Test when Strava credentials are missing."""
-    test_event = create_test_event("test_user_123")
+    test_request = create_test_request("test_user_123")
 
     # Mock Firestore client and document
     mock_doc = MagicMock()
@@ -116,5 +120,5 @@ def test_refresh_token_missing_credentials():
     ):
         # Verify it raises the correct error
         with pytest.raises(ValueError) as exc_info:
-            refresh_token(test_event)
+            refresh_token(test_request)
         assert str(exc_info.value) == "Strava credentials not found in Secret Manager"

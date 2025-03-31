@@ -15,7 +15,7 @@ test:
 	  -e PYTHONPATH=/app/fitnessllm-dataplatform \
 	  -v "$$PWD:/app/fitnessllm-dataplatform" \
 	  fitnessllm-dp:latest \
-	  sh -c "cd /app/fitnessllm-dataplatform && /venv/.venv/bin/pytest --cov --cov-branch --cov-report=html"
+	  sh -c "cd /app/fitnessllm-dataplatform && /venv/.venv/bin/pytest tests --cov --cov-branch --cov-report=html"
 
 coverage:
 	coverage

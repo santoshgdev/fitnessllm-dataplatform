@@ -1,22 +1,19 @@
+"""Module for Strava Silver ETL interface."""
 import os
 import pathlib
 
-from google.cloud import bigquery
+from tqdm import tqdm
 
 from fitnessllm_dataplatform.entities.enums import FitnessLLMDataSource
 from fitnessllm_dataplatform.services.etl_interface import ETLInterface
-
-from sqlglot import parse_one, exp
-
-from fitnessllm_dataplatform.utils.query_utils import get_parameterized_query, \
-    get_transaction_insert_query
+from fitnessllm_dataplatform.utils.logging_utils import logger
+from fitnessllm_dataplatform.utils.query_utils import get_delete_query, get_insert_query
 
 
 class SilverStravaETLInterface(ETLInterface):
     """Silver ETL interface for Strava data."""
 
-    def __init__(self,
-                 athlete_id: str):
+    def __init__(self, athlete_id: str):
         """Initializes Strava ETL Interface."""
         super().__init__()
         self.data_source = FitnessLLMDataSource.STRAVA
@@ -32,14 +29,36 @@ class SilverStravaETLInterface(ETLInterface):
             "athlete_id": self.athlete_id,
         }
 
-
-
-        for query in list_of_queries:
+        for query in tqdm(list_of_queries):
             target_destination = f"{self.ENV}_silver_{self.data_source.value.lower()}.{query.split('.')[0]}"
             query_path = pathlib.Path(path, query)
 
-            out = get_transaction_insert_query(target_table=target_destination,
-                                               query_path=query_path,
-                                               parameters=parameters)
+            delete_query = get_delete_query(
+                target_table=target_destination, parameters=parameters
+            )
+            delete_job = self.client.query(delete_query)
+            delete_job.result()
+            if delete_job.state != "DONE" and delete_job.error is not None:
+                logger.error(
+                    f"Query {delete_query} failed with error {delete_job.error}"
+                )
+                continue
+            logger.debug(
+                f"Query {delete_query} successfully deleted {delete_job.num_dml_affected_rows} rows."
+            )
 
-            result = self.client.query(out).result()
+            insert_query = get_insert_query(
+                target_table=target_destination,
+                query_path=query_path,
+                parameters=parameters,
+            )
+            insert_job = self.client.query(insert_query)
+            insert_job.result()
+            if insert_job.state != "DONE" and insert_job.error is not None:
+                logger.error(
+                    f"Query {insert_query} failed with error {insert_job.error}"
+                )
+                continue
+            logger.debug(
+                f"Query {insert_query} successfully inserted {insert_job.num_dml_affected_rows} rows."
+            )

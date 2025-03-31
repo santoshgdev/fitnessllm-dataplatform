@@ -56,7 +56,6 @@ class BronzeStravaETLInterface(ETLInterface):
             athlete_id=athlete_id,
         )
 
-
     @beartype
     def load_json_into_bq(self) -> None:
         """Loads JSONs into BigQuery."""
@@ -246,8 +245,7 @@ class BronzeStravaETLInterface(ETLInterface):
             if result.state == "DONE":
                 self.insert_metrics(
                     metrics_list=metrics,
-                    destination=f"{self.client.project}.{self.ENV
-                    }_metrics.metrics",
+                    destination=f"{self.client.project}.{self.ENV}_metrics.metrics",
                     timestamp=timestamp,
                     status=Status.SUCCESS,
                 )

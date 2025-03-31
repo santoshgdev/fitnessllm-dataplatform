@@ -7,3 +7,4 @@ pydantic==1.10.10
 beartype
 types-pytz
 cryptography
+firebase-admin

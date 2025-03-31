@@ -64,7 +64,6 @@ jobs:
           --trigger-topic token-refresh \
           --source ./cloud_functions/token_refresh \
           --entry-point refresh_token \
-          --allow-unauthenticated \
           --region ${{ env.REGION }} \
           --memory 128Mi \
           --timeout 60s \

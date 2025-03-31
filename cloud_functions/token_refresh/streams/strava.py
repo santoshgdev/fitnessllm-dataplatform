@@ -14,7 +14,7 @@ from ..utils.task_utils import decrypt_token, encrypt_token, update_last_refresh
 
 
 @beartype
-def refresh_oauth_token(db: firestore.Client, uid: str, refresh_token: str) -> None:
+def strava_refresh_oauth_token(db: firestore.Client, uid: str, refresh_token: str) -> None:
     """Call Strava OAuth to refresh the token.
 
     Args:

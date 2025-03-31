@@ -41,24 +41,35 @@ jobs:
           pytest cloud_functions/ --cov=. --cov-report=xml
 
   deploy:
-    needs: test
     runs-on: ubuntu-latest
-    permissions:
-      contents: 'read'
-      id-token: 'write'
 
     steps:
-      - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
-      - id: auth
-        uses: google-github-actions/auth@v1
-        with:
-          workload_identity_provider: projects/${{ secrets.PROJECT_ID }}/locations/global/workloadIdentityPools/github-actions/providers/github-actions
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v1
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ env.PROJECT_ID }}
+        version: 'latest'
 
-      - name: Submit to Cloud Build
-        run: |
-          gcloud config set project ${{ secrets.PROJECT_ID }}
-          gcloud builds submit --config cloudbuild.yaml
+    - name: Deploy Token Refresh Function
+      run: |
+        gcloud functions deploy refresh_token \
+          --runtime python39 \
+          --trigger-topic token-refresh \
+          --region ${{ env.REGION }} \
+          --source ./cloud_functions/token_refresh \
+          --entry-point refresh_token \
+          --allow-unauthenticated \
+          --memory 128MB \
+          --timeout 60s \
+          --min-instances 0 \
+          --max-instances 10 \
+          --set-env-vars PROJECT_ID=${{ env.PROJECT_ID }} \
+          --vpc-connector projects/${{ env.PROJECT_ID }}/locations/${{ env.REGION }}/connectors/your-vpc-connector \
+          --service-account ${{ secrets.GCP_SA_EMAIL }}

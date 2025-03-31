@@ -10,7 +10,7 @@ on:
 
 env:
   PROJECT_ID: ${{ secrets.PROJECT_ID }}
-  REGION: us-central1
+  REGION: us-west1
   STRAVA_SECRET: ${{ secrets.STRAVA_SECRET }}
   ENCRYPTION_SECRET: ${{ secrets.ENCRYPTION_SECRET }}
 

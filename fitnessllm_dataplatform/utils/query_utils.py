@@ -9,7 +9,14 @@ def get_delete_user_data_query(target_table: str,
     return f"DELETE FROM {target_table} WHERE athlete_id = '{athlete_id}'"
 
 
-def get_transaction_insert_query(target_table: str,
+def get_delete_query(target_table: str,
+                     parameters: dict[str, str]) -> str:
+    return f"{get_delete_user_data_query(target_table=target_table,
+                                athlete_id=parameters['athlete_id'])};"
+
+
+
+def get_insert_query(target_table: str,
                                  query_path: Path,
                                  parameters: dict[str, str]) -> str:
     """Returns a partitioned insert query with the given parameters.
@@ -22,17 +29,10 @@ def get_transaction_insert_query(target_table: str,
     Returns:
         Atomic query string
     """
-    return f"""
-        BEGIN TRANSACTION;
-        
-        {get_delete_user_data_query(target_table=target_table,
-                                    athlete_id=parameters['athlete_id'])};
-        
+    return f"""      
         INSERT INTO {target_table}
         {get_parameterized_query(query_path=query_path,
                                  parameters=parameters)};
-        
-        COMMIT TRANSACTION;
     """
 
 

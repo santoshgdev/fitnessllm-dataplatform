@@ -58,7 +58,7 @@ def get_schema_path(
             )
             else data_stream.value.lower()
         )
-        return f"fitnessllm_dataplatform/stream/{data_source.value.lower()}/schemas/{schema_name}.json"
+        return f"fitnessllm_dataplatform/stream/{data_source.value.lower()}/schemas/bronze/json/{schema_name}.json"
     return "fitnessllm_dataplatform/schemas/metrics.json"
 
 

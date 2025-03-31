@@ -75,11 +75,13 @@ class Startup:
     ) -> None:
         """Entry point for loading JSONs into bronze layer."""
         self._startUp(uid)
+        user_data = self.firebase.read_user().get().to_dict()
 
         if data_source == FitnessLLMDataSource.STRAVA.value:
+            strava_user_data = user_data.get(f"stream={data_source.lower()}")
             strava_etl_interface = BronzeStravaETLInterface(
                 infrastructure_names=self.InfrastructureNames,
-                athlete_id=str(self.uid),
+                athlete_id=str(strava_user_data['athleteId']),
                 data_streams=data_streams,
             )
             strava_etl_interface.load_json_into_bq()
@@ -87,13 +89,15 @@ class Startup:
             raise ValueError(f"Unsupported data source: {data_source}")
 
     @beartype
-    def silver_etl(self, uid: str, data_source: str, athlete_id: int) -> None:
+    def silver_etl(self, uid: str, data_source: str) -> None:
         """Entry point for loading data from bronze to silver."""
         self._startUp(uid)
+        user_data = self.firebase.read_user().get().to_dict()
 
         if data_source == FitnessLLMDataSource.STRAVA.value:
+            strava_user_data = user_data.get(f"stream={data_source.lower()}")
             strava_etl_interface = SilverStravaETLInterface(
-                athlete_id=str(athlete_id),
+                athlete_id=str(strava_user_data['athleteId']),
             )
             strava_etl_interface.task_handler()
 

@@ -1,12 +1,12 @@
-import json
-import sys
-import os
-from unittest.mock import MagicMock, patch
-from flask import Request
-from google.cloud import firestore
 import base64
+import json
+import os
+import sys
+from unittest.mock import MagicMock, patch
 
 import pytest
+from flask import Request
+from google.cloud import firestore
 
 # Add the parent directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
@@ -16,10 +16,7 @@ from cloud_functions.token_refresh.main import refresh_token
 def create_test_request(user_id: str, data_source: str = "strava") -> Request:
     """Create a test Flask request object."""
     mock_request = MagicMock(spec=Request)
-    mock_request.args = {
-        "uid": user_id,
-        "data_source": data_source
-    }
+    mock_request.args = {"uid": user_id, "data_source": data_source}
     return mock_request
 
 
@@ -58,7 +55,7 @@ def mock_env():
     return {
         "ENCRYPTION_SECRET": "test_secret",
         "PROJECT_ID": "test-project-id",
-        "STRAVA_SECRET": "test_strava_secret"
+        "STRAVA_SECRET": "test_strava_secret",
     }
 
 
@@ -76,14 +73,24 @@ def mock_secret_manager():
 def mock_encrypted_token():
     """Fixture for encrypted token in the correct format."""
     # Create a 16-byte IV (required for AES-256-CBC)
-    iv = base64.b64encode(b"0123456789abcdef").decode('utf-8')
+    iv = base64.b64encode(b"0123456789abcdef").decode("utf-8")
     # Create encrypted data that is a multiple of 16 bytes (AES block size)
-    encrypted_data = base64.b64encode(b"test_encrypted_data_padded_to_16_bytes").decode('utf-8')
+    encrypted_data = base64.b64encode(b"test_encrypted_data_padded_to_16_bytes").decode(
+        "utf-8"
+    )
     return f"{iv}:{encrypted_data}"
 
 
 @pytest.mark.cloud_function
-def test_refresh_token_success(mock_strava_response, mock_strava_secret, mock_encryption_secret, mock_firestore_client, mock_env, mock_secret_manager, mock_encrypted_token):
+def test_refresh_token_success(
+    mock_strava_response,
+    mock_strava_secret,
+    mock_encryption_secret,
+    mock_firestore_client,
+    mock_env,
+    mock_secret_manager,
+    mock_encrypted_token,
+):
     """Test successful token refresh."""
     # Create test request
     test_request = create_test_request("test_user_123")
@@ -92,9 +99,7 @@ def test_refresh_token_success(mock_strava_response, mock_strava_secret, mock_en
     mock_doc = MagicMock()
     mock_doc.exists = True
     mock_doc.to_dict.return_value = {
-        "stream=strava": {
-            "refreshToken": mock_encrypted_token
-        }
+        "stream=strava": {"refreshToken": mock_encrypted_token}
     }
 
     mock_ref = MagicMock()
@@ -111,15 +116,29 @@ def test_refresh_token_success(mock_strava_response, mock_strava_secret, mock_en
         return {}
 
     # Mock decrypt_token first to ensure it's mocked before any other operations
-    with patch("cloud_functions.token_refresh.streams.strava.decrypt_token", return_value="decrypted_refresh_token"), \
-         patch("cloud_functions.token_refresh.main.firestore.Client", return_value=mock_firestore_client), \
-         patch("cloud_functions.token_refresh.streams.strava.Client", autospec=True) as mock_client_class, \
-         patch("cloud_functions.token_refresh.utils.cloud_utils.get_secret", side_effect=get_secret_side_effect), \
-         patch.dict(os.environ, mock_env), \
-         patch("cloud_functions.token_refresh.utils.cloud_utils.secretmanager.SecretManagerServiceClient", return_value=mock_secret_manager), \
-         patch("cloud_functions.token_refresh.streams.strava.get_secret", side_effect=get_secret_side_effect), \
-         patch("cloud_functions.token_refresh.streams.strava.encrypt_token", side_effect=lambda token, _: f"encrypted_{token}"):
-        
+    with patch(
+        "cloud_functions.token_refresh.streams.strava.decrypt_token",
+        return_value="decrypted_refresh_token",
+    ), patch(
+        "cloud_functions.token_refresh.main.firestore.Client",
+        return_value=mock_firestore_client,
+    ), patch(
+        "cloud_functions.token_refresh.streams.strava.Client", autospec=True
+    ) as mock_client_class, patch(
+        "cloud_functions.token_refresh.utils.cloud_utils.get_secret",
+        side_effect=get_secret_side_effect,
+    ), patch.dict(
+        os.environ, mock_env
+    ), patch(
+        "cloud_functions.token_refresh.utils.cloud_utils.secretmanager.SecretManagerServiceClient",
+        return_value=mock_secret_manager,
+    ), patch(
+        "cloud_functions.token_refresh.streams.strava.get_secret",
+        side_effect=get_secret_side_effect,
+    ), patch(
+        "cloud_functions.token_refresh.streams.strava.encrypt_token",
+        side_effect=lambda token, _: f"encrypted_{token}",
+    ):
         # Set up the mock client instance
         mock_client_instance = mock_client_class.return_value
         mock_client_instance.refresh_access_token.return_value = mock_strava_response
@@ -144,14 +163,24 @@ def test_refresh_token_success(mock_strava_response, mock_strava_secret, mock_en
 
 
 @pytest.mark.cloud_function
-def test_refresh_token_user_not_found(mock_strava_response, mock_firestore_client, mock_env, mock_secret_manager, mock_strava_secret, mock_encryption_secret, mock_encrypted_token):
+def test_refresh_token_user_not_found(
+    mock_strava_response,
+    mock_firestore_client,
+    mock_env,
+    mock_secret_manager,
+    mock_strava_secret,
+    mock_encryption_secret,
+    mock_encrypted_token,
+):
     """Test when user is not found."""
     test_request = create_test_request("nonexistent_user")
 
     # Mock Firestore client and document
     mock_doc = MagicMock()
     mock_doc.exists = False
-    mock_doc.to_dict.return_value = None  # Document doesn't exist, so to_dict returns None
+    mock_doc.to_dict.return_value = (
+        None  # Document doesn't exist, so to_dict returns None
+    )
 
     mock_ref = MagicMock()
     mock_ref.get.return_value = mock_doc
@@ -167,15 +196,29 @@ def test_refresh_token_user_not_found(mock_strava_response, mock_firestore_clien
         return {}
 
     # Mock decrypt_token first to ensure it's mocked before any other operations
-    with patch("cloud_functions.token_refresh.streams.strava.decrypt_token", return_value="decrypted_refresh_token"), \
-         patch("cloud_functions.token_refresh.main.firestore.Client", return_value=mock_firestore_client), \
-         patch("cloud_functions.token_refresh.streams.strava.Client", autospec=True) as mock_client_class, \
-         patch("cloud_functions.token_refresh.utils.cloud_utils.get_secret", side_effect=get_secret_side_effect), \
-         patch.dict(os.environ, mock_env), \
-         patch("cloud_functions.token_refresh.utils.cloud_utils.secretmanager.SecretManagerServiceClient", return_value=mock_secret_manager), \
-         patch("cloud_functions.token_refresh.streams.strava.get_secret", side_effect=get_secret_side_effect), \
-         patch("cloud_functions.token_refresh.streams.strava.encrypt_token", side_effect=lambda token, _: f"encrypted_{token}"):
-        
+    with patch(
+        "cloud_functions.token_refresh.streams.strava.decrypt_token",
+        return_value="decrypted_refresh_token",
+    ), patch(
+        "cloud_functions.token_refresh.main.firestore.Client",
+        return_value=mock_firestore_client,
+    ), patch(
+        "cloud_functions.token_refresh.streams.strava.Client", autospec=True
+    ) as mock_client_class, patch(
+        "cloud_functions.token_refresh.utils.cloud_utils.get_secret",
+        side_effect=get_secret_side_effect,
+    ), patch.dict(
+        os.environ, mock_env
+    ), patch(
+        "cloud_functions.token_refresh.utils.cloud_utils.secretmanager.SecretManagerServiceClient",
+        return_value=mock_secret_manager,
+    ), patch(
+        "cloud_functions.token_refresh.streams.strava.get_secret",
+        side_effect=get_secret_side_effect,
+    ), patch(
+        "cloud_functions.token_refresh.streams.strava.encrypt_token",
+        side_effect=lambda token, _: f"encrypted_{token}",
+    ):
         # Set up the mock client instance
         mock_client_instance = mock_client_class.return_value
         mock_client_instance.refresh_access_token.return_value = mock_strava_response
@@ -192,7 +235,14 @@ def test_refresh_token_user_not_found(mock_strava_response, mock_firestore_clien
 
 
 @pytest.mark.cloud_function
-def test_refresh_token_missing_credentials(mock_strava_response, mock_firestore_client, mock_encryption_secret, mock_env, mock_secret_manager, mock_encrypted_token):
+def test_refresh_token_missing_credentials(
+    mock_strava_response,
+    mock_firestore_client,
+    mock_encryption_secret,
+    mock_env,
+    mock_secret_manager,
+    mock_encrypted_token,
+):
     """Test when Strava credentials are missing."""
     test_request = create_test_request("test_user_123")
 
@@ -200,9 +250,7 @@ def test_refresh_token_missing_credentials(mock_strava_response, mock_firestore_
     mock_doc = MagicMock()
     mock_doc.exists = True
     mock_doc.to_dict.return_value = {
-        "stream=strava": {
-            "refreshToken": mock_encrypted_token
-        }
+        "stream=strava": {"refreshToken": mock_encrypted_token}
     }
 
     mock_ref = MagicMock()
@@ -219,15 +267,29 @@ def test_refresh_token_missing_credentials(mock_strava_response, mock_firestore_
         return {}
 
     # Mock decrypt_token first to ensure it's mocked before any other operations
-    with patch("cloud_functions.token_refresh.streams.strava.decrypt_token", return_value="decrypted_refresh_token"), \
-         patch("cloud_functions.token_refresh.main.firestore.Client", return_value=mock_firestore_client), \
-         patch("cloud_functions.token_refresh.streams.strava.Client", autospec=True) as mock_client_class, \
-         patch("cloud_functions.token_refresh.utils.cloud_utils.get_secret", side_effect=get_secret_side_effect), \
-         patch.dict(os.environ, mock_env), \
-         patch("cloud_functions.token_refresh.utils.cloud_utils.secretmanager.SecretManagerServiceClient", return_value=mock_secret_manager), \
-         patch("cloud_functions.token_refresh.streams.strava.get_secret", side_effect=get_secret_side_effect), \
-         patch("cloud_functions.token_refresh.streams.strava.encrypt_token", side_effect=lambda token, _: f"encrypted_{token}"):
-        
+    with patch(
+        "cloud_functions.token_refresh.streams.strava.decrypt_token",
+        return_value="decrypted_refresh_token",
+    ), patch(
+        "cloud_functions.token_refresh.main.firestore.Client",
+        return_value=mock_firestore_client,
+    ), patch(
+        "cloud_functions.token_refresh.streams.strava.Client", autospec=True
+    ) as mock_client_class, patch(
+        "cloud_functions.token_refresh.utils.cloud_utils.get_secret",
+        side_effect=get_secret_side_effect,
+    ), patch.dict(
+        os.environ, mock_env
+    ), patch(
+        "cloud_functions.token_refresh.utils.cloud_utils.secretmanager.SecretManagerServiceClient",
+        return_value=mock_secret_manager,
+    ), patch(
+        "cloud_functions.token_refresh.streams.strava.get_secret",
+        side_effect=get_secret_side_effect,
+    ), patch(
+        "cloud_functions.token_refresh.streams.strava.encrypt_token",
+        side_effect=lambda token, _: f"encrypted_{token}",
+    ):
         # Set up the mock client instance
         mock_client_instance = mock_client_class.return_value
         mock_client_instance.refresh_access_token.return_value = mock_strava_response

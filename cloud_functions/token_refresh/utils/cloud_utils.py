@@ -4,6 +4,7 @@ from os import environ
 
 from beartype import beartype
 from google.cloud import secretmanager
+
 from .logger_utils import logger
 
 

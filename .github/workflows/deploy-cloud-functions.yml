@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - '*FIT-**'
     paths:
       - 'cloud_functions/**'
       - '.github/workflows/deploy-cloud-functions.yml'

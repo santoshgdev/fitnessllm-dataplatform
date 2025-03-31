@@ -1,8 +1,8 @@
 import json
 import pytest
 from unittest.mock import patch, MagicMock
-from main import refresh_token
-
+from .main import refresh_token
+from .secrets import get_secret
 
 def create_test_event(user_id: str) -> dict:
     """Create a test Cloud Event."""

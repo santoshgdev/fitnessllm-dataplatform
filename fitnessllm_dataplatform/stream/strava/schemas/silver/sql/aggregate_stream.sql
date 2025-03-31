@@ -34,4 +34,3 @@ where t.athlete_id = '{{ athlete_id }}'
 {% if activity_id %}
 and t.activity_id = '{{ activity_id }}'
 {% endif %}
-

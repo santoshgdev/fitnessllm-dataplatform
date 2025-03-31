@@ -1,5 +1,4 @@
 """Main entry point for the data platform."""
-import json
 from functools import partial
 from os import environ
 
@@ -15,7 +14,9 @@ from fitnessllm_dataplatform.stream.strava.services.api_interface import (
 from fitnessllm_dataplatform.stream.strava.services.bronze_etl_interface import (
     BronzeStravaETLInterface,
 )
-from fitnessllm_dataplatform.stream.strava.services.silver_etl_interface import SilverStravaETLInterface
+from fitnessllm_dataplatform.stream.strava.services.silver_etl_interface import (
+    SilverStravaETLInterface,
+)
 from fitnessllm_dataplatform.utils.cloud_utils import get_secret
 from fitnessllm_dataplatform.utils.logging_utils import logger
 from fitnessllm_dataplatform.utils.task_utils import decrypt_token
@@ -32,7 +33,9 @@ class Startup:
             get_secret(environ["INFRASTRUCTURE_SECRET"])[environ["STAGE"]],
         )
         self.firebase = FirebaseConnect(uid)
-        self.decryptor = partial(decrypt_token, key=get_secret(environ["ENCRYPTION_SECRET"])['token'])
+        self.decryptor = partial(
+            decrypt_token, key=get_secret(environ["ENCRYPTION_SECRET"])["token"]
+        )
 
     def __init__(self) -> None:
         """Initializes the data platform."""
@@ -61,9 +64,13 @@ class Startup:
             if strava_user_data is None:
                 raise ValueError(f"User {uid} has no {data_source} data")
 
-            strava_api_interface = StravaAPIInterface(infrastructure_names=self.InfrastructureNames,
-                                                      access_token=self.decryptor(encrypted_token=strava_user_data['accessToken']),
-                                                      firebase=self.firebase)
+            strava_api_interface = StravaAPIInterface(
+                infrastructure_names=self.InfrastructureNames,
+                access_token=self.decryptor(
+                    encrypted_token=strava_user_data["accessToken"]
+                ),
+                firebase=self.firebase,
+            )
             try:
                 strava_api_interface.get_all_activities()
             except Exception as e:
@@ -90,7 +97,7 @@ class Startup:
             strava_user_data = user_data.get(f"stream={data_source.lower()}")
             strava_etl_interface = BronzeStravaETLInterface(
                 infrastructure_names=self.InfrastructureNames,
-                athlete_id=str(strava_user_data['athleteId']),
+                athlete_id=str(strava_user_data["athleteId"]),
                 data_streams=data_streams,
             )
             strava_etl_interface.load_json_into_bq()
@@ -114,7 +121,7 @@ class Startup:
         if data_source == FitnessLLMDataSource.STRAVA.value:
             strava_user_data = user_data.get(f"stream={data_source.lower()}")
             strava_etl_interface = SilverStravaETLInterface(
-                athlete_id=str(strava_user_data['athleteId']),
+                athlete_id=str(strava_user_data["athleteId"]),
             )
             strava_etl_interface.task_handler()
         else:

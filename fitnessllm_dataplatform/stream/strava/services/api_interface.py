@@ -15,10 +15,7 @@ from fitnessllm_dataplatform.infrastructure.FirebaseConnect import FirebaseConne
 from fitnessllm_dataplatform.infrastructure.RedisConnect import RedisConnect
 from fitnessllm_dataplatform.services.api_interface import APIInterface
 from fitnessllm_dataplatform.stream.strava.cloud_utils import get_strava_storage_path
-from fitnessllm_dataplatform.stream.strava.entities.enums import (
-    StravaKeys,
-    StravaStreams,
-)
+from fitnessllm_dataplatform.stream.strava.entities.enums import StravaStreams
 from fitnessllm_dataplatform.stream.strava.entities.queries import (
     create_get_latest_activity_date_query,
 )
@@ -35,22 +32,27 @@ class StravaAPIInterface(APIInterface):
     partial_get_strava_storage: partial
 
     # @beartype
-    def __init__(self, infrastructure_names: EnumType, access_token: str, firebase: FirebaseConnect = None):
+    def __init__(
+        self,
+        infrastructure_names: EnumType,
+        access_token: str,
+        firebase: FirebaseConnect,
+    ):
         """Initializes Strava API Interface."""
         super().__init__()
         self.strava_client = None
         self.data_source = FitnessLLMDataSource.STRAVA
         self.ENV = environ.get("ENV", "dev")
-        self.firebase = firebase or FirebaseConnect()
+        self.firebase = firebase
         strava_secret_token = get_secret(environ["STRAVA_SECRET"])
         self.write_strava_var_to_env(
-            client_id=int(strava_secret_token["client_id"]), client_secret=strava_secret_token["client_secret"]
+            client_id=int(strava_secret_token["client_id"]),
+            client_secret=strava_secret_token["client_secret"],
         )
         self.set_strava_client(access_token)
         self.InfrastructureNames = infrastructure_names
         self.athlete_id = self.get_athlete_summary()
         self.bq_client = bigquery.Client()
-
 
     @staticmethod
     def write_strava_var_to_env(client_id: int, client_secret: str) -> None:
@@ -59,16 +61,13 @@ class StravaAPIInterface(APIInterface):
         environ["STRAVA_CLIENT_ID"] = str(client_id)
         environ["STRAVA_CLIENT_SECRET"] = client_secret
 
-
     @beartype
     def set_strava_client(self, access_token: str) -> None:
         """Instantiate strava client."""
         if not access_token:
             logger.warning("Strava access token not found in redis")
             return None
-        self.strava_client = Client(
-            access_token=access_token
-        )
+        self.strava_client = Client(access_token=access_token)
         logger.info("Set strava access token")
 
     @beartype

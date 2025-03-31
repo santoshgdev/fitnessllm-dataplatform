@@ -1,25 +1,28 @@
+"""Common query utilities."""
 from pathlib import Path
-from jinja2 import Template
-from sqlglot import parse_one, exp
-from beartype import beartype
 
+from beartype import beartype
+from jinja2 import Template
+from sqlglot import exp, parse_one
+
+
+# TODO: These delete functions can be refactored to be just one function; this is too noisy.
 @beartype
-def get_delete_user_data_query(target_table: str,
-                               athlete_id: str) -> str:
+def get_delete_user_data_query(target_table: str, athlete_id: str) -> str:
     """Returns a query to delete data for a specific user."""
     return f"DELETE FROM {target_table} WHERE athlete_id = '{athlete_id}'"
 
+
 @beartype
-def get_delete_query(target_table: str,
-                     parameters: dict[str, str]) -> str:
-    return f"{get_delete_user_data_query(target_table=target_table,
-                                athlete_id=parameters['athlete_id'])};"
+def get_delete_query(target_table: str, parameters: dict[str, str]) -> str:
+    """Returns a query to delete data for a specific user."""
+    return f"{get_delete_user_data_query(target_table=target_table, athlete_id=parameters['athlete_id'])};"
 
 
 @beartype
-def get_insert_query(target_table: str,
-                                 query_path: Path,
-                                 parameters: dict[str, str]) -> str:
+def get_insert_query(
+    target_table: str, query_path: Path, parameters: dict[str, str]
+) -> str:
     """Returns a partitioned insert query with the given parameters.
 
     Args:
@@ -30,12 +33,11 @@ def get_insert_query(target_table: str,
     Returns:
         Atomic query string
     """
-    return f"""      
+    return f"""
         INSERT INTO {target_table}
         {get_parameterized_query(query_path=query_path,
                                  parameters=parameters)};
     """
-
 
 
 def get_parameterized_query(

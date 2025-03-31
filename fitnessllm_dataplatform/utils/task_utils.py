@@ -5,9 +5,10 @@ import os
 from datetime import datetime
 from enum import Enum
 from json.decoder import JSONDecodeError
+
 from beartype import beartype
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from google.cloud import bigquery
 
 from fitnessllm_dataplatform.entities.enums import (
@@ -97,10 +98,10 @@ def load_schema_from_json(
         for field in schema_json
     ]
 
+
 @beartype
 def decrypt_token(encrypted_token: str, key: str) -> str:
-    """
-    Decrypt a token that was encrypted using AES-256-CBC in JavaScript.
+    """Decrypt a token that was encrypted using AES-256-CBC in JavaScript.
 
     Args:
         encrypted_token (str): The encrypted token in format "iv:encrypted"
@@ -120,23 +121,19 @@ def decrypt_token(encrypted_token: str, key: str) -> str:
 
     # Prepare the key (ensure its bytes)
     if isinstance(key, str):
-        key_bytes = key.encode('utf-8')
+        key_bytes = key.encode("utf-8")
     else:
         key_bytes = key
 
     # For AES-256-CBC, the key must be 32 bytes
     if len(key_bytes) != 32:
         if len(key_bytes) < 32:
-            key_bytes = key_bytes.ljust(32, b'\0')  # Pad with zeros
+            key_bytes = key_bytes.ljust(32, b"\0")  # Pad with zeros
         else:
             key_bytes = key_bytes[:32]  # Truncate
 
     # Create decipher
-    cipher = Cipher(
-        algorithms.AES(key_bytes),
-        modes.CBC(iv),
-        backend=default_backend()
-    )
+    cipher = Cipher(algorithms.AES(key_bytes), modes.CBC(iv), backend=default_backend())
     decryptor = cipher.decryptor()
 
     # Decrypt
@@ -148,4 +145,4 @@ def decrypt_token(encrypted_token: str, key: str) -> str:
         decrypted_data = decrypted_data[:-padding_length]
 
     # Return as string
-    return decrypted_data.decode('utf-8')
+    return decrypted_data.decode("utf-8")

@@ -28,4 +28,5 @@ class FirebaseConnect:
         pass
 
     def read_user(self):
+        """Read user from Firebase."""
         return self.interface.collection("users").document(self.uid)

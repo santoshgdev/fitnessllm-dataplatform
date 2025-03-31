@@ -1,17 +1,13 @@
+"""Module for Strava Silver ETL interface."""
 import os
 import pathlib
 
-from google.cloud import bigquery
 from tqdm import tqdm
 
 from fitnessllm_dataplatform.entities.enums import FitnessLLMDataSource
 from fitnessllm_dataplatform.services.etl_interface import ETLInterface
 from fitnessllm_dataplatform.utils.logging_utils import logger
-
-from fitnessllm_dataplatform.utils.query_utils import (
-    get_delete_query,
-    get_insert_query,
-)
+from fitnessllm_dataplatform.utils.query_utils import get_delete_query, get_insert_query
 
 
 class SilverStravaETLInterface(ETLInterface):

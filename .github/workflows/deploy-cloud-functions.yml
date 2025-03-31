@@ -57,7 +57,6 @@ jobs:
         gcloud functions deploy refresh_token \
           --runtime python39 \
           --trigger-topic token-refresh \
-          --region ${{ env.REGION }} \
           --source ./cloud_functions/token_refresh \
           --entry-point refresh_token \
           --allow-unauthenticated \

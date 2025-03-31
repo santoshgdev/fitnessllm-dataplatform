@@ -73,7 +73,16 @@ class Startup:
     def bronze_etl(
         self, uid: str, data_source: str, data_streams: list[str] | None = None
     ) -> None:
-        """Entry point for loading JSONs into bronze layer."""
+        """Entry point for loading JSONs into bronze layer.
+
+        Args:
+            uid: Uid for user found in firebase.
+            data_source: Data source to download from (e.g. Strava).
+            data_streams: List of data streams to load.
+
+        Raises:
+            KeyError: If required data_source is not supported.
+        """
         self._startUp(uid)
         user_data = self.firebase.read_user().get().to_dict()
 
@@ -90,7 +99,15 @@ class Startup:
 
     @beartype
     def silver_etl(self, uid: str, data_source: str) -> None:
-        """Entry point for loading data from bronze to silver."""
+        """Entry point for loading data from bronze to silver.
+
+        Args:
+            uid: Uid for user found in firebase.
+            data_source: Data source to download from (e.g. Strava)
+
+        Raises:
+            KeyError: If required data_source is not supported.
+        """
         self._startUp(uid)
         user_data = self.firebase.read_user().get().to_dict()
 
@@ -100,6 +117,8 @@ class Startup:
                 athlete_id=str(strava_user_data['athleteId']),
             )
             strava_etl_interface.task_handler()
+        else:
+            raise ValueError(f"Unsupported data source: {data_source}")
 
 
 if __name__ == "__main__":

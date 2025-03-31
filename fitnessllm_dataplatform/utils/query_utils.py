@@ -1,21 +1,22 @@
 from pathlib import Path
 from jinja2 import Template
 from sqlglot import parse_one, exp
+from beartype import beartype
 
-
+@beartype
 def get_delete_user_data_query(target_table: str,
                                athlete_id: str) -> str:
     """Returns a query to delete data for a specific user."""
     return f"DELETE FROM {target_table} WHERE athlete_id = '{athlete_id}'"
 
-
+@beartype
 def get_delete_query(target_table: str,
                      parameters: dict[str, str]) -> str:
     return f"{get_delete_user_data_query(target_table=target_table,
                                 athlete_id=parameters['athlete_id'])};"
 
 
-
+@beartype
 def get_insert_query(target_table: str,
                                  query_path: Path,
                                  parameters: dict[str, str]) -> str:

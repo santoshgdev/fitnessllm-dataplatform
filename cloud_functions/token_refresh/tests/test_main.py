@@ -1,10 +1,13 @@
 import json
+import sys
+import os
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 # Add the parent directory to the Python path
-from ..main import refresh_token
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+from cloud_functions.token_refresh.main import refresh_token
 
 
 def create_test_event(user_id: str) -> dict:
@@ -47,9 +50,9 @@ def test_refresh_token_success(mock_strava_response, mock_strava_secret):
     mock_db = MagicMock()
     mock_db.collection.return_value.document.return_value = mock_ref
 
-    with patch("main.firestore.Client", return_value=mock_db), patch(
-        "strava.Client.refresh_access_token", return_value=mock_strava_response
-    ), patch("secrets.get_secret", return_value=mock_strava_secret):
+    with patch("cloud_functions.token_refresh.main.firestore.Client", return_value=mock_db), patch(
+        "cloud_functions.token_refresh.streams.strava.Client.refresh_access_token", return_value=mock_strava_response
+    ), patch("cloud_functions.token_refresh.utils.cloud_utils.get_secret", return_value=mock_strava_secret):
         # Call the function
         result = refresh_token(test_event)
 
@@ -84,7 +87,7 @@ def test_refresh_token_user_not_found():
     mock_db = MagicMock()
     mock_db.collection.return_value.document.return_value = mock_ref
 
-    with patch("main.firestore.Client", return_value=mock_db):
+    with patch("cloud_functions.token_refresh.main.firestore.Client", return_value=mock_db):
         # Verify it raises the correct error
         with pytest.raises(ValueError) as exc_info:
             refresh_token(test_event)
@@ -108,8 +111,8 @@ def test_refresh_token_missing_credentials():
     mock_db.collection.return_value.document.return_value = mock_ref
 
     # Mock empty secret
-    with patch("main.firestore.Client", return_value=mock_db), patch(
-        "secrets.get_secret", return_value={}
+    with patch("cloud_functions.token_refresh.main.firestore.Client", return_value=mock_db), patch(
+        "cloud_functions.token_refresh.utils.cloud_utils.get_secret", return_value={}
     ):
         # Verify it raises the correct error
         with pytest.raises(ValueError) as exc_info:

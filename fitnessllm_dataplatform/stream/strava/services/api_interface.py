@@ -46,8 +46,13 @@ class StravaAPIInterface(APIInterface):
         self.firebase = firebase
         strava_secret_token = get_secret(environ["STRAVA_SECRET"])
 
-        if not strava_secret_token["client_id"] or not strava_secret_token["client_secret"]:
-            raise Exception("Client ID or Secret Token missing") # TODO: Perhaps implement a separate exception type?
+        if (
+            not strava_secret_token["client_id"]
+            or not strava_secret_token["client_secret"]
+        ):
+            raise Exception(
+                "Client ID or Secret Token missing"
+            )  # TODO: Perhaps implement a separate exception type?
 
         self.write_strava_var_to_env(
             client_id=int(strava_secret_token["client_id"]),

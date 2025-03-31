@@ -61,6 +61,7 @@ jobs:
           --source ./cloud_functions/token_refresh \
           --entry-point refresh_token \
           --allow-unauthenticated \
+          --region ${{ env.REGION }} \
           --memory 128MB \
           --timeout 60s \
           --min-instances 0 \

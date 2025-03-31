@@ -60,5 +60,5 @@ class SilverStravaETLInterface(ETLInterface):
                 )
                 continue
             logger.debug(
-                f"Query {insert_query} successfully inserted {delete_job.num_dml_affected_rows} rows."
+                f"Query {insert_query} successfully inserted {insert_job.num_dml_affected_rows} rows."
             )

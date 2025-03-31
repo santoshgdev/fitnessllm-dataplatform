@@ -2,8 +2,8 @@
 
 import functions_framework
 from google.cloud import firestore
-from streams.strava import refresh_oauth_token
-from utils.logger_utils import logger
+from .streams.strava import refresh_oauth_token
+from .utils.logger_utils import logger
 
 
 @functions_framework.http

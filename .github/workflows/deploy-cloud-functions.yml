@@ -6,24 +6,18 @@ on:
       - main
     paths:
       - 'cloud_functions/**'
-      - 'task_handler.py'
-      - 'Dockerfile'
       - '.github/workflows/deploy-cloud-functions.yml'
       - 'cloudbuild.yaml'
-      - 'requirements.txt'
   pull_request:
     branches:
       - main
     paths:
       - 'cloud_functions/**'
-      - 'task_handler.py'
-      - 'Dockerfile'
       - '.github/workflows/deploy-cloud-functions.yml'
       - 'cloudbuild.yaml'
-      - 'requirements.txt'
 
 env:
-  PROJECT_ID: your-project-id  # Replace with your GCP project ID
+  PROJECT_ID: ${{ secrets.PROJECT_ID }}
 
 jobs:
   test:
@@ -59,12 +53,12 @@ jobs:
       - id: auth
         uses: google-github-actions/auth@v1
         with:
-          workload_identity_provider: projects/${{ env.PROJECT_ID }}/locations/global/workloadIdentityPools/github-actions/providers/github-actions
+          workload_identity_provider: projects/${{ secrets.PROJECT_ID }}/locations/global/workloadIdentityPools/github-actions/providers/github-actions
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
 
       - name: Submit to Cloud Build
         run: |
-          gcloud config set project ${{ env.PROJECT_ID }}
+          gcloud config set project ${{ secrets.PROJECT_ID }}
           gcloud builds submit --config cloudbuild.yaml

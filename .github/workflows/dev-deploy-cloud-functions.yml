@@ -72,4 +72,4 @@ jobs:
 
     - name: Upload function zip to GCS
       run: |
-        gsutil cp tokenrefresh.zip "gs://${{ secrets.GCS_CF_BUCKET }}/${{ env.ENVIRONMENT }}/tokenrefresh/tokenrefresh.zip"
+        gsutil cp cloud_functions/token_refresh/tokenrefresh.zip "gs://${{ secrets.GCS_CF_BUCKET }}/${{ env.ENVIRONMENT }}/tokenrefresh/tokenrefresh.zip"

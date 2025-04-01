@@ -31,3 +31,6 @@ lint:
 
 repomix:
 	repomix --include "**/*.json,**/*.sql,**/*.py,**/Dockerfile,**/*.yml,**/*.ini,**/*.md,**/*.toml"
+
+cf_token_refresh:
+	cd cloud_functions && functions-framework --target refresh_token --port 8080

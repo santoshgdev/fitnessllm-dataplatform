@@ -2,7 +2,7 @@
 import os
 import time
 from os import environ
-from typing import Any, Dict
+from beartype.typing import Any, Dict
 
 from beartype import beartype
 from google.cloud import firestore

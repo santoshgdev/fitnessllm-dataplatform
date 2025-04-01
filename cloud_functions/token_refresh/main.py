@@ -15,6 +15,7 @@ ALLOWED_ORIGINS = [
     'https://fitnessllm.app',  # Production domain
     'https://www.fitnessllm.app',  # Production domain with www
     'http://localhost:3000',  # Local development
+    'http://localhost:8081', # Local development
     'https://dev.fitnessllm.app',  # Development domain
 ]
 

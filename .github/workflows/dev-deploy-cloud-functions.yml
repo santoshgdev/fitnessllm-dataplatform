@@ -68,7 +68,6 @@ jobs:
 
     - name: Create function source zip
       run: |
-        cd cloud_functions/token_refresh
         zip -r cloud_functions/token_refresh/tokenrefresh.zip cloud_functions/token_refresh/
 
     - name: Upload function zip to GCS

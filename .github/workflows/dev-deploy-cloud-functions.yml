@@ -7,7 +7,7 @@ on:
       - '*FIT-**'
     paths:
       - 'cloud_functions/**'
-      - '.github/workflows/deploy-cloud-functions.yml'
+      - '.github/workflows/*-deploy-cloud-functions.yml'
 
 env:
   PROJECT_ID: ${{ secrets.PROJECT_ID }}

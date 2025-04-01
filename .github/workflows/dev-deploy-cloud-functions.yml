@@ -14,6 +14,8 @@ env:
   REGION: us-west1
   STRAVA_SECRET: ${{ secrets.STRAVA_SECRET }}
   ENCRYPTION_SECRET: ${{ secrets.ENCRYPTION_SECRET }}
+  GCS_CF_BUCKET: ${{ secrets.GCS_CF_BUCKET }}
+  ENVIRONMENT: dev
 
 jobs:
   test:
@@ -32,11 +34,11 @@ jobs:
         pip install -r cloud_functions/requirements.txt
         pip install pytest pytest-mock
 
-    - name: Run tests
+    - name: token refresh tests
       run: |
         pytest cloud_functions/token_refresh/tests/
 
-  deploy:
+  tokenrefresh:
     needs: test
     runs-on: ubuntu-latest
     steps:
@@ -57,16 +59,11 @@ jobs:
       run: |
         gcloud pubsub topics create token-refresh || true
 
-    - name: Deploy Token Refresh Function
+    - name: Create function source zip
       run: |
-        gcloud functions deploy refresh_token \
-          --runtime python39 \
-          --trigger-topic token-refresh \
-          --source ./cloud_functions/token_refresh \
-          --entry-point refresh_token \
-          --region ${{ env.REGION }} \
-          --memory 128Mi \
-          --timeout 60s \
-          --min-instances 0 \
-          --max-instances 10 \
-          --set-env-vars "PROJECT_ID=${{ env.PROJECT_ID }},ENCRYPTION_SECRET=${{ env.ENCRYPTION_SECRET }},STRAVA_SECRET=${{ env.STRAVA_SECRET }}"  # pragma: allowlist secret
+        cd cloud_functions/token_refresh
+        zip -r ../tokenrefresh.zip .
+
+    - name: Upload function zip to GCS
+      run: |
+        gsutil cp tokenrefresh.zip gs://${{ env.GCS_CFBUCKET }}/${{ env.ENVIRONMENT }}/tokenrefresh/tokenrefresh.zip

@@ -38,8 +38,20 @@ jobs:
   tokenrefresh:
     needs: test
     runs-on: ubuntu-latest
+    env:
+      GCS_BUCKET: ${{ secrets.GCS_CF_BUCKET }}
     steps:
     - uses: actions/checkout@v4
+
+    - name: Debug environment
+      run: |
+        echo "Checking if GCS_BUCKET is set:"
+        if [ -n "$GCS_BUCKET" ]; then
+          echo "GCS_BUCKET is set"
+          echo "First few characters: ${GCS_BUCKET:0:4}..."
+        else
+          echo "GCS_BUCKET is empty"
+        fi
 
     - name: Authenticate to Google Cloud
       uses: google-github-actions/auth@v2
@@ -62,7 +74,5 @@ jobs:
         zip -r ../tokenrefresh.zip .
 
     - name: Upload function zip to GCS
-      env:
-        GCS_BUCKET: ${{ secrets.GCS_CF_BUCKET }}
       run: |
         gsutil cp tokenrefresh.zip "gs://${GCS_BUCKET}/${{ env.ENVIRONMENT }}/tokenrefresh/tokenrefresh.zip"

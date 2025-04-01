@@ -12,8 +12,6 @@ on:
 env:
   PROJECT_ID: ${{ secrets.PROJECT_ID }}
   REGION: us-west1
-  STRAVA_SECRET: ${{ secrets.STRAVA_SECRET }}
-  ENCRYPTION_SECRET: ${{ secrets.ENCRYPTION_SECRET }}
   ENVIRONMENT: dev
 
 jobs:
@@ -78,5 +76,7 @@ jobs:
         echo "gsutil cp tokenrefresh.zip \"gs://${{ secrets.GCS_CF_BUCKET }}/${{ env.ENVIRONMENT }}/tokenrefresh/tokenrefresh.zip\""
 
     - name: Upload function zip to GCS
+      env:
+        GCS_BUCKET: ${{ secrets.GCS_CF_BUCKET }}
       run: |
-        gsutil cp tokenrefresh.zip "gs://${{ secrets.GCS_CF_BUCKET }}/${{ env.ENVIRONMENT }}/tokenrefresh/tokenrefresh.zip"
+        gsutil cp tokenrefresh.zip "gs://${GCS_BUCKET}/${{ env.ENVIRONMENT }}/tokenrefresh/tokenrefresh.zip"

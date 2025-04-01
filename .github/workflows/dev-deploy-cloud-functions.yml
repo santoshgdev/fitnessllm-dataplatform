@@ -68,8 +68,10 @@ jobs:
 
     - name: Create function source zip
       run: |
-        zip -r cloud_functions/token_refresh/tokenrefresh.zip cloud_functions/token_refresh/
+        cd cloud_functions/token_refresh
+        zip -r tokenrefresh.zip .
 
     - name: Upload function zip to GCS
       run: |
-        gsutil cp cloud_functions/token_refresh/tokenrefresh.zip "gs://${{ secrets.GCS_CF_BUCKET }}/${{ env.ENVIRONMENT }}/tokenrefresh/tokenrefresh.zip"
+        cd cloud_functions/token_refresh
+        gsutil cp tokenrefresh.zip "gs://${{ secrets.GCS_CF_BUCKET }}/${{ env.ENVIRONMENT }}/tokenrefresh/tokenrefresh.zip"

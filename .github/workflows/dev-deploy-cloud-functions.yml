@@ -64,6 +64,10 @@ jobs:
         cd cloud_functions/token_refresh
         zip -r ../tokenrefresh.zip .
 
+    - name: Debug - Print bucket name
+      run: |
+        echo "GCS_CF_BUCKET value: $GCS_CF_BUCKET"
+
     - name: Upload function zip to GCS
       run: |
-        gsutil cp tokenrefresh.zip "gs://${{ env.GCS_CF_BUCKET}}/${{ env.ENVIRONMENT }}/tokenrefresh/tokenrefresh.zip"
+        gsutil cp tokenrefresh.zip "gs://${GCS_CF_BUCKET}/${{ env.ENVIRONMENT }}/tokenrefresh/tokenrefresh.zip"

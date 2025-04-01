@@ -63,6 +63,20 @@ jobs:
         cd cloud_functions/token_refresh
         zip -r ../tokenrefresh.zip .
 
+    - name: Debug - Verify secret exists
+      run: |
+        if [ -n "${{ secrets.GCS_CF_BUCKET }}" ]; then
+          echo "GCS_CF_BUCKET secret is set"
+        else
+          echo "GCS_CF_BUCKET secret is not set"
+          exit 1
+        fi
+
+    - name: Debug - Print command
+      run: |
+        echo "Command to be executed:"
+        echo "gsutil cp tokenrefresh.zip \"gs://${{ secrets.GCS_CF_BUCKET }}/${{ env.ENVIRONMENT }}/tokenrefresh/tokenrefresh.zip\""
+
     - name: Upload function zip to GCS
       run: |
         gsutil cp tokenrefresh.zip "gs://${{ secrets.GCS_CF_BUCKET }}/${{ env.ENVIRONMENT }}/tokenrefresh/tokenrefresh.zip"

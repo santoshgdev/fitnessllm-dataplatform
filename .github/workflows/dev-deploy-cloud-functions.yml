@@ -14,7 +14,7 @@ env:
   REGION: us-west1
   STRAVA_SECRET: ${{ secrets.STRAVA_SECRET }}
   ENCRYPTION_SECRET: ${{ secrets.ENCRYPTION_SECRET }}
-  GCS_CF_BUCKET: ${{ secrets.GCS_CF_BUCKET }}
+  GCS_CF_BUCKET: "${{ secrets.GCS_CF_BUCKET }}"
   ENVIRONMENT: dev
 
 jobs:

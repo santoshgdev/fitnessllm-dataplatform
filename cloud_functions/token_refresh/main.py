@@ -71,6 +71,9 @@ def refresh_token(request):
         decoded_token = auth.verify_id_token(token)
         uid = decoded_token['uid']  # Get uid from verified token
 
+        logger.info(f"Decoded UID: {decoded_token['uid']}")
+        logger.info(f"Token Project: {decoded_token['aud']}")
+
         data_source = request.args.get("data_source")
         if not data_source:
             return {'error': 'Bad Request - Missing data_source parameter'}, 400#, cors_headers

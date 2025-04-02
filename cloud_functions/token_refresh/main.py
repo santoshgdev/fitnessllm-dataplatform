@@ -57,13 +57,13 @@ def refresh_token(request):
     Note: At current time, it registers the parameters uid (firebase user id) and data_source.
     """
     # Handle CORS
-    cors_headers = cors_enabled_function(request)
-    if isinstance(cors_headers, tuple):
-        return cors_headers
+    # cors_headers = cors_enabled_function(request)
+    # if isinstance(cors_headers, tuple):
+    #     return cors_headers
 
-    auth_header = request.headers.get('Authorization')
-    if not auth_header or not auth_header.startswith('Bearer '):
-        return {'error': 'Unauthorized - No token provided'}, 401, cors_headers
+    # auth_header = request.headers.get('Authorization')
+    # if not auth_header or not auth_header.startswith('Bearer '):
+    #     return {'error': 'Unauthorized - No token provided'}, 401, cors_headers
 
     try:
         # Verify the Firebase ID token

@@ -78,7 +78,7 @@ jobs:
           --source=cloud_functions/${{ matrix.function }} \
           --trigger-http \
           --entry-point=refresh_token \
-          --allow-unauthenticated \
+          --no-allow-unauthenticated \
           --max-instances=10 \
           --min-instances=0 \
           --memory=256MB \

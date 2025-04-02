@@ -35,43 +35,45 @@ jobs:
 #      run: |
 #        pytest cloud_functions/token_refresh/tests/
 
-  tokenrefresh:
-#    needs: test
+  detect_changes:
+    runs-on: ubuntu-latest
+    outputs:
+      token_refresh: ${{ steps.filter.outputs.token_refresh }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # Required for git diff
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            token_refresh: 'cloud_functions/token_refresh/**'
+
+  deploy:
+    needs: detect_changes
     runs-on: ubuntu-latest
     environment: dev
+    strategy:
+      matrix:
+        function: ['token_refresh']
     steps:
     - uses: actions/checkout@v4
-
-    - name: Check secret availability
-      id: check_secret
-      run: |
-        if [[ "${{ secrets.GCS_CF_BUCKET }}" == "" ]]; then
-          echo "::error::GCS_CF_BUCKET secret is not set in environment secrets"
-          exit 1
-        fi
-        echo "Secret is available"
 
     - name: Authenticate to Google Cloud
       uses: google-github-actions/auth@v2
       with:
         credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-    - name: Set up Cloud SDK
+    - name: Set up gcloud CLI
       uses: google-github-actions/setup-gcloud@v2
-      with:
-        project_id: ${{ env.PROJECT_ID }}
-        version: 'latest'
 
-    - name: Create Pub/Sub topic
+    - name: Deploy Function
+      if: needs.detect_changes.outputs[matrix.function] == 'true'
       run: |
-        gcloud pubsub topics create token-refresh || true
-
-    - name: Create function source zip
-      run: |
-        cd cloud_functions/token_refresh
-        zip -r tokenrefresh.zip .
-
-    - name: Upload function zip to GCS
-      run: |
-        cd cloud_functions/token_refresh
-        gsutil cp tokenrefresh.zip "gs://${{ secrets.GCS_CF_BUCKET }}/${{ env.ENVIRONMENT }}/tokenrefresh/tokenrefresh.zip"
+        gcloud functions deploy ${{ matrix.function }} \
+          --gen2 \
+          --region=us-west1 \
+          --runtime=python310 \
+          --source=cloud_functions/${{ matrix.function }} \
+          --trigger-http

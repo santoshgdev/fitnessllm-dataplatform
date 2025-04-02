@@ -48,7 +48,7 @@ jobs:
         id: filter
         with:
           filters: |
-            token_refresh: 'cloud_functions/token_refresh/**'
+            dev-token_refresh: 'cloud_functions/token_refresh/**'
 
   deploy:
     needs: detect_changes

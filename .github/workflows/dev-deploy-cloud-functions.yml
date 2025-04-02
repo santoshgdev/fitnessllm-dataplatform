@@ -73,7 +73,13 @@ jobs:
       run: |
         gcloud functions deploy ${{ matrix.function }} \
           --gen2 \
-          --region=us-west1 \
+          --region=${{ env.REGION }} \
           --runtime=python310 \
           --source=cloud_functions/${{ matrix.function }} \
-          --trigger-http
+          --trigger-http \
+          --entry-point=refresh_token \
+          --allow-unauthenticated \
+          --max-instances=10 \
+          --min-instances=0 \
+          --memory=256MB \
+          --set-env-vars=PROJECT_ID=${{ env.PROJECT_ID }},ENVIRONMENT=${{ env.ENVIRONMENT }}

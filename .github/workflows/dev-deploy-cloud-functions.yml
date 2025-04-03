@@ -71,11 +71,11 @@ jobs:
     - name: Deploy Function
       if: needs.detect_changes.outputs[matrix.function] == 'true'
       run: |
-        gcloud functions deploy ${{ matrix.function }} \
+        gcloud functions deploy ${{ env.ENVIRONMENT}}-${{ matrix.function }} \
           --gen2 \
           --region=${{ env.REGION }} \
           --runtime=python310 \
-          --source=cloud_functions/dev-${{ matrix.function }} \
+          --source=cloud_functions/${{ matrix.function }} \
           --trigger-http \
           --entry-point=refresh_token \
           --no-allow-unauthenticated \

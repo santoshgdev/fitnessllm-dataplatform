@@ -38,7 +38,7 @@ jobs:
   detect_changes:
     runs-on: ubuntu-latest
     outputs:
-      token_refresh: ${{ steps.filter.outputs.dev-token_refresh }}
+      token_refresh: ${{ steps.filter.outputs.token_refresh }}
     steps:
       - uses: actions/checkout@v4
         with:

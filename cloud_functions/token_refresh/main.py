@@ -1,4 +1,4 @@
-"""Entry point for cloud function."""
+"""Main Entry point for cloud function."""
 import functions_framework
 from google.cloud import firestore
 from firebase_admin import auth, initialize_app

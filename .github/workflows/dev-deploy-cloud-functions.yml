@@ -48,7 +48,7 @@ jobs:
         id: filter
         with:
           filters: |
-            token_refresh: 'cloud_functions/token_refresh/**'
+            ${{ env.ENVIRONMENT }}-token_refresh: 'cloud_functions/token_refresh/**'
 
   deploy:
     needs: detect_changes
@@ -56,7 +56,7 @@ jobs:
     environment: dev
     strategy:
       matrix:
-        function: ['dev-token_refresh']
+        function: ['${{ env.ENVIRONMENT }}-token_refresh']
     steps:
     - uses: actions/checkout@v4
 

@@ -75,7 +75,7 @@ jobs:
           --gen2 \
           --region=${{ env.REGION }} \
           --runtime=python310 \
-          --source=cloud_functions/${{ matrix.function }} \
+          --source=cloud_functions/dev-${{ matrix.function }} \
           --trigger-http \
           --entry-point=refresh_token \
           --no-allow-unauthenticated \

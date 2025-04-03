@@ -48,7 +48,7 @@ def cors_enabled_function(request):
     return headers
 
 @functions_framework.http
-def refresh_token(request):
+def token_refresh(request):
     """Cloud function taking http parameters to perform update of tokens.
 
     Args:

@@ -38,7 +38,7 @@ jobs:
   detect_changes:
     runs-on: ubuntu-latest
     outputs:
-      dev-token_refresh: ${{ steps.filter.outputs.dev-token_refresh }}
+      token_refresh: ${{ steps.filter.outputs.dev-token_refresh }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -48,7 +48,7 @@ jobs:
         id: filter
         with:
           filters: |
-            dev-token_refresh: 'cloud_functions/token_refresh/**'
+            token_refresh: 'cloud_functions/token_refresh/**'
 
   deploy:
     needs: detect_changes
@@ -77,7 +77,7 @@ jobs:
           --runtime=python310 \
           --source=cloud_functions/${{ matrix.function }} \
           --trigger-http \
-          --entry-point=refresh_token \
+          --entry-point=${{ matrix.function }} \
           --no-allow-unauthenticated \
           --max-instances=10 \
           --min-instances=0 \

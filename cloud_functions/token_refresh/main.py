@@ -1,4 +1,6 @@
 """Main Entry point for cloud function."""
+import os
+
 import functions_framework
 from google.cloud import firestore
 from firebase_admin import auth, initialize_app
@@ -8,7 +10,9 @@ from .streams.strava import strava_refresh_oauth_token
 from .utils.logger_utils import logger
 
 # Initialize Firebase Admin
-initialize_app()
+initialize_app(options={
+    'projectId': os.getenv("GOOGLE_CLOUD_PROJECT"),  # Replace with your actual project ID
+})
 
 # Define allowed origins
 ALLOWED_ORIGINS = [

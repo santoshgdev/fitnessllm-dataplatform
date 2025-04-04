@@ -61,13 +61,13 @@ def token_refresh(request):
     Note: At current time, it registers the parameters uid (firebase user id) and data_source.
     """
     # Handle CORS
-    # cors_headers = cors_enabled_function(request)
-    # if isinstance(cors_headers, tuple):
-    #     return cors_headers
+    cors_headers = cors_enabled_function(request)
+    if isinstance(cors_headers, tuple):
+        return cors_headers
 
     auth_header = request.headers.get('Authorization')
     if not auth_header or not auth_header.startswith('Bearer '):
-        return {'error': 'Unauthorized - No token provided'}, 401#, cors_headers
+        return {'error': 'Unauthorized - No token provided'}, 401, cors_headers
 
     try:
         # Verify the Firebase ID token
@@ -80,36 +80,36 @@ def token_refresh(request):
 
         data_source = request.args.get("data_source")
         if not data_source:
-            return {'error': 'Bad Request - Missing data_source parameter'}, 400#, cors_headers
+            return {'error': 'Bad Request - Missing data_source parameter'}, 400, cors_headers
 
         db = firestore.Client()
         doc = db.collection("users").document(uid).get()
         
         if not doc.exists:
-            return {'error': 'Not Found - User document does not exist'}, 404#, cors_headers
+            return {'error': 'Not Found - User document does not exist'}, 404, cors_headers
             
         stream_data = doc.to_dict()[f"stream={data_source}"]
         
         if not stream_data or not stream_data.get("refreshToken"):
-            return {'error': f'Not Found - No refresh token found for user {uid}'}, 404#, cors_headers
+            return {'error': f'Not Found - No refresh token found for user {uid}'}, 404, cors_headers
 
         if data_source == "strava":
             try:
                 strava_refresh_oauth_token(db, uid, stream_data["refreshToken"])
-                return {"status": "success", "uid": uid}, 200#, cors_headers
+                return {"status": "success", "uid": uid}, 200, cors_headers
             except ValueError as e:
                 if "credentials not found" in str(e):
-                    return {'error': 'Strava credentials not found in Secret Manager'}, 400#, cors_headers
+                    return {'error': 'Strava credentials not found in Secret Manager'}, 400, cors_headers
                 raise
         else:
-            return {'error': 'Bad Request - Invalid data_source'}, 400#, cors_headers
+            return {'error': 'Bad Request - Invalid data_source'}, 400, cors_headers
 
     except auth.InvalidIdTokenError:
-        return {'error': 'Unauthorized - Invalid token'}, 401#, cors_headers
+        return {'error': 'Unauthorized - Invalid token'}, 401, cors_headers
     except auth.ExpiredIdTokenError:
-        return {'error': 'Unauthorized - Token expired'}, 401#, cors_headers
+        return {'error': 'Unauthorized - Token expired'}, 401, cors_headers
     except auth.RevokedIdTokenError:
-        return {'error': 'Unauthorized - Token revoked'}, 401#, cors_headers
+        return {'error': 'Unauthorized - Token revoked'}, 401, cors_headers
     except Exception as e:
         logger.error(f"Error in refresh_token: {str(e)}")
-        return {'error': 'Internal Server Error'}, 500#, cors_headers
+        return {'error': 'Internal Server Error'}, 500, cors_headers

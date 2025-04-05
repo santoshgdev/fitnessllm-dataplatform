@@ -82,4 +82,5 @@ jobs:
           --max-instances=10 \
           --min-instances=0 \
           --memory=256MB \
-          --set-env-vars=GOOGLE_CLOUD_PROJECT=${{ env.PROJECT_ID }},ENVIRONMENT=${{ env.ENVIRONMENT }}
+          --set-env-vars=GOOGLE_CLOUD_PROJECT=${{ env.PROJECT_ID }},ENVIRONMENT=${{ env.ENVIRONMENT }} \
+          --service-account=${{ secrets.GCP_DP_SA_EMAIL }}

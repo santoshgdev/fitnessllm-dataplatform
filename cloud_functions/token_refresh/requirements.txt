@@ -8,3 +8,4 @@ beartype
 types-pytz
 cryptography
 firebase-admin
+firebase-functions

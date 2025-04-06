@@ -2,9 +2,9 @@
 import os
 import time
 from os import environ
-from beartype.typing import Any, Dict
 
 from beartype import beartype
+from beartype.typing import Any, Dict
 from google.cloud import firestore
 from stravalib.client import Client
 
@@ -14,7 +14,9 @@ from ..utils.task_utils import decrypt_token, encrypt_token, update_last_refresh
 
 
 @beartype
-def strava_refresh_oauth_token(db: firestore.Client, uid: str, refresh_token: str) -> None:
+def strava_refresh_oauth_token(
+    db: firestore.Client, uid: str, refresh_token: str
+) -> None:
     """Call Strava OAuth to refresh the token.
 
     Args:

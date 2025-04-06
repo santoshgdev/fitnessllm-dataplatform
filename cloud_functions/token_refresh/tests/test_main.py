@@ -19,14 +19,16 @@ def create_test_request(user_id: str, data_source: str = "strava") -> Request:
     mock_request = MagicMock(spec=Request)
     # Create a mock for args that behaves like Flask's MultiDict
     mock_args = MagicMock()
-    mock_args.get = lambda key, default=None: {"data_source": data_source}.get(key, default)
+    mock_args.get = lambda key, default=None: {"data_source": data_source}.get(
+        key, default
+    )
     mock_request.args = mock_args
     # Add method attribute
     mock_request.method = "POST"
     # Add headers attribute with mock Authorization header containing the user_id and Origin
     mock_request.headers = {
         "Authorization": f"Bearer {user_id}",
-        "Origin": "https://fitnessllm.app"  # Use one of the allowed origins
+        "Origin": "https://fitnessllm.app",  # Use one of the allowed origins
     }
     return mock_request
 
@@ -128,8 +130,7 @@ def test_refresh_token_success(
 
     # Mock decrypt_token first to ensure it's mocked before any other operations
     with patch(
-        "firebase_admin.auth.verify_id_token",
-        return_value={"uid": "test_user_123"}
+        "firebase_admin.auth.verify_id_token", return_value={"uid": "test_user_123"}
     ), patch(
         "cloud_functions.token_refresh.streams.strava.decrypt_token",
         return_value="decrypted_refresh_token",
@@ -194,7 +195,9 @@ def test_refresh_token_user_not_found(
     # Mock Firestore client and document
     mock_doc = MagicMock()
     mock_doc.exists = False
-    mock_doc.to_dict.return_value = None  # Document doesn't exist, so to_dict returns None
+    mock_doc.to_dict.return_value = (
+        None  # Document doesn't exist, so to_dict returns None
+    )
 
     mock_ref = MagicMock()
     mock_ref.get.return_value = mock_doc
@@ -211,8 +214,7 @@ def test_refresh_token_user_not_found(
 
     # Mock decrypt_token first to ensure it's mocked before any other operations
     with patch(
-        "firebase_admin.auth.verify_id_token",
-        return_value={"uid": "nonexistent_user"}
+        "firebase_admin.auth.verify_id_token", return_value={"uid": "nonexistent_user"}
     ), patch(
         "cloud_functions.token_refresh.streams.strava.decrypt_token",
         return_value="decrypted_refresh_token",
@@ -286,8 +288,7 @@ def test_refresh_token_missing_credentials(
 
     # Mock decrypt_token first to ensure it's mocked before any other operations
     with patch(
-        "firebase_admin.auth.verify_id_token",
-        return_value={"uid": "test_user_123"}
+        "firebase_admin.auth.verify_id_token", return_value={"uid": "test_user_123"}
     ), patch(
         "cloud_functions.token_refresh.streams.strava.decrypt_token",
         return_value="decrypted_refresh_token",

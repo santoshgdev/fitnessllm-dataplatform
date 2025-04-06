@@ -53,11 +53,10 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
             }
         )
 
-    body_data = request.get_json(silent=True)
-    print(body_data)
-
-    if not body_data or "data" not in body_data:
-        return https_fn.Response(status=400, response="Required data is missing!")
+    # Get data_source from query parameters instead of body
+    data_source = request.args.get("data_source")
+    if not data_source:
+        return https_fn.Response(status=400, response="Required data_source parameter is missing!")
 
     auth_header = request.headers.get('Authorization')
     logger.info(f"Received Authorization header: {auth_header}")
@@ -65,11 +64,6 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
         return https_fn.Response(status=400, response="Bad Request - Missing or invalid Authorization header")
 
     try:
-        data = body_data["data"]
-        data_source = data.get("data_source")
-        if not data_source:
-            return https_fn.Response(status=400, response="Bad Request - Missing data_source parameter")
-
         # Verify the Firebase ID token
         token = auth_header.split('Bearer ')[1]
         decoded_token = auth.verify_id_token(token)

@@ -25,7 +25,7 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
     """
     # Only accept POST requests.
     if request.method != "POST":
-        return https_fn.Response(status=403, response="Only POST requests are accepted!")
+        return https_fn.Response(status=404, response="Only POST requests are accepted!")
 
     body_data = request.get_json(silent=True)
     print(body_data)
@@ -34,6 +34,7 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
         return https_fn.Response(status=400, response="Required data is missing!")
 
     auth_header = request.headers.get('Authorization')
+    logger.info(f"Received Authorization header: {auth_header}")
     if not auth_header or not auth_header.startswith('Bearer '):
         return https_fn.Response(status=400, response="Bad Request - Missing or invalid Authorization header")
 

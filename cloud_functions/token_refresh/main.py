@@ -12,7 +12,7 @@ from .utils.logger_utils import logger
 initialize_app(
     options={
         "projectId": os.getenv(
-            "GOOGLE_CLOUD_PROJECT"
+            "PROJECT_ID"
         ),  # Replace with your actual project ID
     }
 )

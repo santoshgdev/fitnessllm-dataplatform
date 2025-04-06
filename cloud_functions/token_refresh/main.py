@@ -14,7 +14,12 @@ initialize_app(options={
 })
 
 
-@https_fn.on_request()
+@https_fn.on_request(
+    cors=options.CorsOptions(
+        cors_origins=["*"],
+        cors_methods=["POST", "OPTIONS"]
+    )
+)
 def token_refresh(request: https_fn.Request) -> https_fn.Response:
     """Cloud function taking http parameters to perform update of tokens.
 
@@ -23,9 +28,19 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
 
     Note: At current time, it registers the parameters uid (firebase user id) and data_source.
     """
-    # Only accept POST requests.
-    if request.method != "POST":
-        return https_fn.Response(status=404, response="Only POST requests are accepted!")
+    logger.info(f"Received request with method: {request.method}")
+    
+    # Handle OPTIONS request for CORS preflight
+    if request.method == "OPTIONS":
+        return https_fn.Response(
+            status=204,
+            headers={
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "POST",
+                "Access-Control-Allow-Headers": "Authorization, Content-Type",
+                "Access-Control-Max-Age": "3600"
+            }
+        )
 
     body_data = request.get_json(silent=True)
     print(body_data)

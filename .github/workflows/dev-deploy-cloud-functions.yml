@@ -84,4 +84,4 @@ jobs:
           --memory=256MB \
           --set-env-vars=GOOGLE_CLOUD_PROJECT=${{ env.PROJECT_ID }},ENVIRONMENT=${{ env.ENVIRONMENT }} \
           --service-account=${{ secrets.GCP_DP_SA_EMAIL }} \
-          --timeout=300s
+          --set-custom-audiences=${{ env.PROJECT_ID }}

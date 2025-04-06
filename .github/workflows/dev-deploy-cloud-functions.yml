@@ -79,7 +79,6 @@ jobs:
           --source=cloud_functions/${{ matrix.function }} \
           --trigger-http \
           --entry-point=${{ matrix.function }} \
-          --no-allow-unauthenticated \
           --max-instances=10 \
           --min-instances=0 \
           --memory=256MB \

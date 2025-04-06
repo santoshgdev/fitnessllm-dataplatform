@@ -46,15 +46,14 @@ def strava_refresh_oauth_token(
     current_time = time.time()
     expires_at = token_response["expires_at"]
     buffer_time = 18000  # 5 hours in seconds (since Strava tokens expire in 6 hours)
-    time_with_buffer = expires_at - buffer_time
+    time_until_expiration = expires_at - current_time
 
     logger.info(f"Current time: {current_time}")
     logger.info(f"Token expires at: {expires_at}")
-    logger.info(f"Time with buffer (5 hours): {time_with_buffer}")
-    logger.info(f"Time until expiration: {expires_at - current_time} seconds")
+    logger.info(f"Time until expiration: {time_until_expiration} seconds")
 
-    # Check if token will expire within 5 hours
-    if current_time > time_with_buffer:
+    # Refresh if less than 5 hours until expiration
+    if time_until_expiration < buffer_time:
         new_tokens = {
             "accessToken": encrypt_token(
                 token_response["access_token"], encryption_key

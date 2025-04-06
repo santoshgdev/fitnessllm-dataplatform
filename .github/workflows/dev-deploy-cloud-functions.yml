@@ -86,4 +86,4 @@ jobs:
           --service-account=${{ secrets.GCP_DP_SA_EMAIL }} \
           --set-custom-audiences=${{ env.PROJECT_ID }}
         
-        gcloud run services update ${{ env.ENVIRONMENT}}-${{ matrix.function }} --add-custom-audiences=${{ env.PROJECT_ID }}
+        gcloud run services update dev-token-refresh --region=${{ env.REGION }} --add-custom-audiences=${{ env.PROJECT_ID }}

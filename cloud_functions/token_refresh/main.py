@@ -14,9 +14,7 @@ initialize_app(options={
 })
 
 
-@https_fn.on_request(
-    cors=options.CorsOptions(cors_origins="*", cors_methods=["post"])
-)
+@https_fn.on_request()
 def token_refresh(request: https_fn.Request) -> https_fn.Response:
     """Cloud function taking http parameters to perform update of tokens.
 

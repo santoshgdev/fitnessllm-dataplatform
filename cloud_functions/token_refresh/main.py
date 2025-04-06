@@ -11,9 +11,7 @@ from .utils.logger_utils import logger
 # Initialize Firebase Admin
 initialize_app(
     options={
-        "projectId": os.getenv(
-            "PROJECT_ID"
-        ),  # Replace with your actual project ID
+        "projectId": os.getenv("PROJECT_ID"),  # Replace with your actual project ID
     }
 )
 

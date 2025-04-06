@@ -28,7 +28,18 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
 
     Note: At current time, it registers the parameters uid (firebase user id) and data_source.
     """
-    logger.info(f"Received request with method: {request.method}")
+    # Log all request details at the start
+    logger.info("=== Request Details ===")
+    logger.info(f"Method: {request.method}")
+    logger.info(f"Headers: {dict(request.headers)}")
+    logger.info(f"URL: {request.url}")
+    logger.info(f"Args: {dict(request.args)}")
+    try:
+        body = request.get_json(silent=True)
+        logger.info(f"Body: {body}")
+    except Exception as e:
+        logger.error(f"Error parsing body: {e}")
+    logger.info("=== End Request Details ===")
     
     # Handle OPTIONS request for CORS preflight
     if request.method == "OPTIONS":

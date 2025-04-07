@@ -12,14 +12,14 @@ from .logger_utils import logger
 def get_secret(name: str) -> dict:
     """Retrieve secret from secret manager."""
     if "PROJECT_ID" not in environ:
-        raise KeyError("PROJECT_ID environment variable is not set")
+        raise KeyError("PROJECT_ID environment variable not found")
     logger.debug("Initializing secret manager")
     client = secretmanager.SecretManagerServiceClient()
     logger.debug(f"Getting secret for {name}")
     try:
         response = client.access_secret_version(
             request={
-                "name": f"projects/{environ['PROJECT_ID']}/secrets/{name}/versions/latest"
+                "name": f"projects/{environ['PROJECT_ID']}/secrets/{name}/versions/latest",
             }
         )
         logger.debug(f"Retrieved secret {name}")

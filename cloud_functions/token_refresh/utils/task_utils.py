@@ -10,12 +10,10 @@ from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 
-def update_last_refresh():
+def update_last_refresh() -> datetime:
     """Return the current time."""
     pacific_tz = pytz.timezone("America/Los_Angeles")
-    timestamp = datetime.now(pacific_tz)
-    return timestamp
-
+    return datetime.now(pacific_tz)
 
 @beartype
 def decrypt_token(encrypted_token: str, key: str) -> str:

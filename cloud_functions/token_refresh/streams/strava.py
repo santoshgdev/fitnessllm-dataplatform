@@ -1,6 +1,5 @@
 """Strava specific utils."""
 import os
-import time
 from os import environ
 
 from beartype import beartype
@@ -45,12 +44,8 @@ def strava_refresh_oauth_token(
 
     logger.info("Refreshing token...")
     new_tokens = {
-        "accessToken": encrypt_token(
-            token_response["access_token"], encryption_key
-        ),
-        "refreshToken": encrypt_token(
-            token_response["refresh_token"], encryption_key
-        ),
+        "accessToken": encrypt_token(token_response["access_token"], encryption_key),
+        "refreshToken": encrypt_token(token_response["refresh_token"], encryption_key),
         "expiresAt": token_response["expires_at"],
         "lastTokenRefresh": update_last_refresh(),
     }

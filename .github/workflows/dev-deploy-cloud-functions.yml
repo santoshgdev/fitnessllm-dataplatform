@@ -86,3 +86,5 @@ jobs:
           --service-account=${{ secrets.GCP_DP_SA_EMAIL }}
 
         gcloud run services update dev-token-refresh --region=${{ env.REGION }} --add-custom-audiences=${{ env.PROJECT_ID }}
+
+        gcloud run revisions delete $(gcloud run revisions list --service dev-token-refresh --region us-west1 --format="value(name)" | tail -n +2) --region us-west1 --quiet

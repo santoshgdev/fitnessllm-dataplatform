@@ -28,6 +28,7 @@ class Startup:
     def _startUp(self, uid: str) -> None:
         """Resources agnostic of service."""
         logger.info("Starting up...")
+        self.initialized = True
         GSClient().set_as_default_client()
         self.InfrastructureNames = DynamicEnum.from_dict(
             get_secret(environ["INFRASTRUCTURE_SECRET"])[environ["STAGE"]],
@@ -40,7 +41,7 @@ class Startup:
 
     def __init__(self) -> None:
         """Initializes the data platform."""
-        self.InfrastructureNames = None
+        self.initialized = False
         pass
 
     @beartype
@@ -55,7 +56,7 @@ class Startup:
             KeyError: If required options or environment variables are missing.
             ValueError: If data source is not supported.
         """
-        if self.InfrastructureNames is None or self.firebase is None:
+        if not self.initialized:
             self._startUp(uid)
 
         if data_source not in [member.value for member in FitnessLLMDataSource]:
@@ -92,7 +93,7 @@ class Startup:
         Raises:
             KeyError: If required data_source is not supported.
         """
-        if self.InfrastructureNames is None or self.firebase is None:
+        if not self.initialized:
             self._startUp(uid)
 
         if data_source == FitnessLLMDataSource.STRAVA.value:
@@ -117,7 +118,7 @@ class Startup:
         Raises:
             KeyError: If required data_source is not supported.
         """
-        if self.InfrastructureNames is None or self.firebase is None:
+        if not self.initialized:
             self._startUp(uid)
 
         if data_source == FitnessLLMDataSource.STRAVA.value:
@@ -130,7 +131,9 @@ class Startup:
             raise ValueError(f"Unsupported data source: {data_source}")
 
     @beartype
-    def full_etl(self, uid: str, data_source: str, data_streams: list[str] | None = None) -> None:
+    def full_etl(
+        self, uid: str, data_source: str, data_streams: list[str] | None = None
+    ) -> None:
         """Entry point for full ETL process.
 
         Args:

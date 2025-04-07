@@ -15,6 +15,7 @@ def update_last_refresh() -> datetime:
     pacific_tz = pytz.timezone("America/Los_Angeles")
     return datetime.now(pacific_tz)
 
+
 @beartype
 def decrypt_token(encrypted_token: str, key: str) -> str:
     """Decrypt a token that was encrypted using AES-256-CBC in JavaScript.

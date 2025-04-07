@@ -8,6 +8,8 @@ on:
 env:
   PYTHONPATH: ${{ github.workspace }}
   PROJECT_NAME: fitnessllm-dp
+  ENVIRONMENT: dev
+  REGION: us-west1
 
 jobs:
   test-and-build:
@@ -92,3 +94,13 @@ jobs:
     - name: Push Docker image to Artifact Registry
       run: |
         docker push us-west1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.PROJECT_NAME }}/${{ env.PROJECT_NAME }}:main
+
+    - name: Deploy to Cloud Run
+      if: success()
+      run: |
+        gcloud run deploy ${{ env.ENVIRONMENT }} \
+          --image ${{ env.REGION}}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.PROJECT_NAME }}/${{ env.PROJECT_NAME }}:main \
+          --region ${{ env.REGION}} \
+          --platform managed \
+          --allow-unauthenticated \
+          --service-account ${{ secrets.GCP_DP_SA_EMAIL }}

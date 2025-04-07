@@ -9,7 +9,7 @@ def setup_logger(name: Optional[str] = None, level: int = logging.DEBUG) -> Logg
 
     Args:
         name (str): Name of the logger.
-        level (int): Logging level git a(e.g., logging.DEBUG, logging.INFO).
+        level (int): Logging level (e.g., logging.DEBUG, logging.INFO).
 
     Returns:
         logging.Logger: Configured logger instance.

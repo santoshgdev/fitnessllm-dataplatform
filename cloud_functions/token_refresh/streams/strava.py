@@ -43,32 +43,20 @@ def strava_refresh_oauth_token(
         refresh_token=decrypt_token(refresh_token, encryption_key),
     )
 
-    current_time = time.time()
-    expires_at = token_response["expires_at"]
-    buffer_time = 14400  # 4 hours in seconds (since Strava tokens expire in 6 hours)
-    time_until_expiration = expires_at - current_time
+    logger.info("Refreshing token...")
+    new_tokens = {
+        "accessToken": encrypt_token(
+            token_response["access_token"], encryption_key
+        ),
+        "refreshToken": encrypt_token(
+            token_response["refresh_token"], encryption_key
+        ),
+        "expiresAt": token_response["expires_at"],
+        "lastTokenRefresh": update_last_refresh(),
+    }
 
-    logger.info(f"Current time: {current_time}")
-    logger.info(f"Token expires at: {expires_at}")
-    logger.info(f"Time until expiration: {time_until_expiration} seconds")
-
-    # Refresh if less than 4 hours until expiration
-    if time_until_expiration < buffer_time:
-        new_tokens = {
-            "accessToken": encrypt_token(
-                token_response["access_token"], encryption_key
-            ),
-            "refreshToken": encrypt_token(
-                token_response["refresh_token"], encryption_key
-            ),
-            "expiresAt": token_response["expires_at"],
-            "lastTokenRefresh": update_last_refresh(),
-        }
-
-        strava_update_user_tokens(db=db, uid=uid, new_tokens=new_tokens)
-        logger.info("Token has been refreshed")
-    else:
-        logger.info("Token is still valid")
+    strava_update_user_tokens(db=db, uid=uid, new_tokens=new_tokens)
+    logger.info("Token refreshed successfully")
 
 
 @beartype

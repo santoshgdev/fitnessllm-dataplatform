@@ -8,7 +8,6 @@ from google.cloud import firestore
 from .streams.strava import strava_refresh_oauth_token
 from .utils.logger_utils import logger
 
-# Initialize Firebase Admin
 initialize_app(
     options={
         "projectId": os.getenv("PROJECT_ID"),  # Replace with your actual project ID

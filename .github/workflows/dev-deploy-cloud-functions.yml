@@ -39,7 +39,7 @@ jobs:
   detect_changes:
     runs-on: ubuntu-latest
     outputs:
-      token_refresh: ${{ steps.filter.outputs.token_refresh }}
+      token-refresh: ${{ steps.filter.outputs.token-refresh }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -49,7 +49,7 @@ jobs:
         id: filter
         with:
           filters: |
-            token_refresh: 'cloud_functions/token_refresh/**'
+            token-refresh: 'cloud_functions/token_refresh/**'
 
   deploy:
     needs: detect_changes

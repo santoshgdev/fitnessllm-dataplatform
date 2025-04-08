@@ -1,20 +1,23 @@
-- initialize:
-    call: http.post
-    args:
-      url: https://REGION-PROJECT_ID.cloudfunctions.net/process-initial
-      body:
-        data: ${input.data}
-    result: initial_result
+main:
+  params: [input]
+  steps:
+    - initialize:
+        call: http.post
+        args:
+          url: "https://${input.PROJECT_ID}.cloudfunctions.net/process-initial"  # Fixed URL
+          body:
+            data: ${input.data}  # Dynamic data from POST
+        result: initial_result
 
-- finalize:
-    call: http.post
-    args:
-      url: https://SERVICE_NAME-REGION.run.app/process-final
-      auth:
-        type: OIDC
-      body:
-        processed_data: ${initial_result.body}
-    result: final_result
+    - finalize:
+        call: http.post
+        args:
+          url: "https://${input.PROJECT_ID}.run.app/process-final"  # Fixed URL
+          auth:
+            type: OIDC
+          body:
+            processed_data: ${initial_result.body}
+        result: final_result
 
-- return_output:
-    return: ${final_result}
+    - return_output:
+        return: ${final_result}

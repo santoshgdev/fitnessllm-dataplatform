@@ -1,7 +1,9 @@
 """HTTP handler for Cloud Run."""
 import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from typing import Any
 
+from fitnessllm_dataplatform.batch_handler import BatchHandler
 from fitnessllm_dataplatform.task_handler import Startup
 
 
@@ -18,24 +20,38 @@ class Handler(BaseHTTPRequestHandler):
         uid = data.get("uid")
         data_source = data.get("data_source")
         data_streams = data.get("data_streams")
+        batch = data.get("batch", False)
+
+        if batch:
+            try:
+                # Process all users
+                handler = BatchHandler()
+                handler.process_all_users(data_source=data_source)
+
+                self.send_response(200)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "success", "message": "Batch processing completed"}).encode())
+            except Exception as e:
+                self.send_response(500)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode())
+            return
 
         if not uid or not data_source:
             self.send_response(400)
             self.send_header("Content-type", "application/json")
             self.end_headers()
             self.wfile.write(
-                json.dumps(
-                    {"error": "Missing required parameters: uid and data_source"}
-                ).encode()
+                json.dumps({"error": "Missing required parameters: uid and data_source"}).encode()
             )
             return
 
         try:
             # Initialize and run the task handler
             startup = Startup()
-            startup.full_etl(
-                uid=uid, data_source=data_source, data_streams=data_streams
-            )
+            startup.full_etl(uid=uid, data_source=data_source, data_streams=data_streams)
 
             self.send_response(200)
             self.send_header("Content-type", "application/json")

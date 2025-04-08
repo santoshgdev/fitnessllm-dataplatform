@@ -83,9 +83,24 @@ jobs:
       if: success()
       run: gcloud auth configure-docker us-west1-docker.pkg.dev --quiet
 
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Cache Docker layers
+      uses: actions/cache@v4
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-
+
     - name: Build Docker image
       run: |
-        docker build . -t us-west1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.PROJECT_NAME }}/${{ env.PROJECT_NAME }}:${{ env.ENVIRONMENT }}
+        docker buildx build . \
+          --cache-from type=local,src=/tmp/.buildx-cache \
+          --cache-to type=local,dest=/tmp/.buildx-cache \
+          -t us-west1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.PROJECT_NAME }}/${{ env.PROJECT_NAME }}:${{ env.ENVIRONMENT }} \
+          --load
 
     - name: Push Docker image to Artifact Registry
       run: |

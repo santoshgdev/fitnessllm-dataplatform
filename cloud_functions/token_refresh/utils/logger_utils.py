@@ -1,7 +1,7 @@
 """Logging utilities."""
 import logging
 from logging import Logger
-from typing import Optional
+from beartype.typing import Optional
 
 
 def setup_logger(name: Optional[str] = None, level: int = logging.DEBUG) -> Logger:

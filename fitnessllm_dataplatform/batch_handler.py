@@ -1,5 +1,5 @@
 """Batch handler for processing all users."""
-from typing import Any, Dict, List
+from beartype.typing import Any, Dict, List
 
 from beartype import beartype
 from google.cloud import firestore
@@ -71,4 +71,4 @@ class BatchHandler:
 
 if __name__ == "__main__":
     handler = BatchHandler()
-    handler.process_all_users()
+    handler.process_all_users() 

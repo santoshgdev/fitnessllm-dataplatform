@@ -4,9 +4,9 @@ main:
     - token_refresh:
         call: http.post
         args:
-          url: "${sys.get_env('TOKEN_REFRESH_FUNCTION')}"
+          url: ${sys.get_env("TOKEN_REFRESH_FUNCTION")}
           headers:
-            Authorization: ${"Bearer " + sys.get_env('BEARER_TOKEN')}
+            Authorization: ${"Bearer " + sys.get_env("BEARER_TOKEN")}
             Content-Type: "application/json"
           body:
             data_source: ${input.data_source}
@@ -15,9 +15,9 @@ main:
     - full_etl:
         call: http.post
         args:
-          url: "${sys.get_env('DATA_RUN_FUNCTION')}"
+          url: ${sys.get_env("DATA_RUN_FUNCTION")}
           headers:
-            Authorization: ${"Bearer " + sys.get_env('BEARER_TOKEN')}
+            Authorization: ${"Bearer " + sys.get_env("BEARER_TOKEN")}
             Content-Type: "application/json"
           body:
             data_source: ${input.data_source}

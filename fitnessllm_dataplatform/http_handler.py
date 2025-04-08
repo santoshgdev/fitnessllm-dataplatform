@@ -10,14 +10,32 @@ from fitnessllm_dataplatform.task_handler import Startup
 class Handler(BaseHTTPRequestHandler):
     """HTTP request handler."""
 
+    def extract_uid_from_token(self) -> str:
+        """Extract UID from Bearer token."""
+        auth_header = self.headers.get("Authorization")
+        if not auth_header or not auth_header.startswith("Bearer "):
+            raise ValueError("Missing or invalid Authorization header")
+        token = auth_header.split(" ")[1]
+        # Assuming the token is the UID directly, like in token_refresh
+        return token
+
     def do_POST(self) -> None:
         """Handle POST requests."""
+        try:
+            # Extract UID from Bearer token
+            uid = self.extract_uid_from_token()
+        except ValueError as e:
+            self.send_response(401)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"error": str(e)}).encode())
+            return
+
         content_length = int(self.headers["Content-Length"])
         post_data = self.rfile.read(content_length)
         data = json.loads(post_data)
 
         # Extract required parameters
-        uid = data.get("uid")
         data_source = data.get("data_source")
         data_streams = data.get("data_streams")
         batch = data.get("batch", False)
@@ -43,13 +61,13 @@ class Handler(BaseHTTPRequestHandler):
                 self.wfile.write(json.dumps({"error": str(e)}).encode())
             return
 
-        if not uid or not data_source:
+        if not data_source:
             self.send_response(400)
             self.send_header("Content-type", "application/json")
             self.end_headers()
             self.wfile.write(
                 json.dumps(
-                    {"error": "Missing required parameters: uid and data_source"}
+                    {"error": "Missing required parameter: data_source"}
                 ).encode()
             )
             return

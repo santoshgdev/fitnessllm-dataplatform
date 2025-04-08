@@ -7,6 +7,7 @@ main:
           url: "${sys.get_env('TOKEN_REFRESH_FUNCTION')}"
           headers:
             Authorization: ${"Bearer " + sys.get_env('BEARER_TOKEN')}
+            Content-Type: "application/json"
           body:
             data_source: ${input.data_source}
         result: initial_result
@@ -17,8 +18,10 @@ main:
           url: "${sys.get_env('DATA_RUN_FUNCTION')}"
           headers:
             Authorization: ${"Bearer " + sys.get_env('BEARER_TOKEN')}
+            Content-Type: "application/json"
           body:
-            processed_data: ${initial_result.body}
+            data_source: ${input.data_source}
+            data_streams: ${input.data_streams}
         result: final_result
 
     - return_output:

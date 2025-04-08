@@ -1,6 +1,7 @@
 """Dataclasses for the entities in the FitnessLLM Data Platform."""
 from dataclasses import asdict, dataclass
 from datetime import datetime
+
 from beartype.typing import Optional
 
 from fitnessllm_dataplatform.entities.enums import (

@@ -1,7 +1,6 @@
 """Batch handler for processing all users."""
-from beartype.typing import Any, Dict, List
-
 from beartype import beartype
+from beartype.typing import Any, Dict, List
 from google.cloud import firestore
 
 from fitnessllm_dataplatform.task_handler import Startup
@@ -71,4 +70,4 @@ class BatchHandler:
 
 if __name__ == "__main__":
     handler = BatchHandler()
-    handler.process_all_users() 
+    handler.process_all_users()

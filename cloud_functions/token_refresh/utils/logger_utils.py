@@ -1,6 +1,7 @@
 """Logging utilities."""
 import logging
 from logging import Logger
+
 from beartype.typing import Optional
 
 

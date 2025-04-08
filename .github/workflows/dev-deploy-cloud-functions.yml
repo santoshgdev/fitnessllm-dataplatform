@@ -39,7 +39,7 @@ jobs:
   detect_changes:
     runs-on: ubuntu-latest
     outputs:
-      token-refresh: ${{ steps.filter.outputs.token-refresh }}
+      token_refresh: ${{ steps.filter.outputs.token_refresh }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -49,7 +49,7 @@ jobs:
         id: filter
         with:
           filters: |
-            token-refresh: 'cloud_functions/token_refresh/**'
+            token_refresh: 'cloud_functions/token_refresh/**'
 
   deploy:
     needs: detect_changes
@@ -57,7 +57,7 @@ jobs:
     environment: dev
     strategy:
       matrix:
-        function: ['token-refresh']
+        function: ['token_refresh']
     steps:
     - uses: actions/checkout@v4
 
@@ -72,7 +72,7 @@ jobs:
     - name: Deploy Function
       if: needs.detect_changes.outputs[matrix.function] == 'true'
       run: |
-        gcloud functions deploy ${{ env.ENVIRONMENT}}-${{ matrix.function }} \
+        gcloud functions deploy ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') \
           --gen2 \
           --region=${{ env.REGION }} \
           --runtime=python310 \
@@ -85,10 +85,10 @@ jobs:
           --set-env-vars=PROJECT_ID=${{ env.PROJECT_ID }},ENVIRONMENT=${{ env.ENVIRONMENT }},ENCRYPTION_SECRET=${{ env.ENCRYPTION_SECRET }},STRAVA_SECRET=${{ env.STRAVA_SECRET }} \
           --service-account=${{ secrets.GCP_DP_SA_EMAIL }}
 
-        gcloud run services update ${{ env.ENVIRONMENT}}-${{ matrix.function }} --region=${{ env.REGION }} --add-custom-audiences=${{ env.PROJECT_ID }}
+        gcloud run services update ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') --region=${{ env.REGION }} --add-custom-audiences=${{ env.PROJECT_ID }}
 
         # First, get the latest revision
-        LATEST_REVISION=$(gcloud run revisions list --service ${{ env.ENVIRONMENT}}-${{ matrix.function }} --region us-west1 --format="value(name)" --sort-by=~creationTimestamp --limit=1)
+        LATEST_REVISION=$(gcloud run revisions list --service ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') --region us-west1 --format="value(name)" --sort-by=~creationTimestamp --limit=1)
 
         # Then delete all revisions except the latest one
-        gcloud run revisions list --service ${{ env.ENVIRONMENT}}-${{ matrix.function }} --region us-west1 --format="value(name)" | grep -v "$LATEST_REVISION" | xargs -r gcloud run revisions delete --region us-west1 --quiet
+        gcloud run revisions list --service ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') --region us-west1 --format="value(name)" | grep -v "$LATEST_REVISION" | xargs -r gcloud run revisions delete --region us-west1 --quiet

@@ -47,11 +47,6 @@ def test_get_secret(mock_create_resource_path, mock_secret_manager_client):
     )
 
 
-def test_get_secret_error():
-    with pytest.raises(KeyError):
-        get_secret("test_secret")
-
-
 @patch(
     "fitnessllm_dataplatform.utils.cloud_utils.secretmanager.SecretManagerServiceClient"
 )

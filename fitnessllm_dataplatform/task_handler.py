@@ -6,6 +6,7 @@ import fire
 from beartype import beartype
 from cloudpathlib import GSClient
 
+from cloud_functions.token_refresh.utils.task_utils import decrypt_token
 from fitnessllm_dataplatform.entities.enums import DynamicEnum, FitnessLLMDataSource
 from fitnessllm_dataplatform.infrastructure.FirebaseConnect import FirebaseConnect
 from fitnessllm_dataplatform.stream.strava.services.api_interface import (
@@ -19,7 +20,6 @@ from fitnessllm_dataplatform.stream.strava.services.silver_etl_interface import 
 )
 from fitnessllm_dataplatform.utils.cloud_utils import get_secret
 from fitnessllm_dataplatform.utils.logging_utils import logger
-from fitnessllm_dataplatform.utils.task_utils import decrypt_token
 
 
 class Startup:
@@ -28,6 +28,7 @@ class Startup:
     def _startUp(self, uid: str) -> None:
         """Resources agnostic of service."""
         logger.info("Starting up...")
+        self.initialized = True
         GSClient().set_as_default_client()
         self.InfrastructureNames = DynamicEnum.from_dict(
             get_secret(environ["INFRASTRUCTURE_SECRET"])[environ["STAGE"]],
@@ -36,9 +37,11 @@ class Startup:
         self.decryptor = partial(
             decrypt_token, key=get_secret(environ["ENCRYPTION_SECRET"])["token"]
         )
+        self.user_data = self.firebase.read_user().get().to_dict()
 
     def __init__(self) -> None:
         """Initializes the data platform."""
+        self.initialized = False
         pass
 
     @beartype
@@ -53,14 +56,14 @@ class Startup:
             KeyError: If required options or environment variables are missing.
             ValueError: If data source is not supported.
         """
-        self._startUp(uid)
-        user_data = self.firebase.read_user().get().to_dict()
+        if not self.initialized:
+            self._startUp(uid)
 
         if data_source not in [member.value for member in FitnessLLMDataSource]:
             raise ValueError(f"Unsupported data source: {data_source}")
 
         if data_source == FitnessLLMDataSource.STRAVA.value:
-            strava_user_data = user_data.get(f"stream={data_source.lower()}")
+            strava_user_data = self.user_data.get(f"stream={data_source.lower()}")
             if strava_user_data is None:
                 raise ValueError(f"User {uid} has no {data_source} data")
 
@@ -90,11 +93,11 @@ class Startup:
         Raises:
             KeyError: If required data_source is not supported.
         """
-        self._startUp(uid)
-        user_data = self.firebase.read_user().get().to_dict()
+        if not self.initialized:
+            self._startUp(uid)
 
         if data_source == FitnessLLMDataSource.STRAVA.value:
-            strava_user_data = user_data.get(f"stream={data_source.lower()}")
+            strava_user_data = self.user_data.get(f"stream={data_source.lower()}")
             strava_etl_interface = BronzeStravaETLInterface(
                 infrastructure_names=self.InfrastructureNames,
                 athlete_id=str(strava_user_data["athleteId"]),
@@ -115,17 +118,42 @@ class Startup:
         Raises:
             KeyError: If required data_source is not supported.
         """
-        self._startUp(uid)
-        user_data = self.firebase.read_user().get().to_dict()
+        if not self.initialized:
+            self._startUp(uid)
 
         if data_source == FitnessLLMDataSource.STRAVA.value:
-            strava_user_data = user_data.get(f"stream={data_source.lower()}")
+            strava_user_data = self.user_data.get(f"stream={data_source.lower()}")
             strava_etl_interface = SilverStravaETLInterface(
                 athlete_id=str(strava_user_data["athleteId"]),
             )
             strava_etl_interface.task_handler()
         else:
             raise ValueError(f"Unsupported data source: {data_source}")
+
+    @beartype
+    def full_etl(
+        self, uid: str, data_source: str, data_streams: list[str] | None = None
+    ) -> None:
+        """Entry point for full ETL process.
+
+        Args:
+            uid: Uid for user found in firebase.
+            data_source: Data source to download from (e.g. Strava)
+            data_streams: List of data streams to load for bronze ETL. If None, all streams will be loaded.
+
+        Raises:
+            KeyError: If required data_source is not supported.
+        """
+        # Ingest data
+        self.ingest(uid=uid, data_source=data_source)
+
+        # Bronze ETL
+        self.bronze_etl(uid=uid, data_source=data_source, data_streams=data_streams)
+
+        # Silver ETL
+        self.silver_etl(uid=uid, data_source=data_source)
+
+        logger.info("Full ETL process completed successfully.")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,213 @@
+name: Build, Test and Push to GCR
+
+on:
+  push:
+    branches:
+      - main
+      - '*FIT-**'
+
+env:
+  PYTHONPATH: ${{ github.workspace }}
+  SERVICE_NAME: fitnessllm-dp
+  ENVIRONMENT: dev
+  REGION: us-west1
+  PROJECT_ID: ${{ secrets.PROJECT_ID }}
+  ENCRYPTION_SECRET: ${{ secrets.ENCRYPTION_SECRET }}
+  STRAVA_SECRET: ${{ secrets.STRAVA_SECRET }}
+
+jobs:
+  cloud_run_deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12.2'
+
+
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: 2.0.1
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+
+    - name: Update Poetry lock file
+      run: |
+        poetry lock
+
+    - name: Install dependencies
+      run: |
+        poetry install --no-interaction
+
+    - name: Run pytest
+      if: success()
+      run: poetry run pytest tests/
+
+
+    - name: Cache pre-commit environments
+      if: success()
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pre-commit
+        key: precommit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+
+    - name: Install dependencies
+      if: success()
+      run: |
+        python -m pip install --upgrade pip
+        pip install pre-commit
+
+    - name: Run pre-commit
+      if: success()
+      run: |
+        pre-commit install
+        pre-commit run --all-files
+
+
+    - name: Authenticate to Google Cloud
+      if: success()
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+    - name: Set up Cloud SDK
+      if: success()
+      uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ secrets.PROJECT_ID }}
+        version: 'latest'
+
+    - name: Configure Docker for Artifact Registry
+      if: success()
+      run: gcloud auth configure-docker us-west1-docker.pkg.dev --quiet
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Cache Docker layers
+      uses: actions/cache@v4
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-
+
+    - name: Build Docker image
+      run: |
+        # Create cache directory if it doesn't exist
+        mkdir -p /tmp/.buildx-cache
+
+        # Build with cache if available
+        docker buildx build . \
+          --cache-from type=local,src=/tmp/.buildx-cache \
+          --cache-to type=local,dest=/tmp/.buildx-cache \
+          -t us-west1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.PROJECT_NAME }}/${{ env.PROJECT_NAME }}:${{ env.ENVIRONMENT }} \
+          --load
+
+    - name: Push Docker image to Artifact Registry
+      run: |
+        docker push us-west1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }}
+
+    - name: Deploy to Cloud Run
+      if: success()
+      run: |
+        gcloud run deploy ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }} \
+          --image ${{ env.REGION}}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }} \
+          --region ${{ env.REGION}} \
+          --platform managed \
+          --allow-unauthenticated \
+          --service-account=${{ secrets.GCP_DP_SA_EMAIL }} \
+          --port=8080
+
+    - name: Clean up old revisions
+      if: success()
+      run: |
+        # Get the latest revision
+        LATEST_REVISION=$(gcloud run revisions list --service ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }} --region ${{ env.REGION }} --format="value(name)" --sort-by=~creationTimestamp --limit=1)
+        
+        # Delete old revisions one by one
+        for revision in $(gcloud run revisions list --service ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }} --region ${{ env.REGION }} --format="value(name)" | grep -v "$LATEST_REVISION"); do
+          gcloud run revisions delete $revision --region ${{ env.REGION }} --quiet
+        done
+
+  #  test:
+  #    runs-on: ubuntu-latest
+  #    steps:
+  #    - uses: actions/checkout@v4
+  #
+  #    - name: Set up Python
+  #      uses: actions/setup-python@v5
+  #      with:
+  #        python-version: '3.9'
+  #
+  #    - name: Install dependencies
+  #      run: |
+  #        python -m pip install --upgrade pip
+  #        pip install -r cloud_functions/requirements.txt
+  #        pip install pytest pytest-mock
+  #
+  #    - name: token refresh tests
+  #      run: |
+  #        pytest cloud_functions/token_refresh/tests/
+
+  cloud_function_detect_changes:
+    runs-on: ubuntu-latest
+    outputs:
+      token_refresh: ${{ steps.filter.outputs.token_refresh }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # Required for git diff
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            token_refresh: 'cloud_functions/token_refresh/**'
+
+  cloud_function_deploy:
+    needs: cloud_function_detect_changes
+    runs-on: ubuntu-latest
+    environment: dev
+    strategy:
+      matrix:
+        function: [ 'token_refresh' ]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Deploy Function
+        if: needs.detect_changes.outputs[matrix.function] == 'true'
+        run: |
+          gcloud functions deploy ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') \
+            --gen2 \
+            --region=${{ env.REGION }} \
+            --runtime=python310 \
+            --source=cloud_functions/${{ matrix.function }} \
+            --trigger-http \
+            --entry-point=${{ matrix.function }} \
+            --max-instances=10 \
+            --min-instances=0 \
+            --memory=256MB \
+            --set-env-vars=PROJECT_ID=${{ env.PROJECT_ID }},ENVIRONMENT=${{ env.ENVIRONMENT }},ENCRYPTION_SECRET=${{ env.ENCRYPTION_SECRET }},STRAVA_SECRET=${{ env.STRAVA_SECRET }} \
+            --service-account=${{ secrets.GCP_DP_SA_EMAIL }}
+          
+          gcloud run services update ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') --region=${{ env.REGION }} --add-custom-audiences=${{ env.PROJECT_ID }}
+          
+          # First, get the latest revision
+          LATEST_REVISION=$(gcloud run revisions list --service ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') --region us-west1 --format="value(name)" --sort-by=~creationTimestamp --limit=1)
+          
+          # Then delete all revisions except the latest one
+          gcloud run revisions list --service ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') --region us-west1 --format="value(name)" | grep -v "$LATEST_REVISION" | xargs -r gcloud run revisions delete --region us-west1 --quiet

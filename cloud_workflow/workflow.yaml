@@ -1,0 +1,20 @@
+- initialize:
+    call: http.post
+    args:
+      url: https://REGION-PROJECT_ID.cloudfunctions.net/process-initial
+      body:
+        data: ${input.data}
+    result: initial_result
+
+- finalize:
+    call: http.post
+    args:
+      url: https://SERVICE_NAME-REGION.run.app/process-final
+      auth:
+        type: OIDC
+      body:
+        processed_data: ${initial_result.body}
+    result: final_result
+
+- return_output:
+    return: ${final_result}

@@ -85,17 +85,17 @@ jobs:
 
     - name: Build Docker image
       run: |
-        docker build . -t us-west1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.PROJECT_NAME }}/${{ env.PROJECT_NAME }}:main
+        docker build . -t us-west1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.PROJECT_NAME }}/${{ env.PROJECT_NAME }}:${{ env.ENVIRONMENT }}
 
     - name: Push Docker image to Artifact Registry
       run: |
-        docker push us-west1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.PROJECT_NAME }}/${{ env.PROJECT_NAME }}:main
+        docker push us-west1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.PROJECT_NAME }}/${{ env.PROJECT_NAME }}:${{ env.ENVIRONMENT }}
 
     - name: Deploy to Cloud Run
       if: success()
       run: |
-        gcloud run deploy ${{ env.ENVIRONMENT }} \
-          --image ${{ env.REGION}}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.PROJECT_NAME }}/${{ env.PROJECT_NAME }}:main \
+        gcloud run deploy ${{ env.ENVIRONMENT }}-${{ env.PROJECT_NAME }} \
+          --image ${{ env.REGION}}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.PROJECT_NAME }}/${{ env.PROJECT_NAME }}:${{ env.ENVIRONMENT }} \
           --region ${{ env.REGION}} \
           --platform managed \
           --allow-unauthenticated \

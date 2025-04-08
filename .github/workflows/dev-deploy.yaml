@@ -106,12 +106,12 @@ jobs:
         docker buildx build . \
           --cache-from type=local,src=/tmp/.buildx-cache \
           --cache-to type=local,dest=/tmp/.buildx-cache \
-          -t us-west1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.PROJECT_NAME }}/${{ env.PROJECT_NAME }}:${{ env.ENVIRONMENT }} \
+          -t ${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }} \
           --load
 
     - name: Push Docker image to Artifact Registry
       run: |
-        docker push us-west1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }}
+        docker push ${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }}
 
     - name: Deploy to Cloud Run
       if: success()

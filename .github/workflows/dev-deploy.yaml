@@ -227,7 +227,7 @@ jobs:
       - name: Deploy Workflow
         run: |
           TOKEN_REFRESH_FUNCTION=$(gcloud functions describe ${{ env.ENVIRONMENT }}-token-refresh --gen2 --region=${{ env.REGION }} --format='value(serviceConfig.uri)')
-          DATA_RUN_FUNCTION=$(gcloud run services describe ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }} --gen2 --region=${{ env.REGION }} --format='value(status.url)')
+          DATA_RUN_FUNCTION=$(gcloud run services describe ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }} --region=${{ env.REGION }} --format='value(status.url)')
 
           gcloud workflows deploy ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }}-workflow \
             --region=${{ env.REGION }} \

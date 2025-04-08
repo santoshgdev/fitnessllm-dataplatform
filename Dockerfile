@@ -30,6 +30,8 @@ COPY pyproject.toml poetry.lock ./
 RUN poetry config virtualenvs.in-project true
 RUN poetry lock
 RUN poetry install --no-root
+RUN poetry export -f requirements.txt -o requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 ENV PORT=8080
 

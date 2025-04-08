@@ -245,7 +245,6 @@ jobs:
           DATA_RUN_FUNCTION=$(gcloud run services describe ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }} --region=${{ env.REGION }} --format='value(status.url)')
 
           gcloud workflows deploy ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }}-workflow \
-            --region=${{ env.REGION }} \
             --source=cloud_workflow/workflow.yaml \
             --service-account=${{ secrets.GCP_DP_SA_EMAIL }} \
             --set-env-vars TOKEN_REFRESH_FUNCTION=${TOKEN_REFRESH_FUNCTION},DATA_RUN_FUNCTION=${DATA_RUN_FUNCTION}

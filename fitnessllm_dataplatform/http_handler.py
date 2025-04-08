@@ -21,16 +21,6 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         """Handle POST requests."""
-        try:
-            # Extract UID from Bearer token
-            uid = self.extract_uid_from_token()
-        except ValueError as e:
-            self.send_response(401)
-            self.send_header("Content-type", "application/json")
-            self.end_headers()
-            self.wfile.write(json.dumps({"error": str(e)}).encode())
-            return
-
         content_length = int(self.headers["Content-Length"])
         post_data = self.rfile.read(content_length)
         data = json.loads(post_data)
@@ -73,6 +63,9 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         try:
+            # Extract UID from Bearer token
+            uid = self.extract_uid_from_token()
+
             # Initialize and run the task handler
             startup = Startup()
             startup.full_etl(
@@ -83,6 +76,11 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("Content-type", "application/json")
             self.end_headers()
             self.wfile.write(json.dumps({"status": "success"}).encode())
+        except ValueError as e:
+            self.send_response(401)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"error": str(e)}).encode())
         except Exception as e:
             self.send_response(500)
             self.send_header("Content-type", "application/json")

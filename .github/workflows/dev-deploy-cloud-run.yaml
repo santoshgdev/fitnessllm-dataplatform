@@ -25,6 +25,7 @@ jobs:
       with:
         python-version: '3.12.2'
 
+
     - name: Install Poetry
       uses: snok/install-poetry@v1
       with:
@@ -44,6 +45,7 @@ jobs:
       if: success()
       run: poetry run pytest tests/
 
+
     - name: Cache pre-commit environments
       if: success()
       uses: actions/cache@v4
@@ -62,6 +64,7 @@ jobs:
       run: |
         pre-commit install
         pre-commit run --all-files
+
 
     - name: Authenticate to Google Cloud
       if: success()

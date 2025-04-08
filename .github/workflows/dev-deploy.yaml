@@ -22,12 +22,26 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 4  # Needed to check for file changes
+
+    - name: Check for relevant file changes
+      id: check_changes
+      run: |
+        git diff --name-only HEAD^ HEAD > changed_files.txt
+        echo "Changed files:"
+        cat changed_files.txt
+        
+        if grep -q -E '^(fitnessllm_dataplatform/|Dockerfile|pyproject.toml|poetry.lock)' changed_files.txt; then
+          echo "docker_build_needed=true" >> $GITHUB_OUTPUT
+        else
+          echo "docker_build_needed=false" >> $GITHUB_OUTPUT
+        fi
 
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.12.2'
-
 
     - name: Install Poetry
       uses: snok/install-poetry@v1
@@ -48,7 +62,6 @@ jobs:
       if: success()
       run: poetry run pytest tests/
 
-
     - name: Cache pre-commit environments
       if: success()
       uses: actions/cache@v4
@@ -68,7 +81,6 @@ jobs:
         pre-commit install
         pre-commit run --all-files
 
-
     - name: Authenticate to Google Cloud
       if: success()
       uses: google-github-actions/auth@v2
@@ -87,6 +99,7 @@ jobs:
       run: gcloud auth configure-docker us-west1-docker.pkg.dev --quiet
 
     - name: Set up Docker Buildx
+      if: steps.check_changes.outputs.docker_build_needed == 'true'
       uses: docker/setup-buildx-action@v3
 
     - name: Cache Docker layers
@@ -98,6 +111,7 @@ jobs:
           ${{ runner.os }}-buildx-
 
     - name: Build Docker image
+      if: steps.check_changes.outputs.docker_build_needed == 'true'
       run: |
         # Create cache directory if it doesn't exist
         mkdir -p /tmp/.buildx-cache
@@ -110,6 +124,7 @@ jobs:
           --load
 
     - name: Push Docker image to Artifact Registry
+      if: steps.check_changes.outputs.docker_build_needed == 'true'
       run: |
         docker push ${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }}
 
@@ -129,7 +144,7 @@ jobs:
       run: |
         # Get the latest revision
         LATEST_REVISION=$(gcloud run revisions list --service ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }} --region ${{ env.REGION }} --format="value(name)" --sort-by=~creationTimestamp --limit=1)
-
+        
         # Delete old revisions one by one
         for revision in $(gcloud run revisions list --service ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }} --region ${{ env.REGION }} --format="value(name)" | grep -v "$LATEST_REVISION"); do
           gcloud run revisions delete $revision --region ${{ env.REGION }} --quiet

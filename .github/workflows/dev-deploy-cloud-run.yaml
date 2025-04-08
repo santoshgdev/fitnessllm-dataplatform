@@ -35,7 +35,7 @@ jobs:
 
     - name: Update Poetry lock file
       run: |
-        poetry lock --no-update
+        poetry lock
 
     - name: Install dependencies
       run: |

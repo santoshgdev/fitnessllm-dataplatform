@@ -71,4 +71,4 @@ class BatchHandler:
 
 if __name__ == "__main__":
     handler = BatchHandler()
-    handler.process_all_users() 
+    handler.process_all_users()

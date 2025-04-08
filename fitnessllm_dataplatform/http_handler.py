@@ -1,5 +1,6 @@
 """HTTP handler for Cloud Run."""
 import json
+import os
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 from fitnessllm_dataplatform.batch_handler import BatchHandler
@@ -70,9 +71,16 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(json.dumps({"error": str(e)}).encode())
 
+    def do_GET(self):
+        if self.path == '/health':
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b'OK')
+
 
 def run_server(port: int = 8080) -> None:
     """Run the HTTP server."""
+    port = int(os.environ.get("PORT", 8080))
     server = HTTPServer(("0.0.0.0", port), Handler)
     print(f"Starting server on port {port}")
     server.serve_forever()

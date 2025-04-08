@@ -96,6 +96,10 @@ jobs:
 
     - name: Build Docker image
       run: |
+        # Create cache directory if it doesn't exist
+        mkdir -p /tmp/.buildx-cache
+
+        # Build with cache if available
         docker buildx build . \
           --cache-from type=local,src=/tmp/.buildx-cache \
           --cache-to type=local,dest=/tmp/.buildx-cache \

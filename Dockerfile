@@ -15,15 +15,8 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/* \
     && curl -sSL https://install.python-poetry.org | python3 - --version ${POETRY_VERSION}
 
-# Create and set up virtual environment directory
-RUN mkdir /venv
-WORKDIR /venv
-COPY pyproject.toml poetry.lock ./
 
-# Install dependencies
-RUN poetry config virtualenvs.in-project true
-RUN poetry lock
-RUN poetry install --no-root
+
 
 # Set up application directory
 RUN mkdir /app
@@ -31,6 +24,12 @@ WORKDIR /app
 
 COPY fitnessllm_dataplatform ./fitnessllm_dataplatform
 COPY cloud_functions ./cloud_functions
+COPY pyproject.toml poetry.lock ./
+
+# Install dependencies
+RUN poetry config virtualenvs.in-project true
+RUN poetry lock
+RUN poetry install --no-root
 
 ENV PORT=8080
 

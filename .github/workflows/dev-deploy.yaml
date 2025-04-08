@@ -223,7 +223,7 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
-      
+
       - name: Deploy Workflow
         run: |
           TOKEN_REFRESH_FUNCTION=$(gcloud functions describe ${{ env.ENVIRONMENT }}-token-refresh --gen2 --region=${{ env.REGION }} --format='value(serviceConfig.uri)')

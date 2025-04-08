@@ -114,4 +114,6 @@ jobs:
           --region ${{ env.REGION}} \
           --platform managed \
           --allow-unauthenticated \
-          --service-account=${{ secrets.GCP_DP_SA_EMAIL }}
+          --service-account=${{ secrets.GCP_DP_SA_EMAIL }} \
+          --port=8080 \
+          --set-env-vars="PROJECT_ID=${{ secrets.PROJECT_ID }},ENVIRONMENT=${{ env.ENVIRONMENT }},ENCRYPTION_SECRET=${{ secrets.ENCRYPTION_SECRET }},STRAVA_SECRET=${{ secrets.STRAVA_SECRET }},INFRASTRUCTURE_SECRET=${{ secrets.INFRASTRUCTURE_SECRET }},STAGE=${{ env.ENVIRONMENT }}"

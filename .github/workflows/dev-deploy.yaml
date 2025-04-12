@@ -1,168 +1,169 @@
+---
 name: Build, Test, and Deploy Cloud Function, Run, and Workflow
 
 on:
-  push:
-    branches:
-      - main
-      - '*FIT-**'
+    push:
+        branches:
+            - main
+            - '*FIT-**'
 
 env:
-  PYTHONPATH: ${{ github.workspace }}
-  SERVICE_NAME: fitnessllm-dp
-  ENVIRONMENT: dev
-  REGION: us-west1
-  PROJECT_ID: ${{ secrets.PROJECT_ID }}
-  ENCRYPTION_SECRET: ${{ secrets.ENCRYPTION_SECRET }}
-  STRAVA_SECRET: ${{ secrets.STRAVA_SECRET }}
+    PYTHONPATH: ${{ github.workspace }}
+    SERVICE_NAME: fitnessllm-dp
+    ENVIRONMENT: dev
+    REGION: us-west1
+    PROJECT_ID: ${{ secrets.PROJECT_ID }}
+    ENCRYPTION_SECRET: ${{ secrets.ENCRYPTION_SECRET }}
+    STRAVA_SECRET: ${{ secrets.STRAVA_SECRET }}
 
 jobs:
-  cloud_run_deploy:
-    runs-on: ubuntu-latest
+    cloud_run_deploy:
+        runs-on: ubuntu-latest
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 4  # Needed to check for file changes
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 4
 
-    - name: Check for relevant file changes
-      id: check_changes
-      run: |
-        git diff --name-only HEAD^ HEAD > changed_files.txt
-        echo "Changed files:"
-        cat changed_files.txt
+            - name: Check for relevant file changes
+              id: check_changes
+              run: |
+                  git diff --name-only HEAD^ HEAD > changed_files.txt
+                  echo "Changed files:"
+                  cat changed_files.txt
 
-        if grep -q -E '^(fitnessllm_dataplatform/|Dockerfile|pyproject.toml|poetry.lock)' changed_files.txt; then
-          echo "docker_build_needed=true" >> $GITHUB_OUTPUT
-        else
-          echo "docker_build_needed=false" >> $GITHUB_OUTPUT
-        fi
+                  if grep -q -E '^(fitnessllm_dataplatform/|Dockerfile|pyproject.toml|poetry.lock)' changed_files.txt; then
+                    echo "docker_build_needed=true" >> $GITHUB_OUTPUT
+                  else
+                    echo "docker_build_needed=false" >> $GITHUB_OUTPUT
+                  fi
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.12.2'
+            - name: Set up Python
+              uses: actions/setup-python@v4
+              with:
+                  python-version: 3.12.2
 
-    - name: Install Poetry
-      uses: snok/install-poetry@v1
-      with:
-        version: 2.0.1
-        virtualenvs-create: true
-        virtualenvs-in-project: true
+            - name: Install Poetry
+              uses: snok/install-poetry@v1
+              with:
+                  version: 2.0.1
+                  virtualenvs-create: true
+                  virtualenvs-in-project: true
 
-    - name: Update Poetry lock file
-      run: |
-        poetry lock
+            - name: Update Poetry lock file
+              run: |
+                  poetry lock
 
-    - name: Install dependencies
-      run: |
-        poetry install --no-interaction
+            - name: Install dependencies
+              run: |
+                  poetry install --no-interaction
 
-    - name: Run pytest
-      if: success()
-      run: poetry run pytest tests/
+            - name: Run pytest
+              if: success()
+              run: poetry run pytest tests/
 
-    - name: Cache pre-commit
-      id: cache-pre-commit
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.cache/pre-commit
-          ~/.cache/pip
-        key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}-${{ hashFiles('**/poetry.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}-
-          ${{ runner.os }}-pre-commit-
+            - name: Cache pre-commit
+              id: cache-pre-commit
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      ~/.cache/pre-commit
+                      ~/.cache/pip
+                  key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}-${{ hashFiles('**/poetry.lock') }}
+                  restore-keys: |
+                      ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}-
+                      ${{ runner.os }}-pre-commit-
 
-    - name: Install and initialize pre-commit
-      run: |
-        pip install pre-commit
-        pre-commit install
-        # Run once to populate the cache
-        pre-commit run --all-files || true
+            - name: Install and initialize pre-commit
+              run: |
+                  pip install pre-commit
+                  pre-commit install
+                  # Run once to populate the cache
+                  pre-commit run --all-files || true
 
-    - name: Save pre-commit cache
-      if: steps.cache-pre-commit.outputs.cache-hit != 'true'
-      uses: actions/cache/save@v4
-      with:
-        path: |
-          ~/.cache/pre-commit
-          ~/.cache/pip
-        key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}-${{ hashFiles('**/poetry.lock') }}
+            - name: Save pre-commit cache
+              if: steps.cache-pre-commit.outputs.cache-hit != 'true'
+              uses: actions/cache/save@v4
+              with:
+                  path: |
+                      ~/.cache/pre-commit
+                      ~/.cache/pip
+                  key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}-${{ hashFiles('**/poetry.lock') }}
 
-    - name: Run pre-commit checks
-      if: success()
-      run: |
-        pre-commit run --all-files
+            - name: Run pre-commit checks
+              if: success()
+              run: |
+                  pre-commit run --all-files
 
-    - name: Authenticate to Google Cloud
-      if: success()
-      uses: google-github-actions/auth@v2
-      with:
-        credentials_json: ${{ secrets.GCP_SA_KEY }}
+            - name: Authenticate to Google Cloud
+              if: success()
+              uses: google-github-actions/auth@v2
+              with:
+                  credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-    - name: Set up Cloud SDK
-      if: success()
-      uses: google-github-actions/setup-gcloud@v2
-      with:
-        project_id: ${{ secrets.PROJECT_ID }}
-        version: 'latest'
+            - name: Set up Cloud SDK
+              if: success()
+              uses: google-github-actions/setup-gcloud@v2
+              with:
+                  project_id: ${{ secrets.PROJECT_ID }}
+                  version: latest
 
-    - name: Configure Docker for Artifact Registry
-      if: success()
-      run: gcloud auth configure-docker us-west1-docker.pkg.dev --quiet
+            - name: Configure Docker for Artifact Registry
+              if: success()
+              run: gcloud auth configure-docker us-west1-docker.pkg.dev --quiet
 
-    - name: Set up Docker Buildx
-      if: steps.check_changes.outputs.docker_build_needed == 'true'
-      uses: docker/setup-buildx-action@v3
+            - name: Set up Docker Buildx
+              if: steps.check_changes.outputs.docker_build_needed == 'true'
+              uses: docker/setup-buildx-action@v3
 
-    - name: Cache Docker layers
-      uses: actions/cache@v4
-      with:
-        path: /tmp/.buildx-cache
-        key: ${{ runner.os }}-buildx-${{ github.sha }}
-        restore-keys: |
-          ${{ runner.os }}-buildx-
+            - name: Cache Docker layers
+              uses: actions/cache@v4
+              with:
+                  path: /tmp/.buildx-cache
+                  key: ${{ runner.os }}-buildx-${{ github.sha }}
+                  restore-keys: |
+                      ${{ runner.os }}-buildx-
 
-    - name: Build Docker image
-      if: steps.check_changes.outputs.docker_build_needed == 'true'
-      run: |
-        # Create cache directory if it doesn't exist
-        mkdir -p /tmp/.buildx-cache
+            - name: Build Docker image
+              if: steps.check_changes.outputs.docker_build_needed == 'true'
+              run: |
+                  # Create cache directory if it doesn't exist
+                  mkdir -p /tmp/.buildx-cache
 
-        # Build with cache if available
-        docker buildx build . \
-          --cache-from type=local,src=/tmp/.buildx-cache \
-          --cache-to type=local,dest=/tmp/.buildx-cache \
-          -t ${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }} \
-          --load
+                  # Build with cache if available
+                  docker buildx build . \
+                    --cache-from type=local,src=/tmp/.buildx-cache \
+                    --cache-to type=local,dest=/tmp/.buildx-cache \
+                    -t ${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }} \
+                    --load
 
-    - name: Push Docker image to Artifact Registry
-      if: steps.check_changes.outputs.docker_build_needed == 'true'
-      run: |
-        docker push ${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }}
+            - name: Push Docker image to Artifact Registry
+              if: steps.check_changes.outputs.docker_build_needed == 'true'
+              run: |
+                  docker push ${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }}
 
-    - name: Deploy to Cloud Run
-      if: success()
-      run: |
-        gcloud run deploy ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }} \
-          --image ${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }} \
-          --region ${{ env.REGION }} \
-          --platform managed \
-          --allow-unauthenticated \
-          --service-account=${{ secrets.GCP_DP_SA_EMAIL }} \
-          --port=8080
+            - name: Deploy to Cloud Run
+              if: success()
+              run: |
+                  gcloud run deploy ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }} \
+                    --image ${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }} \
+                    --region ${{ env.REGION }} \
+                    --platform managed \
+                    --allow-unauthenticated \
+                    --service-account=${{ secrets.GCP_DP_SA_EMAIL }} \
+                    --port=8080
 
-    - name: Clean up old revisions
-      if: success()
-      run: |
-        # Get the latest revision
-        LATEST_REVISION=$(gcloud run revisions list --service ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }} --region ${{ env.REGION }} --format="value(name)" --sort-by=~creationTimestamp --limit=1)
+            - name: Clean up old revisions
+              if: success()
+              run: |
+                  # Get the latest revision
+                  LATEST_REVISION=$(gcloud run revisions list --service ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }} --region ${{ env.REGION }} --format="value(name)" --sort-by=~creationTimestamp --limit=1)
 
-        # Delete old revisions one by one
-        for revision in $(gcloud run revisions list --service ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }} --region ${{ env.REGION }} --format="value(name)" | grep -v "$LATEST_REVISION"); do
-          gcloud run revisions delete $revision --region ${{ env.REGION }} --quiet
-        done
+                  # Delete old revisions one by one
+                  for revision in $(gcloud run revisions list --service ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }} --region ${{ env.REGION }} --format="value(name)" | grep -v "$LATEST_REVISION"); do
+                    gcloud run revisions delete $revision --region ${{ env.REGION }} --quiet
+                  done
 
   #  test:
   #    runs-on: ubuntu-latest
@@ -184,65 +185,65 @@ jobs:
   #      run: |
   #        pytest cloud_functions/token_refresh/tests/
 
-  cloud_function_detect_changes:
-    runs-on: ubuntu-latest
-    outputs:
-      token_refresh: ${{ steps.filter.outputs.token_refresh }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 2  # Required for git diff
+    cloud_function_detect_changes:
+        runs-on: ubuntu-latest
+        outputs:
+            token_refresh: ${{ steps.filter.outputs.token_refresh }}
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 2 # Required for git diff
 
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            token_refresh: 'cloud_functions/token_refresh/**'
+            - uses: dorny/paths-filter@v3
+              id: filter
+              with:
+                  filters: |
+                      token_refresh: 'cloud_functions/token_refresh/**'
 
-  cloud_function_deploy:
-    needs: cloud_function_detect_changes
-    runs-on: ubuntu-latest
-    environment: dev
-    strategy:
-      matrix:
-        function: [ 'token_refresh' ]
-    steps:
-      - uses: actions/checkout@v4
+    cloud_function_deploy:
+        needs: cloud_function_detect_changes
+        runs-on: ubuntu-latest
+        environment: dev
+        strategy:
+            matrix:
+                function: [token_refresh]
+        steps:
+            - uses: actions/checkout@v4
 
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
+            - name: Authenticate to Google Cloud
+              uses: google-github-actions/auth@v2
+              with:
+                  credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      - name: Set up gcloud CLI
-        uses: google-github-actions/setup-gcloud@v2
+            - name: Set up gcloud CLI
+              uses: google-github-actions/setup-gcloud@v2
 
-      - name: Deploy Function
-        if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true'
-        run: |
-          gcloud functions deploy ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') \
-            --gen2 \
-            --region=${{ env.REGION }} \
-            --runtime=python310 \
-            --source=cloud_functions/${{ matrix.function }} \
-            --trigger-http \
-            --entry-point=${{ matrix.function }} \
-            --max-instances=10 \
-            --min-instances=0 \
-            --memory=256MB \
-            --set-env-vars=PROJECT_ID=${{ env.PROJECT_ID }},ENVIRONMENT=${{ env.ENVIRONMENT }},ENCRYPTION_SECRET=${{ env.ENCRYPTION_SECRET }},STRAVA_SECRET=${{ env.STRAVA_SECRET }} \
-            --service-account=${{ secrets.GCP_DP_SA_EMAIL }}
-          gcloud run services update ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') --region=${{ env.REGION }} --add-custom-audiences=${{ env.PROJECT_ID }}
+            - name: Deploy Function
+              if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true'
+              run: |
+                  gcloud functions deploy ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') \
+                    --gen2 \
+                    --region=${{ env.REGION }} \
+                    --runtime=python310 \
+                    --source=cloud_functions/${{ matrix.function }} \
+                    --trigger-http \
+                    --entry-point=${{ matrix.function }} \
+                    --max-instances=10 \
+                    --min-instances=0 \
+                    --memory=256MB \
+                    --set-env-vars=PROJECT_ID=${{ env.PROJECT_ID }},ENVIRONMENT=${{ env.ENVIRONMENT }},ENCRYPTION_SECRET=${{ env.ENCRYPTION_SECRET }},STRAVA_SECRET=${{ env.STRAVA_SECRET }} \
+                    --service-account=${{ secrets.GCP_DP_SA_EMAIL }}
+                  gcloud run services update ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') --region=${{ env.REGION }} --add-custom-audiences=${{ env.PROJECT_ID }}
 
-      - name: Clean up old revisions
-        if: success()
-        run: |
-          # First, get the latest revision
-          LATEST_REVISION=$(gcloud run revisions list --service ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') --region us-west1 --format="value(name)" --sort-by=~creationTimestamp --limit=1)
+            - name: Clean up old revisions
+              if: success()
+              run: |
+                  # First, get the latest revision
+                  LATEST_REVISION=$(gcloud run revisions list --service ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') --region us-west1 --format="value(name)" --sort-by=~creationTimestamp --limit=1)
 
-          # Then delete all revisions except the latest one using a for loop
-          for revision in $(gcloud run revisions list --service ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') --region us-west1 --format="value(name)"); do
-            if [ "$revision" != "$LATEST_REVISION" ]; then
-              gcloud run revisions delete $revision --region us-west1 --quiet
-            fi
-          done
+                  # Then delete all revisions except the latest one using a for loop
+                  for revision in $(gcloud run revisions list --service ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') --region us-west1 --format="value(name)"); do
+                    if [ "$revision" != "$LATEST_REVISION" ]; then
+                      gcloud run revisions delete $revision --region us-west1 --quiet
+                    fi
+                  done

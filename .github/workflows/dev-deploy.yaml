@@ -218,7 +218,7 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
 
       - name: Deploy Function
-        if: needs.detect_changes.outputs[matrix.function] == 'true'
+        if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true'
         run: |
           gcloud functions deploy ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') \
             --gen2 \

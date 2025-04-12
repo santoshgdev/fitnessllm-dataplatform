@@ -5,7 +5,7 @@ from typing import Dict
 import requests
 from firebase_admin import auth, initialize_app
 from firebase_functions import https_fn, options
-from google.cloud import functions_v2, run_v2
+from google.cloud import functions, run
 
 from .utils.logger_utils import logger
 
@@ -28,8 +28,8 @@ def get_api_endpoints() -> Dict[str, str]:
         environment = os.getenv("ENVIRONMENT")
 
         # Initialize clients
-        functions_client = functions_v2.FunctionServiceClient()
-        run_client = run_v2.ServicesClient()
+        functions_client = functions.CloudFunctionsServiceClient()
+        run_client = run.ServicesClient()
 
         # Get token refresh function URL
         token_refresh_name = f"projects/{project_id}/locations/{region}/functions/{environment}-token-refresh"

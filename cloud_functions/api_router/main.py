@@ -4,6 +4,7 @@ from typing import Dict, Any
 
 from firebase_admin import auth, initialize_app
 from firebase_functions import https_fn, options
+from google.cloud import run_v2, functions_v2
 import requests
 
 from .utils.logger_utils import logger
@@ -13,6 +14,37 @@ initialize_app(
         "projectId": os.getenv("PROJECT_ID"),
     }
 )
+
+def get_api_endpoints() -> Dict[str, str]:
+    """Get API endpoints dynamically using service discovery.
+    
+    Returns:
+        Dict[str, str]: Dictionary mapping API names to their URLs
+    """
+    try:
+        project_id = os.getenv("PROJECT_ID")
+        region = os.getenv("REGION")
+        environment = os.getenv("ENVIRONMENT")
+        
+        # Initialize clients
+        functions_client = functions_v2.FunctionServiceClient()
+        run_client = run_v2.ServicesClient()
+        
+        # Get token refresh function URL
+        token_refresh_name = f"projects/{project_id}/locations/{region}/functions/{environment}-token-refresh"
+        token_refresh_function = functions_client.get_function(name=token_refresh_name)
+        
+        # Get data run service URL
+        data_run_name = f"projects/{project_id}/locations/{region}/services/{environment}-data-run"
+        data_run_service = run_client.get_service(name=data_run_name)
+        
+        return {
+            "token_refresh": token_refresh_function.service_config.uri,
+            "data_run": data_run_service.uri
+        }
+    except Exception as e:
+        logger.error(f"Error fetching API endpoints: {str(e)}")
+        raise
 
 @https_fn.on_request(
     cors=options.CorsOptions(cors_origins=["*"], cors_methods=["POST", "OPTIONS"])
@@ -58,7 +90,6 @@ def api_router(request: https_fn.Request) -> https_fn.Response:
         # Verify the Firebase ID token
         token = auth_header.split("Bearer ")[1]
         decoded_token = auth.verify_id_token(token)
-        uid = decoded_token["uid"]
 
         # Get the request data
         request_data = request.get_json(silent=True)
@@ -76,13 +107,8 @@ def api_router(request: https_fn.Request) -> https_fn.Response:
                 status=400, response="Bad Request - No target API specified"
             )
 
-        # Define your API endpoints mapping
-        api_endpoints = {
-            "function1": "https://your-cloud-function-1-url",
-            "function2": "https://your-cloud-function-2-url",
-            "cloudrun1": "https://your-cloud-run-1-url",
-            "cloudrun2": "https://your-cloud-run-2-url"
-        }
+        # Get API endpoints dynamically
+        api_endpoints = get_api_endpoints()
 
         # Get the target URL
         target_url = api_endpoints.get(target_api)

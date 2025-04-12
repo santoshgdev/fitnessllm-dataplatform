@@ -232,11 +232,17 @@ jobs:
             --memory=256MB \
             --set-env-vars=PROJECT_ID=${{ env.PROJECT_ID }},ENVIRONMENT=${{ env.ENVIRONMENT }},ENCRYPTION_SECRET=${{ env.ENCRYPTION_SECRET }},STRAVA_SECRET=${{ env.STRAVA_SECRET }} \
             --service-account=${{ secrets.GCP_DP_SA_EMAIL }}
-
           gcloud run services update ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') --region=${{ env.REGION }} --add-custom-audiences=${{ env.PROJECT_ID }}
 
+      - name: Clean up old revisions
+        if: success()    
+        run: |
           # First, get the latest revision
           LATEST_REVISION=$(gcloud run revisions list --service ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') --region us-west1 --format="value(name)" --sort-by=~creationTimestamp --limit=1)
 
-          # Then delete all revisions except the latest one
-          gcloud run revisions list --service ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') --region us-west1 --format="value(name)" | grep -v "$LATEST_REVISION" | xargs -r gcloud run revisions delete --region us-west1 --quiet
+          # Then delete all revisions except the latest one using a for loop
+          for revision in $(gcloud run revisions list --service ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') --region us-west1 --format="value(name)"); do
+            if [ "$revision" != "$LATEST_REVISION" ]; then
+              gcloud run revisions delete $revision --region us-west1 --quiet
+            fi
+          done

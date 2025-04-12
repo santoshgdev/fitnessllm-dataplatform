@@ -63,6 +63,7 @@ jobs:
       run: poetry run pytest tests/
 
     - name: Cache pre-commit
+      id: cache-pre-commit
       uses: actions/cache@v4
       with:
         path: |
@@ -73,10 +74,25 @@ jobs:
           ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}-
           ${{ runner.os }}-pre-commit-
 
-    - name: Install and run pre-commit
-      if: success()
+    - name: Install and initialize pre-commit
       run: |
         pip install pre-commit
+        pre-commit install
+        # Run once to populate the cache
+        pre-commit run --all-files || true
+
+    - name: Save pre-commit cache
+      if: steps.cache-pre-commit.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: |
+          ~/.cache/pre-commit
+          ~/.cache/pip
+        key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}-${{ hashFiles('**/poetry.lock') }}
+
+    - name: Run pre-commit checks
+      if: success()
+      run: |
         pre-commit run --all-files
 
     - name: Authenticate to Google Cloud

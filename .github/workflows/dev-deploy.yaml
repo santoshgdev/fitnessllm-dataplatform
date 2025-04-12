@@ -146,8 +146,8 @@ jobs:
       if: success()
       run: |
         gcloud run deploy ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }} \
-          --image ${{ env.REGION}}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }} \
-          --region ${{ env.REGION}} \
+          --image ${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }} \
+          --region ${{ env.REGION }} \
           --platform managed \
           --allow-unauthenticated \
           --service-account=${{ secrets.GCP_DP_SA_EMAIL }} \

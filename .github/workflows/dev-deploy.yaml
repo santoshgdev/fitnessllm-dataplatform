@@ -190,16 +190,18 @@ jobs:
         runs-on: ubuntu-latest
         outputs:
             token_refresh: ${{ steps.filter.outputs.token_refresh }}
+            api_router: ${{ steps.filter.outputs.api_router }}
         steps:
             - uses: actions/checkout@v4
               with:
-                  fetch-depth: 2 # Required for git diff
+                  fetch-depth: 3
 
             - uses: dorny/paths-filter@v3
               id: filter
               with:
                   filters: |
                       token_refresh: 'cloud_functions/token_refresh/**'
+                      api_router: 'cloud_functions/api_router/**'
 
     cloud_function_deploy:
         needs: cloud_function_detect_changes
@@ -207,7 +209,7 @@ jobs:
         environment: dev
         strategy:
             matrix:
-                function: [token_refresh]
+                function: [token_refresh, api_router]
         steps:
             - uses: actions/checkout@v4
 

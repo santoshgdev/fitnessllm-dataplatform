@@ -1,7 +1,6 @@
 """Utility functions for ETL operations on Strava data."""
-from typing import Callable
-
 from beartype import beartype
+from beartype.typing import Callable
 from pandas import DataFrame
 
 from fitnessllm_dataplatform.stream.strava.entities.enums import StravaStreams

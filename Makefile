@@ -15,7 +15,7 @@ test:
 	  -e PYTHONPATH=/app/fitnessllm-dataplatform \
 	  -v "$$PWD:/app/fitnessllm-dataplatform" \
 	  fitnessllm-dp:latest \
-	  sh -c "cd /app/fitnessllm-dataplatform && /venv/.venv/bin/pytest --cov --cov-branch --cov-report=html"
+	  sh -c "cd /app/fitnessllm-dataplatform && /app/.venv/bin/pytest tests --cov --cov-branch --cov-report=html"
 
 coverage:
 	coverage
@@ -31,3 +31,6 @@ lint:
 
 repomix:
 	repomix --include "**/*.json,**/*.sql,**/*.py,**/Dockerfile,**/*.yml,**/*.ini,**/*.md,**/*.toml"
+
+cf_token_refresh:
+	cd cloud_functions && functions-framework --target refresh_token --port 8080

@@ -93,8 +93,8 @@ def api_router(request: https_fn.Request) -> https_fn.Response:
 
     try:
         # Verify the Firebase ID token
-        token = auth_header.split("Bearer ")[1]
-        decoded_token = auth.verify_id_token(token)
+        # token = auth_header.split("Bearer ")[1]
+        # decoded_token = auth.verify_id_token(token)
 
         # Get the request data
         request_data = request.get_json(silent=True)

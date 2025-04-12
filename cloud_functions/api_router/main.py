@@ -1,11 +1,11 @@
 """Main Entry point for cloud function."""
 import os
-from typing import Dict, Any
+from typing import Dict
 
+import requests
 from firebase_admin import auth, initialize_app
 from firebase_functions import https_fn, options
-from google.cloud import run_v2, functions_v2
-import requests
+from google.cloud import functions_v2, run_v2
 
 from .utils.logger_utils import logger
 
@@ -15,9 +15,10 @@ initialize_app(
     }
 )
 
+
 def get_api_endpoints() -> Dict[str, str]:
     """Get API endpoints dynamically using service discovery.
-    
+
     Returns:
         Dict[str, str]: Dictionary mapping API names to their URLs
     """
@@ -25,33 +26,36 @@ def get_api_endpoints() -> Dict[str, str]:
         project_id = os.getenv("PROJECT_ID")
         region = os.getenv("REGION")
         environment = os.getenv("ENVIRONMENT")
-        
+
         # Initialize clients
         functions_client = functions_v2.FunctionServiceClient()
         run_client = run_v2.ServicesClient()
-        
+
         # Get token refresh function URL
         token_refresh_name = f"projects/{project_id}/locations/{region}/functions/{environment}-token-refresh"
         token_refresh_function = functions_client.get_function(name=token_refresh_name)
-        
+
         # Get data run service URL
-        data_run_name = f"projects/{project_id}/locations/{region}/services/{environment}-data-run"
+        data_run_name = (
+            f"projects/{project_id}/locations/{region}/services/{environment}-data-run"
+        )
         data_run_service = run_client.get_service(name=data_run_name)
-        
+
         return {
             "token_refresh": token_refresh_function.service_config.uri,
-            "data_run": data_run_service.uri
+            "data_run": data_run_service.uri,
         }
     except Exception as e:
         logger.error(f"Error fetching API endpoints: {str(e)}")
         raise
+
 
 @https_fn.on_request(
     cors=options.CorsOptions(cors_origins=["*"], cors_methods=["POST", "OPTIONS"])
 )
 def api_router(request: https_fn.Request) -> https_fn.Response:
     """Cloud function that acts as an API router.
-    
+
     Routes requests to different endpoints based on the payload.
     """
     # Log all request details at the start
@@ -83,7 +87,8 @@ def api_router(request: https_fn.Request) -> https_fn.Response:
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
         return https_fn.Response(
-            status=401, response="Unauthorized - Missing or invalid Authorization header"
+            status=401,
+            response="Unauthorized - Missing or invalid Authorization header",
         )
 
     try:
@@ -119,16 +124,14 @@ def api_router(request: https_fn.Request) -> https_fn.Response:
 
         # Make the request to the target API
         response = requests.post(
-            target_url,
-            json=payload,
-            headers={"Content-Type": "application/json"}
+            target_url, json=payload, headers={"Content-Type": "application/json"}
         )
 
         # Return the response from the target API
         return https_fn.Response(
             status=response.status_code,
             response=response.text,
-            headers={"Content-Type": "application/json"}
+            headers={"Content-Type": "application/json"},
         )
 
     except auth.InvalidIdTokenError:
@@ -139,4 +142,4 @@ def api_router(request: https_fn.Request) -> https_fn.Response:
         return https_fn.Response(status=401, response="Unauthorized - Revoked token")
     except Exception as e:
         logger.error(f"Error in api_router: {str(e)}")
-        return https_fn.Response(status=500, response=str(e)) 
+        return https_fn.Response(status=500, response=str(e))

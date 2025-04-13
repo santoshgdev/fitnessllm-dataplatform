@@ -16,9 +16,9 @@ def get_api_endpoints() -> Dict[str, str]:
         Dict[str, str]: Dictionary mapping API names to their URLs
     """
     try:
-        project_id = os.getenv("PROJECT_ID")
-        region = os.getenv("REGION")
-        environment = os.getenv("ENVIRONMENT")
+        project_id = os.environ["PROJECT_ID"]
+        region = environ["REGION"]
+        environment = environ["ENVIRONMENT"]
 
         # Initialize clients
         functions_client = functions.CloudFunctionsServiceClient()

@@ -1,7 +1,7 @@
 """Main Entry point for cloud function."""
 import json
 import os
-from typing import Dict
+from typing import Dict, Optional
 
 import functions_framework
 import requests
@@ -12,7 +12,7 @@ from .utils.logger_utils import log_structured
 
 
 def invoke_cloud_function(
-    function_name: str, payload: Dict, auth_header: str = None
+    function_name: str, payload: Dict, auth_header: Optional[str] = None
 ) -> https_fn.Response:
     """Invoke a Cloud Function using HTTPS.
 
@@ -114,7 +114,7 @@ def invoke_cloud_function(
 
 
 def invoke_cloud_run(
-    service_name: str, payload: Dict, auth_header: str = None
+    service_name: str, payload: Dict, auth_header: Optional[str] = None
 ) -> https_fn.Response:
     """Invoke a Cloud Run service using HTTPS.
 

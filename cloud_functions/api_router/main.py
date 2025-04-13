@@ -1,19 +1,12 @@
-"""Main Entry point for API Router."""
+"""Main Entry point for cloud function."""
 import os
 from typing import Dict
 
+import functions_framework
 import requests
-from firebase_admin import auth, initialize_app
-from firebase_functions import https_fn, options
 from google.cloud import functions, run
 
 from .utils.logger_utils import logger
-
-initialize_app(
-    options={
-        "projectId": os.getenv("PROJECT_ID"),
-    }
-)
 
 
 def get_api_endpoints() -> Dict[str, str]:
@@ -39,21 +32,19 @@ def get_api_endpoints() -> Dict[str, str]:
         data_run_name = (
             f"projects/{project_id}/locations/{region}/services/{environment}-data-run"
         )
-        data_run_service = run_client.get_service(name=data_run_name)
+        run_service = run_client.get_service(name=data_run_name)
 
         return {
             "token_refresh": token_refresh_function.service_config.uri,
-            "data_run": data_run_service.uri,
+            "data_run": run_service.uri,
         }
     except Exception as e:
         logger.error(f"Error fetching API endpoints: {str(e)}")
         raise
 
 
-@https_fn.on_request(
-    cors=options.CorsOptions(cors_origins=["*"], cors_methods=["POST", "OPTIONS"])
-)
-def api_router(request: https_fn.Request) -> https_fn.Response:
+@functions_framework.http
+def api_router(request):
     """Cloud function that acts as an API router.
 
     Routes requests to different endpoints based on the payload.
@@ -73,45 +64,33 @@ def api_router(request: https_fn.Request) -> https_fn.Response:
 
     # Handle OPTIONS request for CORS preflight
     if request.method == "OPTIONS":
-        return https_fn.Response(
-            status=204,
-            headers={
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods": "POST",
-                "Access-Control-Allow-Headers": "Authorization, Content-Type",
-                "Access-Control-Max-Age": "3600",
-            },
-        )
-
-    # Verify authentication
-    logger.info("Verifying authentication")
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        return https_fn.Response(
-            status=401,
-            response="Unauthorized - Missing or invalid Authorization header",
-        )
+        headers = {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST",
+            "Access-Control-Allow-Headers": "Authorization, Content-Type",
+            "Access-Control-Max-Age": "3600",
+        }
+        return ("", 204, headers)
 
     try:
-        # Verify the Firebase ID token
-        token = auth_header.split("Bearer ")[1]
-        decoded_token = auth.verify_id_token(token)
-
         # Get the request data
         request_data = request.get_json(silent=True)
         if not request_data:
-            return https_fn.Response(
-                status=400, response="Bad Request - No payload provided"
+            return (
+                "Bad Request - No payload provided",
+                400,
+                {"Access-Control-Allow-Origin": "*"},
             )
 
-        logger.info(f"Request data: {request_data}")
         # Extract the target API and payload
         target_api = request_data.get("target_api")
         payload = request_data.get("payload", {})
 
         if not target_api:
-            return https_fn.Response(
-                status=400, response="Bad Request - No target API specified"
+            return (
+                "Bad Request - No target API specified",
+                400,
+                {"Access-Control-Allow-Origin": "*"},
             )
 
         # Get API endpoints dynamically
@@ -119,37 +98,40 @@ def api_router(request: https_fn.Request) -> https_fn.Response:
 
         # Get the target URL
         target_url = api_endpoints.get(target_api)
-
-        logger.info(f"Target URL: {target_url}")
-
         if not target_url:
-            return https_fn.Response(
-                status=400, response=f"Bad Request - Invalid target API: {target_api}"
+            return (
+                f"Bad Request - Invalid target API: {target_api}",
+                400,
+                {"Access-Control-Allow-Origin": "*"},
             )
 
-        # Make the request to the target API with the original Bearer token
+        # Make the request to the target API
+        # Forward any Authorization header if present
+        headers = {"Content-Type": "application/json"}
+        if "Authorization" in request.headers:
+            headers["Authorization"] = request.headers["Authorization"]
+
         response = requests.post(
             target_url,
             json=payload,
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {token}"  # Forward the original token
-            }
+            headers=headers
         )
 
         # Return the response from the target API
-        return https_fn.Response(
-            status=response.status_code,
-            response=response.text,
-            headers={"Content-Type": "application/json"},
+        return (
+            response.text,
+            response.status_code,
+            {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*",
+            },
         )
-    except auth.InvalidIdTokenError:
-        return https_fn.Response(status=401, response="Unauthorized - Invalid token")
-    except auth.ExpiredIdTokenError:
-        return https_fn.Response(status=401, response="Unauthorized - Expired token")
-    except auth.RevokedIdTokenError:
-        return https_fn.Response(status=401, response="Unauthorized - Revoked token")
+
     except Exception as e:
         logger.error(f"Error in api_router: {str(e)}")
-        return https_fn.Response(status=500, response=str(e))
+        return (
+            str(e),
+            500,
+            {"Access-Control-Allow-Origin": "*"},
+        )
 

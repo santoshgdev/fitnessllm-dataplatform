@@ -26,9 +26,22 @@ def invoke_cloud_function(function_name: str, payload: Dict) -> Tuple[Any, int]:
         function = client.get_function(name=function_name)
         url = function.service_config.uri
 
+        logger.info(f"Invoking cloud function at URL: {url}")
+        logger.info(f"With payload: {payload}")
+
         # Make the request
         response = requests.post(url, json=payload)
-        return response.json(), response.status_code
+        
+        # Log the response details
+        logger.info(f"Response status code: {response.status_code}")
+        logger.info(f"Response headers: {dict(response.headers)}")
+        logger.info(f"Response content: {response.text}")
+
+        try:
+            return response.json(), response.status_code
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse JSON response: {response.text}")
+            return {"error": "Invalid JSON response from function", "details": response.text}, 500
 
     except Exception as e:
         logger.error(f"Error invoking cloud function: {str(e)}")
@@ -51,9 +64,22 @@ def invoke_cloud_run(service_name: str, payload: Dict) -> Tuple[Any, int]:
         service = client.get_service(name=service_name)
         url = service.uri
 
+        logger.info(f"Invoking cloud run service at URL: {url}")
+        logger.info(f"With payload: {payload}")
+
         # Make the request
         response = requests.post(url, json=payload)
-        return response.json(), response.status_code
+
+        # Log the response details
+        logger.info(f"Response status code: {response.status_code}")
+        logger.info(f"Response headers: {dict(response.headers)}")
+        logger.info(f"Response content: {response.text}")
+
+        try:
+            return response.json(), response.status_code
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse JSON response: {response.text}")
+            return {"error": "Invalid JSON response from service", "details": response.text}, 500
 
     except Exception as e:
         logger.error(f"Error invoking cloud run service: {str(e)}")

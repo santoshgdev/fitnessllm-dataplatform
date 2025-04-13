@@ -1,7 +1,7 @@
 """Main Entry point for cloud function."""
 import json
 import os
-from typing import Any, Dict, Tuple
+from typing import Any, Dict
 
 import functions_framework
 import requests
@@ -11,7 +11,7 @@ from google.cloud import functions_v2, run_v2
 from .utils.logger_utils import log_structured
 
 
-def invoke_cloud_function(function_name: str, payload: Dict) -> Tuple[Any, int]:
+def invoke_cloud_function(function_name: str, payload: Dict) -> https_fn.Response:
     """Invoke a Cloud Function using HTTPS.
 
     Args:
@@ -19,7 +19,7 @@ def invoke_cloud_function(function_name: str, payload: Dict) -> Tuple[Any, int]:
         payload: The JSON payload to send
 
     Returns:
-        Tuple of (response_data, status_code)
+        https_fn.Response object with the function's response
     """
     try:
         # Get the function URL
@@ -52,28 +52,54 @@ def invoke_cloud_function(function_name: str, payload: Dict) -> Tuple[Any, int]:
                           status_code=response.status_code,
                           response_text=response.text,
                           level="ERROR")
-            return response.text, response.status_code
+            return https_fn.Response(
+                status=response.status_code,
+                response=response.text,
+                headers={"Access-Control-Allow-Origin": "*"},
+            )
 
         # Try to parse JSON response
         try:
             if response.text:
-                return response.json(), response.status_code
-            return {"message": response.text}, response.status_code
+                return https_fn.Response(
+                    status=response.status_code,
+                    response=json.dumps(response.json()),
+                    headers={
+                        "Content-Type": "application/json",
+                        "Access-Control-Allow-Origin": "*",
+                    },
+                )
+            return https_fn.Response(
+                status=response.status_code,
+                response=json.dumps({"message": response.text}),
+                headers={
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": "*",
+                },
+            )
         except json.JSONDecodeError as e:
             log_structured("Failed to parse JSON response",
                           error=str(e),
                           response_text=response.text,
                           level="ERROR")
-            return "Invalid JSON response from function", 500
+            return https_fn.Response(
+                status=500,
+                response="Invalid JSON response from function",
+                headers={"Access-Control-Allow-Origin": "*"},
+            )
 
     except Exception as e:
         log_structured("Error invoking cloud function",
                       error=str(e),
                       level="ERROR")
-        return str(e), 500
+        return https_fn.Response(
+            status=500,
+            response=str(e),
+            headers={"Access-Control-Allow-Origin": "*"},
+        )
 
 
-def invoke_cloud_run(service_name: str, payload: Dict) -> Tuple[Any, int]:
+def invoke_cloud_run(service_name: str, payload: Dict) -> https_fn.Response:
     """Invoke a Cloud Run service using HTTPS.
 
     Args:
@@ -81,7 +107,7 @@ def invoke_cloud_run(service_name: str, payload: Dict) -> Tuple[Any, int]:
         payload: The JSON payload to send
 
     Returns:
-        Tuple of (response_data, status_code)
+        https_fn.Response object with the service's response
     """
     try:
         # Get the service URL
@@ -109,25 +135,51 @@ def invoke_cloud_run(service_name: str, payload: Dict) -> Tuple[Any, int]:
                           status_code=response.status_code,
                           response_text=response.text,
                           level="ERROR")
-            return response.text, response.status_code
+            return https_fn.Response(
+                status=response.status_code,
+                response=response.text,
+                headers={"Access-Control-Allow-Origin": "*"},
+            )
 
         # Try to parse JSON response
         try:
             if response.text:
-                return response.json(), response.status_code
-            return {"message": response.text}, response.status_code
+                return https_fn.Response(
+                    status=response.status_code,
+                    response=json.dumps(response.json()),
+                    headers={
+                        "Content-Type": "application/json",
+                        "Access-Control-Allow-Origin": "*",
+                    },
+                )
+            return https_fn.Response(
+                status=response.status_code,
+                response=json.dumps({"message": response.text}),
+                headers={
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": "*",
+                },
+            )
         except json.JSONDecodeError as e:
             log_structured("Failed to parse JSON response",
                           error=str(e),
                           response_text=response.text,
                           level="ERROR")
-            return "Invalid JSON response from service", 500
+            return https_fn.Response(
+                status=500,
+                response="Invalid JSON response from service",
+                headers={"Access-Control-Allow-Origin": "*"},
+            )
 
     except Exception as e:
         log_structured("Error invoking cloud run service",
                       error=str(e),
                       level="ERROR")
-        return str(e), 500
+        return https_fn.Response(
+            status=500,
+            response=str(e),
+            headers={"Access-Control-Allow-Origin": "*"},
+        )
 
 
 @functions_framework.http
@@ -192,26 +244,16 @@ def api_router(request):
         # Route to appropriate service
         if target_api == "token_refresh":
             function_name = f"projects/{project_id}/locations/{region}/functions/{environment}-token-refresh"
-            response_data, status_code = invoke_cloud_function(function_name, payload)
+            return invoke_cloud_function(function_name, payload)
         elif target_api == "data_run":
             service_name = f"projects/{project_id}/locations/{region}/services/{environment}-fitnessllm-dp"
-            response_data, status_code = invoke_cloud_run(service_name, payload)
+            return invoke_cloud_run(service_name, payload)
         else:
             return https_fn.Response(
                 status=400,
                 response=f"Bad Request - Invalid target API: {target_api}",
                 headers={"Access-Control-Allow-Origin": "*"},
             )
-
-        # Return the response
-        return https_fn.Response(
-            status=status_code,
-            response=json.dumps(response_data) if isinstance(response_data, dict) else response_data,
-            headers={
-                "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*",
-            },
-        )
 
     except Exception as e:
         log_structured("Error in api_router",

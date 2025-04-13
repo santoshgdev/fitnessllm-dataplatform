@@ -36,7 +36,9 @@ def strava_refresh_oauth_token(
     client_secret = strava_secret.get("client_secret")
 
     if not client_id or not client_secret:
-        log_structured("strava_token_refresh", "Strava credentials not found", level="ERROR")
+        log_structured(
+            "strava_token_refresh", "Strava credentials not found", level="ERROR"
+        )
         raise ValueError("Strava credentials not found in Secret Manager")
 
     try:
@@ -48,8 +50,12 @@ def strava_refresh_oauth_token(
         log_structured("strava_token_refresh", "Token refresh successful", uid=uid)
 
         new_tokens = {
-            "accessToken": encrypt_token(token_response["access_token"], encryption_key),
-            "refreshToken": encrypt_token(token_response["refresh_token"], encryption_key),
+            "accessToken": encrypt_token(
+                token_response["access_token"], encryption_key
+            ),
+            "refreshToken": encrypt_token(
+                token_response["refresh_token"], encryption_key
+            ),
             "expiresAt": token_response["expires_at"],
             "lastTokenRefresh": update_last_refresh(),
         }
@@ -57,10 +63,13 @@ def strava_refresh_oauth_token(
         strava_update_user_tokens(db=db, uid=uid, new_tokens=new_tokens)
         log_structured("strava_token_refresh", "Tokens updated in Firestore", uid=uid)
     except Exception as e:
-        log_structured("strava_token_refresh", "Error refreshing token", 
-                      uid=uid,
-                      error=str(e),
-                      level="ERROR")
+        log_structured(
+            "strava_token_refresh",
+            "Error refreshing token",
+            uid=uid,
+            error=str(e),
+            level="ERROR",
+        )
         raise
 
 

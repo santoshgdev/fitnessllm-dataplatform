@@ -1,7 +1,7 @@
 """Main Entry point for cloud function."""
 import json
 import os
-from typing import Any, Dict
+from typing import Dict
 
 import functions_framework
 import requests
@@ -11,7 +11,9 @@ from google.cloud import functions_v2, run_v2
 from .utils.logger_utils import log_structured
 
 
-def invoke_cloud_function(function_name: str, payload: Dict, auth_header: str = None) -> https_fn.Response:
+def invoke_cloud_function(
+    function_name: str, payload: Dict, auth_header: str = None
+) -> https_fn.Response:
     """Invoke a Cloud Function using HTTPS.
 
     Args:
@@ -28,36 +30,42 @@ def invoke_cloud_function(function_name: str, payload: Dict, auth_header: str = 
         function = client.get_function(name=function_name)
         url = function.service_config.uri
 
-        log_structured("Invoking cloud function", 
-                      url=url,
-                      payload=payload,
-                      target_function=function_name.split('/')[-1])
+        log_structured(
+            "Invoking cloud function",
+            url=url,
+            payload=payload,
+            target_function=function_name.split("/")[-1],
+        )
 
         # For token refresh, we need to pass the data_source as a query parameter
-        if 'data_source' in payload:
+        if "data_source" in payload:
             url = f"{url}?data_source={payload['data_source']}"
             log_structured("Modified URL with query params", url=url)
 
         # Prepare headers
         headers = {}
         if auth_header:
-            headers['Authorization'] = auth_header
+            headers["Authorization"] = auth_header
 
         # Make the request
         response = requests.post(url, json=payload, headers=headers)
-        
+
         # Log the response details
-        log_structured("Received response",
-                      status_code=response.status_code,
-                      headers=dict(response.headers),
-                      content=response.text)
+        log_structured(
+            "Received response",
+            status_code=response.status_code,
+            headers=dict(response.headers),
+            content=response.text,
+        )
 
         # Handle non-200 responses
         if response.status_code != 200:
-            log_structured("Non-200 response received",
-                          status_code=response.status_code,
-                          response_text=response.text,
-                          level="ERROR")
+            log_structured(
+                "Non-200 response received",
+                status_code=response.status_code,
+                response_text=response.text,
+                level="ERROR",
+            )
             return https_fn.Response(
                 status=response.status_code,
                 response=response.text,
@@ -84,10 +92,12 @@ def invoke_cloud_function(function_name: str, payload: Dict, auth_header: str = 
                 },
             )
         except json.JSONDecodeError as e:
-            log_structured("Failed to parse JSON response",
-                          error=str(e),
-                          response_text=response.text,
-                          level="ERROR")
+            log_structured(
+                "Failed to parse JSON response",
+                error=str(e),
+                response_text=response.text,
+                level="ERROR",
+            )
             return https_fn.Response(
                 status=500,
                 response="Invalid JSON response from function",
@@ -95,9 +105,7 @@ def invoke_cloud_function(function_name: str, payload: Dict, auth_header: str = 
             )
 
     except Exception as e:
-        log_structured("Error invoking cloud function",
-                      error=str(e),
-                      level="ERROR")
+        log_structured("Error invoking cloud function", error=str(e), level="ERROR")
         return https_fn.Response(
             status=500,
             response=str(e),
@@ -105,7 +113,9 @@ def invoke_cloud_function(function_name: str, payload: Dict, auth_header: str = 
         )
 
 
-def invoke_cloud_run(service_name: str, payload: Dict, auth_header: str = None) -> https_fn.Response:
+def invoke_cloud_run(
+    service_name: str, payload: Dict, auth_header: str = None
+) -> https_fn.Response:
     """Invoke a Cloud Run service using HTTPS.
 
     Args:
@@ -122,31 +132,37 @@ def invoke_cloud_run(service_name: str, payload: Dict, auth_header: str = None) 
         service = client.get_service(name=service_name)
         url = service.uri
 
-        log_structured("Invoking cloud run service",
-                      url=url,
-                      payload=payload,
-                      target_service=service_name.split('/')[-1])
+        log_structured(
+            "Invoking cloud run service",
+            url=url,
+            payload=payload,
+            target_service=service_name.split("/")[-1],
+        )
 
         # Prepare headers
         headers = {}
         if auth_header:
-            headers['Authorization'] = auth_header
+            headers["Authorization"] = auth_header
 
         # Make the request
         response = requests.post(url, json=payload, headers=headers)
 
         # Log the response details
-        log_structured("Received response",
-                      status_code=response.status_code,
-                      headers=dict(response.headers),
-                      content=response.text)
+        log_structured(
+            "Received response",
+            status_code=response.status_code,
+            headers=dict(response.headers),
+            content=response.text,
+        )
 
         # Handle non-200 responses
         if response.status_code != 200:
-            log_structured("Non-200 response received",
-                          status_code=response.status_code,
-                          response_text=response.text,
-                          level="ERROR")
+            log_structured(
+                "Non-200 response received",
+                status_code=response.status_code,
+                response_text=response.text,
+                level="ERROR",
+            )
             return https_fn.Response(
                 status=response.status_code,
                 response=response.text,
@@ -173,10 +189,12 @@ def invoke_cloud_run(service_name: str, payload: Dict, auth_header: str = None) 
                 },
             )
         except json.JSONDecodeError as e:
-            log_structured("Failed to parse JSON response",
-                          error=str(e),
-                          response_text=response.text,
-                          level="ERROR")
+            log_structured(
+                "Failed to parse JSON response",
+                error=str(e),
+                response_text=response.text,
+                level="ERROR",
+            )
             return https_fn.Response(
                 status=500,
                 response="Invalid JSON response from service",
@@ -184,9 +202,7 @@ def invoke_cloud_run(service_name: str, payload: Dict, auth_header: str = None) 
             )
 
     except Exception as e:
-        log_structured("Error invoking cloud run service",
-                      error=str(e),
-                      level="ERROR")
+        log_structured("Error invoking cloud run service", error=str(e), level="ERROR")
         return https_fn.Response(
             status=500,
             response=str(e),
@@ -201,19 +217,19 @@ def api_router(request):
     Routes requests to different endpoints based on the payload.
     """
     # Log all request details at the start
-    log_structured("Request received",
-                  method=request.method,
-                  headers=dict(request.headers),
-                  url=request.url,
-                  args=dict(request.args))
+    log_structured(
+        "Request received",
+        method=request.method,
+        headers=dict(request.headers),
+        url=request.url,
+        args=dict(request.args),
+    )
 
     try:
         body = request.get_json(silent=True)
         log_structured("Request body", body=body)
     except Exception as e:
-        log_structured("Error parsing request body",
-                      error=str(e),
-                      level="ERROR")
+        log_structured("Error parsing request body", error=str(e), level="ERROR")
 
     # Handle OPTIONS request for CORS preflight
     if request.method == "OPTIONS":
@@ -254,7 +270,7 @@ def api_router(request):
         environment = os.environ["ENVIRONMENT"]
 
         # Get authorization header
-        auth_header = request.headers.get('Authorization')
+        auth_header = request.headers.get("Authorization")
 
         # Route to appropriate service
         if target_api == "token_refresh":
@@ -271,9 +287,7 @@ def api_router(request):
             )
 
     except Exception as e:
-        log_structured("Error in api_router",
-                      error=str(e),
-                      level="ERROR")
+        log_structured("Error in api_router", error=str(e), level="ERROR")
         return https_fn.Response(
             status=500,
             response=str(e),

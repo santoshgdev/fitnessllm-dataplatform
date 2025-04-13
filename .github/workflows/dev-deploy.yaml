@@ -40,11 +40,13 @@ jobs:
                   fi
 
             - name: Set up Python
+              if: steps.check_changes.outputs.docker_build_needed == 'true'
               uses: actions/setup-python@v4
               with:
                   python-version: 3.12.2
 
             - name: Install Poetry
+              if: success()
               uses: snok/install-poetry@v1
               with:
                   version: 2.0.1
@@ -52,10 +54,12 @@ jobs:
                   virtualenvs-in-project: true
 
             - name: Update Poetry lock file
+              if: success()
               run: |
                   poetry lock
 
             - name: Install dependencies
+              if: success()
               run: |
                   poetry install --no-interaction
 
@@ -64,6 +68,7 @@ jobs:
               run: poetry run pytest tests/
 
             - name: Cache pre-commit
+              if: steps.cache-pre-commit.outputs.cache-hit != 'true'
               id: cache-pre-commit
               uses: actions/cache@v4
               with:
@@ -76,6 +81,7 @@ jobs:
                       ${{ runner.os }}-pre-commit-
 
             - name: Install and initialize pre-commit
+              if: steps.cache-pre-commit.outputs.cache-hit != 'true'
               run: |
                   pip install pre-commit
                   pre-commit install

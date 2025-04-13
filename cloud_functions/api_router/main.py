@@ -4,15 +4,14 @@ import os
 from typing import Any, Dict, Tuple
 
 import functions_framework
-from google.cloud import functions, run
-from google.cloud.functions.types import RunFunctionRequest
-from google.cloud.run.types import SendRequestRequest
+import requests
+from google.cloud import functions_v2, run_v2
 
 from .utils.logger_utils import logger
 
 
 def invoke_cloud_function(function_name: str, payload: Dict) -> Tuple[Any, int]:
-    """Invoke a Cloud Function directly using the SDK.
+    """Invoke a Cloud Function using HTTPS.
 
     Args:
         function_name: Full resource name of the function
@@ -22,19 +21,14 @@ def invoke_cloud_function(function_name: str, payload: Dict) -> Tuple[Any, int]:
         Tuple of (response_data, status_code)
     """
     try:
-        client = functions.CloudFunctionsClient()
+        # Get the function URL
+        client = functions_v2.FunctionServiceClient()
+        function = client.get_function(name=function_name)
+        url = function.service_config.uri
 
-        # Create the request
-        request = RunFunctionRequest()
-        request.name = function_name
-        request.data = json.dumps(payload).encode("utf-8")
-
-        # Call the function
-        response = client.run_function(request=request)
-
-        # Parse the response
-        response_data = json.loads(response.result.decode("utf-8"))
-        return response_data, 200
+        # Make the request
+        response = requests.post(url, json=payload)
+        return response.json(), response.status_code
 
     except Exception as e:
         logger.error(f"Error invoking cloud function: {str(e)}")
@@ -42,7 +36,7 @@ def invoke_cloud_function(function_name: str, payload: Dict) -> Tuple[Any, int]:
 
 
 def invoke_cloud_run(service_name: str, payload: Dict) -> Tuple[Any, int]:
-    """Invoke a Cloud Run service directly using the SDK.
+    """Invoke a Cloud Run service using HTTPS.
 
     Args:
         service_name: Full resource name of the service
@@ -52,19 +46,14 @@ def invoke_cloud_run(service_name: str, payload: Dict) -> Tuple[Any, int]:
         Tuple of (response_data, status_code)
     """
     try:
-        client = run.ServicesClient()
+        # Get the service URL
+        client = run_v2.ServicesClient()
+        service = client.get_service(name=service_name)
+        url = service.uri
 
-        # Create the request
-        request = SendRequestRequest()
-        request.service = service_name
-        request.body = json.dumps(payload).encode("utf-8")
-
-        # Call the service
-        response = client.send_request(request=request)
-
-        # Parse the response
-        response_data = json.loads(response.body.decode("utf-8"))
-        return response_data, response.status_code
+        # Make the request
+        response = requests.post(url, json=payload)
+        return response.json(), response.status_code
 
     except Exception as e:
         logger.error(f"Error invoking cloud run service: {str(e)}")

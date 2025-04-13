@@ -1,8 +1,8 @@
 functions-framework==3.*
-requests==2.31.0
-firebase-admin==6.2.0
-google-cloud-firestore==2.11.1
-google-cloud-functions-v2==1.12.0
-google-cloud-run-v2==0.11.0
+requests
+firebase-admin
+google-cloud-firestore
+google-cloud-functions
+google-cloud-run
 firebase-functions
 beartype

@@ -1,12 +1,12 @@
 """Main Entry point for cloud function."""
-import json
 import os
-from typing import Any, Dict, Tuple
+import json
+from typing import Dict, Tuple, Any
 
 import functions_framework
-from google.cloud import functions_v2, run_v2
-from google.cloud.functions_v2.types import RunFunctionRequest
-from google.cloud.run_v2.types import SendRequestRequest
+from google.cloud import functions, run
+from google.cloud.functions.types import RunFunctionRequest
+from google.cloud.run.types import SendRequestRequest
 
 from .utils.logger_utils import logger
 
@@ -22,7 +22,7 @@ def invoke_cloud_function(function_name: str, payload: Dict) -> Tuple[Any, int]:
         Tuple of (response_data, status_code)
     """
     try:
-        client = functions_v2.FunctionServiceClient()
+        client = functions.CloudFunctionsClient()
 
         # Create the request
         request = RunFunctionRequest()
@@ -52,7 +52,7 @@ def invoke_cloud_run(service_name: str, payload: Dict) -> Tuple[Any, int]:
         Tuple of (response_data, status_code)
     """
     try:
-        client = run_v2.ServicesClient()
+        client = run.ServicesClient()
 
         # Create the request
         request = SendRequestRequest()

@@ -11,6 +11,7 @@ from google.cloud.run_v2.types import SendRequestRequest
 from .utils.logger_utils import logger
 
 
+def invoke_cloud_function(function_name: str, payload: Dict) -> Tuple[Any, int]:
     """Invoke a Cloud Function directly using the SDK.
     
     Args:

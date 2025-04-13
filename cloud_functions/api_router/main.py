@@ -84,6 +84,7 @@ def api_router(request: https_fn.Request) -> https_fn.Response:
         )
 
     # Verify authentication
+    logger.info("Verifying authentication")
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
         return https_fn.Response(
@@ -103,6 +104,7 @@ def api_router(request: https_fn.Request) -> https_fn.Response:
                 status=400, response="Bad Request - No payload provided"
             )
 
+        logger.info(f"Request data: {request_data}")
         # Extract the target API and payload
         target_api = request_data.get("target_api")
         payload = request_data.get("payload", {})

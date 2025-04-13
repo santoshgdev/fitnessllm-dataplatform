@@ -1,6 +1,7 @@
 """Logging utilities."""
 import logging
 from logging import Logger
+import json
 
 from beartype.typing import Optional
 
@@ -37,3 +38,18 @@ def setup_logger(name: Optional[str] = None, level: int = logging.DEBUG) -> Logg
 
 
 logger = setup_logger()
+
+
+def log_structured(message: str, **kwargs):
+    """Helper function to log in structured JSON format.
+    
+    Args:
+        message: The main log message
+        **kwargs: Additional key-value pairs to include in the log
+    """
+    log_data = {
+        "function": "api_router",
+        "message": message,
+        **kwargs
+    }
+    logger.info(json.dumps(log_data))

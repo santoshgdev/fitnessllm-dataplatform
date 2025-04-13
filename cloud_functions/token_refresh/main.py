@@ -6,7 +6,8 @@ from firebase_functions import https_fn, options
 from google.cloud import firestore
 
 from .streams.strava import strava_refresh_oauth_token
-from .utils.logger_utils import logger
+from .utils.logger_utils import log_structured
+
 
 initialize_app(
     options={
@@ -27,17 +28,18 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
     Note: At current time, it registers the parameters uid (firebase user id) and data_source.
     """
     # Log all request details at the start
-    logger.info("=== Request Details ===")
-    logger.info(f"Method: {request.method}")
-    logger.info(f"Headers: {dict(request.headers)}")
-    logger.info(f"URL: {request.url}")
-    logger.info(f"Args: {dict(request.args)}")
+    log_structured("token_refresh", "Request received",
+                  method=request.method,
+                  headers=dict(request.headers),
+                  url=request.url,
+                  args=dict(request.args))
     try:
         body = request.get_json(silent=True)
-        logger.info(f"Body: {body}")
+        log_structured("token_refresh", "Request body", body=body)
     except Exception as e:
-        logger.error(f"Error parsing body: {e}")
-    logger.info("=== End Request Details ===")
+        log_structured("token_refresh", "Error parsing request body",
+                      error=str(e),
+                      level="ERROR")
 
     # Handle OPTIONS request for CORS preflight
     if request.method == "OPTIONS":
@@ -54,13 +56,15 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
     # Get data_source from query parameters instead of body
     data_source = request.args.get("data_source")
     if not data_source:
+        log_structured("token_refresh", "Missing data_source parameter", level="ERROR")
         return https_fn.Response(
             status=400, response="Required data_source parameter is missing!"
         )
 
     auth_header = request.headers.get("Authorization")
-    logger.info(f"Received Authorization header: {auth_header}")
+    log_structured("token_refresh", "Received Authorization header", auth_header=auth_header)
     if not auth_header or not auth_header.startswith("Bearer "):
+        log_structured("token_refresh", "Invalid Authorization header", level="ERROR")
         return https_fn.Response(
             status=400, response="Bad Request - Missing or invalid Authorization header"
         )
@@ -70,11 +74,13 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
         token = auth_header.split("Bearer ")[1]
         decoded_token = auth.verify_id_token(token)
         uid = decoded_token["uid"]  # Get uid from verified token
+        log_structured("token_refresh", "Token verified", uid=uid)
 
         db = firestore.Client()
         doc = db.collection("users").document(uid).get()
 
         if not doc.exists:
+            log_structured("token_refresh", "User not found", uid=uid, level="ERROR")
             return https_fn.Response(
                 status=404,
                 response=f"Not Found - User {uid} does not exist in Firestore",
@@ -83,6 +89,10 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
         stream_data = doc.to_dict()[f"stream={data_source}"]
 
         if not stream_data or not stream_data.get("refreshToken"):
+            log_structured("token_refresh", "No refresh token found", 
+                         uid=uid, 
+                         data_source=data_source,
+                         level="ERROR")
             return https_fn.Response(
                 status=400,
                 response=f"Bad Request - No refresh token found for user {uid} and data source {data_source}",
@@ -91,28 +101,42 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
         if data_source == "strava":
             try:
                 strava_refresh_oauth_token(db, uid, stream_data["refreshToken"])
+                log_structured("token_refresh", "Token refresh successful", 
+                             uid=uid,
+                             data_source=data_source)
                 return https_fn.Response(
                     status=200, response="Token refreshed successfully for Strava."
                 )
             except ValueError as e:
                 if "credentials not found" in str(e):
+                    log_structured("token_refresh", "Strava credentials not found", 
+                                 error=str(e),
+                                 level="ERROR")
                     return https_fn.Response(
                         status=500,
                         response="Internal Server Error - Strava credentials not found in Secret Manager",
                     )
                 raise
         else:
+            log_structured("token_refresh", "Unsupported data source", 
+                         data_source=data_source,
+                         level="ERROR")
             return https_fn.Response(
                 status=400,
                 response=f"Bad Request - Unsupported data source: {data_source}",
             )
 
     except auth.InvalidIdTokenError:
+        log_structured("token_refresh", "Invalid token", level="ERROR")
         return https_fn.Response(status=401, response="Unauthorized - Invalid token")
     except auth.ExpiredIdTokenError:
+        log_structured("token_refresh", "Expired token", level="ERROR")
         return https_fn.Response(status=401, response="Unauthorized - Expired token")
     except auth.RevokedIdTokenError:
+        log_structured("token_refresh", "Revoked token", level="ERROR")
         return https_fn.Response(status=401, response="Unauthorized - Revoked token")
     except Exception as e:
-        logger.error(f"Error in refresh_token: {str(e)}")
+        log_structured("token_refresh", "Error in token refresh", 
+                      error=str(e),
+                      level="ERROR")
         return https_fn.Response(status=500, response=str(e))

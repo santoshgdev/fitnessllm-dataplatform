@@ -7,7 +7,7 @@ import functions_framework
 import requests
 from google.cloud import functions_v2, run_v2
 
-from .utils.logger_utils import logger
+from .utils.logger_utils import log_structured
 
 
 def invoke_cloud_function(function_name: str, payload: Dict) -> Tuple[Any, int]:
@@ -26,25 +26,40 @@ def invoke_cloud_function(function_name: str, payload: Dict) -> Tuple[Any, int]:
         function = client.get_function(name=function_name)
         url = function.service_config.uri
 
-        logger.info(f"Invoking cloud function at URL: {url}")
-        logger.info(f"With payload: {payload}")
+        log_structured("Invoking cloud function", 
+                      url=url,
+                      payload=payload,
+                      target_function=function_name.split('/')[-1])
+
+        # For token refresh, we need to pass the data_source as a query parameter
+        if 'data_source' in payload:
+            url = f"{url}?data_source={payload['data_source']}"
+            log_structured("Modified URL with query params", url=url)
 
         # Make the request
         response = requests.post(url, json=payload)
         
         # Log the response details
-        logger.info(f"Response status code: {response.status_code}")
-        logger.info(f"Response headers: {dict(response.headers)}")
-        logger.info(f"Response content: {response.text}")
+        log_structured("Received response",
+                      status_code=response.status_code,
+                      headers=dict(response.headers),
+                      content=response.text)
 
         try:
-            return response.json(), response.status_code
+            if response.text:
+                return response.json(), response.status_code
+            return {"message": response.text}, response.status_code
         except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse JSON response: {response.text}")
+            log_structured("Failed to parse JSON response",
+                          error=str(e),
+                          response_text=response.text,
+                          level="ERROR")
             return {"error": "Invalid JSON response from function", "details": response.text}, 500
 
     except Exception as e:
-        logger.error(f"Error invoking cloud function: {str(e)}")
+        log_structured("Error invoking cloud function",
+                      error=str(e),
+                      level="ERROR")
         return {"error": str(e)}, 500
 
 
@@ -64,25 +79,35 @@ def invoke_cloud_run(service_name: str, payload: Dict) -> Tuple[Any, int]:
         service = client.get_service(name=service_name)
         url = service.uri
 
-        logger.info(f"Invoking cloud run service at URL: {url}")
-        logger.info(f"With payload: {payload}")
+        log_structured("Invoking cloud run service",
+                      url=url,
+                      payload=payload,
+                      target_service=service_name.split('/')[-1])
 
         # Make the request
         response = requests.post(url, json=payload)
 
         # Log the response details
-        logger.info(f"Response status code: {response.status_code}")
-        logger.info(f"Response headers: {dict(response.headers)}")
-        logger.info(f"Response content: {response.text}")
+        log_structured("Received response",
+                      status_code=response.status_code,
+                      headers=dict(response.headers),
+                      content=response.text)
 
         try:
-            return response.json(), response.status_code
+            if response.text:
+                return response.json(), response.status_code
+            return {"message": response.text}, response.status_code
         except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse JSON response: {response.text}")
+            log_structured("Failed to parse JSON response",
+                          error=str(e),
+                          response_text=response.text,
+                          level="ERROR")
             return {"error": "Invalid JSON response from service", "details": response.text}, 500
 
     except Exception as e:
-        logger.error(f"Error invoking cloud run service: {str(e)}")
+        log_structured("Error invoking cloud run service",
+                      error=str(e),
+                      level="ERROR")
         return {"error": str(e)}, 500
 
 
@@ -93,17 +118,19 @@ def api_router(request):
     Routes requests to different endpoints based on the payload.
     """
     # Log all request details at the start
-    logger.info("=== Request Details ===")
-    logger.info(f"Method: {request.method}")
-    logger.info(f"Headers: {dict(request.headers)}")
-    logger.info(f"URL: {request.url}")
-    logger.info(f"Args: {dict(request.args)}")
+    log_structured("Request received",
+                  method=request.method,
+                  headers=dict(request.headers),
+                  url=request.url,
+                  args=dict(request.args))
+
     try:
         body = request.get_json(silent=True)
-        logger.info(f"Body: {body}")
+        log_structured("Request body", body=body)
     except Exception as e:
-        logger.error(f"Error parsing body: {e}")
-    logger.info("=== End Request Details ===")
+        log_structured("Error parsing request body",
+                      error=str(e),
+                      level="ERROR")
 
     # Handle OPTIONS request for CORS preflight
     if request.method == "OPTIONS":
@@ -157,7 +184,7 @@ def api_router(request):
 
         # Return the response
         return (
-            json.dumps(response_data),
+            json.dumps(response_data) if isinstance(response_data, dict) else response_data,
             status_code,
             {
                 "Content-Type": "application/json",
@@ -166,7 +193,9 @@ def api_router(request):
         )
 
     except Exception as e:
-        logger.error(f"Error in api_router: {str(e)}")
+        log_structured("Error in api_router",
+                      error=str(e),
+                      level="ERROR")
         return (
             str(e),
             500,

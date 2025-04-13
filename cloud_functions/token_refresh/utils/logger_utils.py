@@ -1,4 +1,5 @@
 """Logging utilities."""
+import json
 import logging
 from logging import Logger
 
@@ -37,3 +38,19 @@ def setup_logger(name: Optional[str] = None, level: int = logging.DEBUG) -> Logg
 
 
 logger = setup_logger()
+
+
+def log_structured(function_name: str, message: str, **kwargs):
+    """Helper function to log in structured JSON format.
+    
+    Args:
+        function_name: Name of the function generating the log
+        message: The main log message
+        **kwargs: Additional key-value pairs to include in the log
+    """
+    log_data = {
+        "function": function_name,
+        "message": message,
+        **kwargs
+    }
+    logger.info(json.dumps(log_data))

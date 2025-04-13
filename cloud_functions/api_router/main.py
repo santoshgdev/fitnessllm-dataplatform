@@ -1,46 +1,73 @@
 """Main Entry point for cloud function."""
 import os
-from typing import Dict
+import json
+from typing import Dict, Tuple, Any
 
 import functions_framework
-import requests
-from google.cloud import functions, run
+from google.cloud import functions_v2, run_v2
+from google.cloud.functions_v2.types import RunFunctionRequest
+from google.cloud.run_v2.types import SendRequestRequest
 
 from .utils.logger_utils import logger
 
 
-def get_api_endpoints() -> Dict[str, str]:
-    """Get API endpoints dynamically using service discovery.
-
+    """Invoke a Cloud Function directly using the SDK.
+    
+    Args:
+        function_name: Full resource name of the function
+        payload: The JSON payload to send
+    
     Returns:
-        Dict[str, str]: Dictionary mapping API names to their URLs
+        Tuple of (response_data, status_code)
     """
     try:
-        project_id = os.environ["PROJECT_ID"]
-        region = environ["REGION"]
-        environment = environ["ENVIRONMENT"]
-
-        # Initialize clients
-        functions_client = functions.CloudFunctionsServiceClient()
-        run_client = run.ServicesClient()
-
-        # Get token refresh function URL
-        token_refresh_name = f"projects/{project_id}/locations/{region}/functions/{environment}-token-refresh"
-        token_refresh_function = functions_client.get_function(name=token_refresh_name)
-
-        # Get data run service URL
-        data_run_name = (
-            f"projects/{project_id}/locations/{region}/services/{environment}-fitnessllm-dp"
-        )
-        run_service = run_client.get_service(name=data_run_name)
-
-        return {
-            "token_refresh": token_refresh_function.service_config.uri,
-            "data_run": run_service.uri,
-        }
+        client = functions_v2.FunctionServiceClient()
+        
+        # Create the request
+        request = RunFunctionRequest()
+        request.name = function_name
+        request.data = json.dumps(payload).encode("utf-8")
+        
+        # Call the function
+        response = client.run_function(request=request)
+        
+        # Parse the response
+        response_data = json.loads(response.result.decode("utf-8"))
+        return response_data, 200
+        
     except Exception as e:
-        logger.error(f"Error fetching API endpoints: {str(e)}")
-        raise
+        logger.error(f"Error invoking cloud function: {str(e)}")
+        return {"error": str(e)}, 500
+
+
+def invoke_cloud_run(service_name: str, payload: Dict) -> Tuple[Any, int]:
+    """Invoke a Cloud Run service directly using the SDK.
+    
+    Args:
+        service_name: Full resource name of the service
+        payload: The JSON payload to send
+    
+    Returns:
+        Tuple of (response_data, status_code)
+    """
+    try:
+        client = run_v2.ServicesClient()
+        
+        # Create the request
+        request = SendRequestRequest()
+        request.service = service_name
+        request.body = json.dumps(payload).encode("utf-8")
+        
+        # Call the service
+        response = client.send_request(request=request)
+        
+        # Parse the response
+        response_data = json.loads(response.body.decode("utf-8"))
+        return response_data, response.status_code
+        
+    except Exception as e:
+        logger.error(f"Error invoking cloud run service: {str(e)}")
+        return {"error": str(e)}, 500
 
 
 @functions_framework.http
@@ -93,30 +120,29 @@ def api_router(request):
                 {"Access-Control-Allow-Origin": "*"},
             )
 
-        # Get API endpoints dynamically
-        api_endpoints = get_api_endpoints()
+        # Get project details from environment
+        project_id = os.environ["PROJECT_ID"]
+        region = os.environ["REGION"]
+        environment = os.environ["ENVIRONMENT"]
 
-        # Get the target URL
-        target_url = api_endpoints.get(target_api)
-        if not target_url:
+        # Route to appropriate service
+        if target_api == "token_refresh":
+            function_name = f"projects/{project_id}/locations/{region}/functions/{environment}-token-refresh"
+            response_data, status_code = invoke_cloud_function(function_name, payload)
+        elif target_api == "data_run":
+            service_name = f"projects/{project_id}/locations/{region}/services/{environment}-fitnessllm-dp"
+            response_data, status_code = invoke_cloud_run(service_name, payload)
+        else:
             return (
                 f"Bad Request - Invalid target API: {target_api}",
                 400,
                 {"Access-Control-Allow-Origin": "*"},
             )
 
-        # Make the request to the target API
-        # Forward any Authorization header if present
-        headers = {"Content-Type": "application/json"}
-        if "Authorization" in request.headers:
-            headers["Authorization"] = request.headers["Authorization"]
-
-        response = requests.post(target_url, json=payload, headers=headers)
-
-        # Return the response from the target API
+        # Return the response
         return (
-            response.text,
-            response.status_code,
+            json.dumps(response_data),
+            status_code,
             {
                 "Content-Type": "application/json",
                 "Access-Control-Allow-Origin": "*",

@@ -1,4 +1,4 @@
-"""Main Entry point for cloud function."""
+"""Main Entry point for Token Refresh."""
 import os
 
 from firebase_admin import auth, initialize_app

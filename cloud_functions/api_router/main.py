@@ -1,4 +1,4 @@
-"""Main Entry point for cloud function."""
+"""Main Entry point for API Router."""
 import os
 from typing import Dict
 
@@ -93,8 +93,8 @@ def api_router(request: https_fn.Request) -> https_fn.Response:
 
     try:
         # Verify the Firebase ID token
-        # token = auth_header.split("Bearer ")[1]
-        # decoded_token = auth.verify_id_token(token)
+        token = auth_header.split("Bearer ")[1]
+        decoded_token = auth.verify_id_token(token)
 
         # Get the request data
         request_data = request.get_json(silent=True)
@@ -125,9 +125,14 @@ def api_router(request: https_fn.Request) -> https_fn.Response:
                 status=400, response=f"Bad Request - Invalid target API: {target_api}"
             )
 
-        # Make the request to the target API
+        # Make the request to the target API with the original Bearer token
         response = requests.post(
-            target_url, json=payload, headers={"Content-Type": "application/json"}
+            target_url,
+            json=payload,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {token}"  # Forward the original token
+            }
         )
 
         # Return the response from the target API
@@ -136,7 +141,6 @@ def api_router(request: https_fn.Request) -> https_fn.Response:
             response=response.text,
             headers={"Content-Type": "application/json"},
         )
-
     except auth.InvalidIdTokenError:
         return https_fn.Response(status=401, response="Unauthorized - Invalid token")
     except auth.ExpiredIdTokenError:
@@ -146,3 +150,4 @@ def api_router(request: https_fn.Request) -> https_fn.Response:
     except Exception as e:
         logger.error(f"Error in api_router: {str(e)}")
         return https_fn.Response(status=500, response=str(e))
+

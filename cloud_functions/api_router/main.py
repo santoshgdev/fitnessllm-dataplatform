@@ -11,12 +11,13 @@ from google.cloud import functions_v2, run_v2
 from .utils.logger_utils import log_structured
 
 
-def invoke_cloud_function(function_name: str, payload: Dict) -> https_fn.Response:
+def invoke_cloud_function(function_name: str, payload: Dict, auth_header: str = None) -> https_fn.Response:
     """Invoke a Cloud Function using HTTPS.
 
     Args:
         function_name: Full resource name of the function
         payload: The JSON payload to send
+        auth_header: Authorization header from original request
 
     Returns:
         https_fn.Response object with the function's response
@@ -37,8 +38,13 @@ def invoke_cloud_function(function_name: str, payload: Dict) -> https_fn.Respons
             url = f"{url}?data_source={payload['data_source']}"
             log_structured("Modified URL with query params", url=url)
 
+        # Prepare headers
+        headers = {}
+        if auth_header:
+            headers['Authorization'] = auth_header
+
         # Make the request
-        response = requests.post(url, json=payload)
+        response = requests.post(url, json=payload, headers=headers)
         
         # Log the response details
         log_structured("Received response",
@@ -99,12 +105,13 @@ def invoke_cloud_function(function_name: str, payload: Dict) -> https_fn.Respons
         )
 
 
-def invoke_cloud_run(service_name: str, payload: Dict) -> https_fn.Response:
+def invoke_cloud_run(service_name: str, payload: Dict, auth_header: str = None) -> https_fn.Response:
     """Invoke a Cloud Run service using HTTPS.
 
     Args:
         service_name: Full resource name of the service
         payload: The JSON payload to send
+        auth_header: Authorization header from original request
 
     Returns:
         https_fn.Response object with the service's response
@@ -120,8 +127,13 @@ def invoke_cloud_run(service_name: str, payload: Dict) -> https_fn.Response:
                       payload=payload,
                       target_service=service_name.split('/')[-1])
 
+        # Prepare headers
+        headers = {}
+        if auth_header:
+            headers['Authorization'] = auth_header
+
         # Make the request
-        response = requests.post(url, json=payload)
+        response = requests.post(url, json=payload, headers=headers)
 
         # Log the response details
         log_structured("Received response",
@@ -241,13 +253,16 @@ def api_router(request):
         region = os.environ["REGION"]
         environment = os.environ["ENVIRONMENT"]
 
+        # Get authorization header
+        auth_header = request.headers.get('Authorization')
+
         # Route to appropriate service
         if target_api == "token_refresh":
             function_name = f"projects/{project_id}/locations/{region}/functions/{environment}-token-refresh"
-            return invoke_cloud_function(function_name, payload)
+            return invoke_cloud_function(function_name, payload, auth_header)
         elif target_api == "data_run":
             service_name = f"projects/{project_id}/locations/{region}/services/{environment}-fitnessllm-dp"
-            return invoke_cloud_run(service_name, payload)
+            return invoke_cloud_run(service_name, payload, auth_header)
         else:
             return https_fn.Response(
                 status=400,

@@ -30,7 +30,7 @@ def get_api_endpoints() -> Dict[str, str]:
 
         # Get data run service URL
         data_run_name = (
-            f"projects/{project_id}/locations/{region}/services/{environment}-data-run"
+            f"projects/{project_id}/locations/{region}/services/{environment}-fitnessllm-dp"
         )
         run_service = run_client.get_service(name=data_run_name)
 
@@ -111,11 +111,7 @@ def api_router(request):
         if "Authorization" in request.headers:
             headers["Authorization"] = request.headers["Authorization"]
 
-        response = requests.post(
-            target_url,
-            json=payload,
-            headers=headers
-        )
+        response = requests.post(target_url, json=payload, headers=headers)
 
         # Return the response from the target API
         return (
@@ -134,4 +130,3 @@ def api_router(request):
             500,
             {"Access-Control-Allow-Origin": "*"},
         )
-

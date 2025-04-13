@@ -1,7 +1,7 @@
 """Main Entry point for cloud function."""
-import os
 import json
-from typing import Dict, Tuple, Any
+import os
+from typing import Any, Dict, Tuple
 
 import functions_framework
 from google.cloud import functions, run

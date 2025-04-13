@@ -5,3 +5,4 @@ google-cloud-firestore==2.11.1
 google-cloud-functions
 google-cloud-run==0.10.0
 firebase-functions
+beartype

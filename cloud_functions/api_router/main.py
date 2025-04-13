@@ -117,6 +117,9 @@ def api_router(request: https_fn.Request) -> https_fn.Response:
 
         # Get the target URL
         target_url = api_endpoints.get(target_api)
+
+        logger.info(f"Target URL: {target_url}")
+
         if not target_url:
             return https_fn.Response(
                 status=400, response=f"Bad Request - Invalid target API: {target_api}"

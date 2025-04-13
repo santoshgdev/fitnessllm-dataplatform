@@ -5,6 +5,7 @@ from typing import Any, Dict, Tuple
 
 import functions_framework
 import requests
+from firebase_functions import https_fn
 from google.cloud import functions_v2, run_v2
 
 from .utils.logger_utils import log_structured
@@ -45,6 +46,15 @@ def invoke_cloud_function(function_name: str, payload: Dict) -> Tuple[Any, int]:
                       headers=dict(response.headers),
                       content=response.text)
 
+        # Handle non-200 responses
+        if response.status_code != 200:
+            log_structured("Non-200 response received",
+                          status_code=response.status_code,
+                          response_text=response.text,
+                          level="ERROR")
+            return response.text, response.status_code
+
+        # Try to parse JSON response
         try:
             if response.text:
                 return response.json(), response.status_code
@@ -54,13 +64,13 @@ def invoke_cloud_function(function_name: str, payload: Dict) -> Tuple[Any, int]:
                           error=str(e),
                           response_text=response.text,
                           level="ERROR")
-            return {"error": "Invalid JSON response from function", "details": response.text}, 500
+            return "Invalid JSON response from function", 500
 
     except Exception as e:
         log_structured("Error invoking cloud function",
                       error=str(e),
                       level="ERROR")
-        return {"error": str(e)}, 500
+        return str(e), 500
 
 
 def invoke_cloud_run(service_name: str, payload: Dict) -> Tuple[Any, int]:
@@ -93,6 +103,15 @@ def invoke_cloud_run(service_name: str, payload: Dict) -> Tuple[Any, int]:
                       headers=dict(response.headers),
                       content=response.text)
 
+        # Handle non-200 responses
+        if response.status_code != 200:
+            log_structured("Non-200 response received",
+                          status_code=response.status_code,
+                          response_text=response.text,
+                          level="ERROR")
+            return response.text, response.status_code
+
+        # Try to parse JSON response
         try:
             if response.text:
                 return response.json(), response.status_code
@@ -102,13 +121,13 @@ def invoke_cloud_run(service_name: str, payload: Dict) -> Tuple[Any, int]:
                           error=str(e),
                           response_text=response.text,
                           level="ERROR")
-            return {"error": "Invalid JSON response from service", "details": response.text}, 500
+            return "Invalid JSON response from service", 500
 
     except Exception as e:
         log_structured("Error invoking cloud run service",
                       error=str(e),
                       level="ERROR")
-        return {"error": str(e)}, 500
+        return str(e), 500
 
 
 @functions_framework.http
@@ -134,22 +153,24 @@ def api_router(request):
 
     # Handle OPTIONS request for CORS preflight
     if request.method == "OPTIONS":
-        headers = {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "POST",
-            "Access-Control-Allow-Headers": "Authorization, Content-Type",
-            "Access-Control-Max-Age": "3600",
-        }
-        return ("", 204, headers)
+        return https_fn.Response(
+            status=204,
+            headers={
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "POST",
+                "Access-Control-Allow-Headers": "Authorization, Content-Type",
+                "Access-Control-Max-Age": "3600",
+            },
+        )
 
     try:
         # Get the request data
         request_data = request.get_json(silent=True)
         if not request_data:
-            return (
-                "Bad Request - No payload provided",
-                400,
-                {"Access-Control-Allow-Origin": "*"},
+            return https_fn.Response(
+                status=400,
+                response="Bad Request - No payload provided",
+                headers={"Access-Control-Allow-Origin": "*"},
             )
 
         # Extract the target API and payload
@@ -157,10 +178,10 @@ def api_router(request):
         payload = request_data.get("payload", {})
 
         if not target_api:
-            return (
-                "Bad Request - No target API specified",
-                400,
-                {"Access-Control-Allow-Origin": "*"},
+            return https_fn.Response(
+                status=400,
+                response="Bad Request - No target API specified",
+                headers={"Access-Control-Allow-Origin": "*"},
             )
 
         # Get project details from environment
@@ -176,17 +197,17 @@ def api_router(request):
             service_name = f"projects/{project_id}/locations/{region}/services/{environment}-fitnessllm-dp"
             response_data, status_code = invoke_cloud_run(service_name, payload)
         else:
-            return (
-                f"Bad Request - Invalid target API: {target_api}",
-                400,
-                {"Access-Control-Allow-Origin": "*"},
+            return https_fn.Response(
+                status=400,
+                response=f"Bad Request - Invalid target API: {target_api}",
+                headers={"Access-Control-Allow-Origin": "*"},
             )
 
         # Return the response
-        return (
-            json.dumps(response_data) if isinstance(response_data, dict) else response_data,
-            status_code,
-            {
+        return https_fn.Response(
+            status=status_code,
+            response=json.dumps(response_data) if isinstance(response_data, dict) else response_data,
+            headers={
                 "Content-Type": "application/json",
                 "Access-Control-Allow-Origin": "*",
             },
@@ -196,8 +217,8 @@ def api_router(request):
         log_structured("Error in api_router",
                       error=str(e),
                       level="ERROR")
-        return (
-            str(e),
-            500,
-            {"Access-Control-Allow-Origin": "*"},
+        return https_fn.Response(
+            status=500,
+            response=str(e),
+            headers={"Access-Control-Allow-Origin": "*"},
         )

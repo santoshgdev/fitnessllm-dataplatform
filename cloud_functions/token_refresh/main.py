@@ -3,13 +3,12 @@ import json
 import traceback
 from os import environ
 
-from google.oauth2 import id_token
-
 import google.auth.transport.requests
 import google.oauth2.id_token
 from firebase_admin import auth, initialize_app
 from firebase_functions import https_fn, options
 from google.cloud import firestore
+from google.oauth2 import id_token
 
 from .streams.strava import strava_refresh_oauth_token
 from .utils.logger_utils import partial_log_structured
@@ -100,7 +99,9 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
         decoded_token = id_token.verify_oauth2_token(
             token,
             request.Request(),
-            audience=environ['PROJECT_ID']  # Crucially, specify the expected audience URL
+            audience=environ[
+                "PROJECT_ID"
+            ],  # Crucially, specify the expected audience URL
         )
         uid = decoded_token["uid"]  # Get uid from verified token
         partial_log_structured(message="Token verified", uid=uid)

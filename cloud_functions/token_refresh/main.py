@@ -29,7 +29,8 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
     """
     # Log all request details at the start
     log_structured(
-        "Request received",
+        function_name="token_refresh",
+        message="Request received",
         method=request.method,
         headers=dict(request.headers),
         url=request.url,

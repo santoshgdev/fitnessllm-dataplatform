@@ -74,7 +74,9 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
         )
 
     auth_header = request.headers.get("Authorization")
-    partial_log_structured(message="Received Authorization header", auth_header=auth_header)
+    partial_log_structured(
+        message="Received Authorization header", auth_header=auth_header
+    )
     if not auth_header or not auth_header.startswith("Bearer "):
         partial_log_structured(message="Invalid Authorization header", level="ERROR")
         return https_fn.Response(
@@ -236,7 +238,9 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
             },
         )
     except Exception as e:
-        partial_log_structured(message="Error in token refresh", error=str(e), level="ERROR")
+        partial_log_structured(
+            message="Error in token refresh", error=str(e), level="ERROR"
+        )
         return https_fn.Response(
             status=500,
             response=json.dumps({"error": "Internal Server Error", "message": str(e)}),

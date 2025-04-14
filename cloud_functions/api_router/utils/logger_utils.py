@@ -51,4 +51,5 @@ def log_structured(message: str, **kwargs):
     log_data = {"function": "api_router", "message": message, **kwargs}
     logger.info(json.dumps(log_data))
 
+
 partial_log_structured = partial(log_structured, function_name="data_run")

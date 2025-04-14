@@ -4,11 +4,19 @@ import os
 from typing import Dict, Optional
 
 import functions_framework
+import google.auth.transport.requests
+import google.oauth2.id_token
 import requests
 from firebase_functions import https_fn
 from google.cloud import functions_v2, run_v2
 
 from .utils.logger_utils import partial_log_structured
+
+
+def get_auth(receiving_function_url: str) -> str:
+    """Get the auth token for the receiving function."""
+    auth_req = google.auth.transport.requests.Request()
+    return google.oauth2.id_token.fetch_id_token(auth_req, receiving_function_url)
 
 
 def invoke_cloud_function(
@@ -43,12 +51,10 @@ def invoke_cloud_function(
             partial_log_structured(message="Modified URL with query params", url=url)
 
         # Prepare headers
-        headers = {}
-        if auth_header:
-            headers["Authorization"] = auth_header
+        headers = {"Authorization": f"Bearer: {get_auth(url)}"}
 
         # Make the request
-        response = requests.post(url, json=payload, headers=headers)
+        response = requests.post(url=url, json=payload, headers=headers)
 
         # Log the response details
         partial_log_structured(
@@ -105,7 +111,9 @@ def invoke_cloud_function(
             )
 
     except Exception as e:
-        partial_log_structured(message="Error invoking cloud function", error=str(e), level="ERROR")
+        partial_log_structured(
+            message="Error invoking cloud function", error=str(e), level="ERROR"
+        )
         return https_fn.Response(
             status=500,
             response=str(e),
@@ -202,7 +210,9 @@ def invoke_cloud_run(
             )
 
     except Exception as e:
-        partial_log_structured(message="Error invoking cloud run service", error=str(e), level="ERROR")
+        partial_log_structured(
+            message="Error invoking cloud run service", error=str(e), level="ERROR"
+        )
         return https_fn.Response(
             status=500,
             response=str(e),
@@ -229,7 +239,9 @@ def api_router(request):
         body = request.get_json(silent=True)
         partial_log_structured(message="Request body", body=body)
     except Exception as e:
-        partial_log_structured(message="Error parsing request body", error=str(e), level="ERROR")
+        partial_log_structured(
+            message="Error parsing request body", error=str(e), level="ERROR"
+        )
 
     # Handle OPTIONS request for CORS preflight
     if request.method == "OPTIONS":
@@ -287,7 +299,9 @@ def api_router(request):
             )
 
     except Exception as e:
-        partial_log_structured(message="Error in api_router", error=str(e), level="ERROR")
+        partial_log_structured(
+            message="Error in api_router", error=str(e), level="ERROR"
+        )
         return https_fn.Response(
             status=500,
             response=str(e),

@@ -43,7 +43,7 @@ def invoke_cloud_function(
             partial_log_structured(message="Modified URL with query params", url=url)
 
         # Prepare headers
-        headers = {"Authorization": f"Bearer {get_auth(url)}"}
+        headers = {}
 
         # Make the request
         response = requests.post(url=url, json=payload, headers=headers)

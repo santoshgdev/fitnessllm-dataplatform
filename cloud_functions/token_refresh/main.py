@@ -5,7 +5,8 @@ import os
 from firebase_admin import auth, initialize_app
 from firebase_functions import https_fn, options
 from google.cloud import firestore
-
+import google.auth.transport.requests
+import google.oauth2.id_token
 from .streams.strava import strava_refresh_oauth_token
 from .utils.logger_utils import partial_log_structured
 
@@ -14,6 +15,11 @@ initialize_app(
         "projectId": os.getenv("PROJECT_ID"),  # Replace with your actual project ID
     }
 )
+
+def get_auth(receiving_function_url: str) -> str:
+    """Get the auth token for the receiving function."""
+    auth_req = google.auth.transport.requests.Request()
+    return google.oauth2.id_token.fetch_id_token(auth_req, receiving_function_url)
 
 
 @https_fn.on_request(
@@ -95,7 +101,7 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
 
     try:
         # Verify the Firebase ID token
-        token = auth_header.split("Bearer ")[1]
+        token = get_auth(request.url)
         decoded_token = auth.verify_id_token(token)
         uid = decoded_token["uid"]  # Get uid from verified token
         partial_log_structured(message="Token verified", uid=uid)

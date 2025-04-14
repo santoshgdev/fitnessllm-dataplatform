@@ -4,19 +4,11 @@ import os
 from typing import Dict, Optional
 
 import functions_framework
-import google.auth.transport.requests
-import google.oauth2.id_token
 import requests
 from firebase_functions import https_fn
 from google.cloud import functions_v2, run_v2
 
 from .utils.logger_utils import partial_log_structured
-
-
-def get_auth(receiving_function_url: str) -> str:
-    """Get the auth token for the receiving function."""
-    auth_req = google.auth.transport.requests.Request()
-    return google.oauth2.id_token.fetch_id_token(auth_req, receiving_function_url)
 
 
 def invoke_cloud_function(

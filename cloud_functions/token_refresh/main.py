@@ -58,7 +58,7 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
     # Get data_source from query parameters instead of body
     data_source = request.args.get("data_source")
     if not data_source:
-        partial_log_structured("Missing data_source parameter", level="ERROR")
+        partial_log_structured(message="Missing data_source parameter", level="ERROR")
         return https_fn.Response(
             status=400,
             response=json.dumps(
@@ -74,9 +74,9 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
         )
 
     auth_header = request.headers.get("Authorization")
-    partial_log_structured("Received Authorization header", auth_header=auth_header)
+    partial_log_structured(message="Received Authorization header", auth_header=auth_header)
     if not auth_header or not auth_header.startswith("Bearer "):
-        partial_log_structured("Invalid Authorization header", level="ERROR")
+        partial_log_structured(message="Invalid Authorization header", level="ERROR")
         return https_fn.Response(
             status=400,
             response=json.dumps(
@@ -96,13 +96,13 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
         token = auth_header.split("Bearer ")[1]
         decoded_token = auth.verify_id_token(token)
         uid = decoded_token["uid"]  # Get uid from verified token
-        partial_log_structured("Token verified", uid=uid)
+        partial_log_structured(message="Token verified", uid=uid)
 
         db = firestore.Client()
         doc = db.collection("users").document(uid).get()
 
         if not doc.exists:
-            partial_log_structured("User not found", uid=uid, level="ERROR")
+            partial_log_structured(message="User not found", uid=uid, level="ERROR")
             return https_fn.Response(
                 status=404,
                 response=json.dumps(
@@ -121,7 +121,7 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
 
         if not stream_data or not stream_data.get("refreshToken"):
             partial_log_structured(
-                "No refresh token found",
+                message="No refresh token found",
                 uid=uid,
                 data_source=data_source,
                 level="ERROR",
@@ -144,7 +144,7 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
             try:
                 strava_refresh_oauth_token(db, uid, stream_data["refreshToken"])
                 partial_log_structured(
-                    "Token refresh successful",
+                    message="Token refresh successful",
                     uid=uid,
                     data_source=data_source,
                 )
@@ -161,7 +161,7 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
             except ValueError as e:
                 if "credentials not found" in str(e):
                     partial_log_structured(
-                        "Strava credentials not found",
+                        message="Strava credentials not found",
                         error=str(e),
                         level="ERROR",
                     )
@@ -181,7 +181,7 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
                 raise
         else:
             partial_log_structured(
-                "Unsupported data source",
+                message="Unsupported data source",
                 data_source=data_source,
                 level="ERROR",
             )
@@ -200,7 +200,7 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
             )
 
     except auth.InvalidIdTokenError:
-        partial_log_structured("Invalid token", level="ERROR")
+        partial_log_structured(message="Invalid token", level="ERROR")
         return https_fn.Response(
             status=401,
             response=json.dumps(
@@ -212,7 +212,7 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
             },
         )
     except auth.ExpiredIdTokenError:
-        partial_log_structured("Expired token", level="ERROR")
+        partial_log_structured(message="Expired token", level="ERROR")
         return https_fn.Response(
             status=401,
             response=json.dumps(
@@ -224,7 +224,7 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
             },
         )
     except auth.RevokedIdTokenError:
-        partial_log_structured("Revoked token", level="ERROR")
+        partial_log_structured(message="Revoked token", level="ERROR")
         return https_fn.Response(
             status=401,
             response=json.dumps(
@@ -236,7 +236,7 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
             },
         )
     except Exception as e:
-        partial_log_structured("Error in token refresh", error=str(e), level="ERROR")
+        partial_log_structured(message="Error in token refresh", error=str(e), level="ERROR")
         return https_fn.Response(
             status=500,
             response=json.dumps({"error": "Internal Server Error", "message": str(e)}),

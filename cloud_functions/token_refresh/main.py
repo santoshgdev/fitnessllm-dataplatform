@@ -1,6 +1,9 @@
 """Main Entry point for Token Refresh."""
 import json
 import traceback
+from os import environ
+
+from google.oauth2 import id_token
 
 import google.auth.transport.requests
 import google.oauth2.id_token
@@ -94,7 +97,11 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
     try:
         # Verify the Firebase ID token
         token = get_auth(request.url)
-        decoded_token = auth.verify_id_token(token)
+        decoded_token = id_token.verify_oauth2_token(
+            token,
+            request.Request(),
+            audience=environ['PROJECT_ID']  # Crucially, specify the expected audience URL
+        )
         uid = decoded_token["uid"]  # Get uid from verified token
         partial_log_structured(message="Token verified", uid=uid)
 

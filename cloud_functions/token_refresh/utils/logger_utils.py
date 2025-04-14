@@ -1,6 +1,7 @@
 """Logging utilities."""
 import json
 import logging
+from functools import partial
 from logging import Logger
 
 from beartype.typing import Optional
@@ -50,3 +51,6 @@ def log_structured(function_name: str, message: str, **kwargs):
     """
     log_data = {"function": function_name, "message": message, **kwargs}
     logger.info(json.dumps(log_data))
+
+
+partial_log_structured = partial(log_structured, function_name="token_refresh")

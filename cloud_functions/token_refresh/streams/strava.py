@@ -8,7 +8,7 @@ from google.cloud import firestore
 from stravalib.client import Client
 
 from ..utils.cloud_utils import get_secret
-from ..utils.logger_utils import log_structured
+from ..utils.logger_utils import partial_log_structured
 from ..utils.task_utils import decrypt_token, encrypt_token, update_last_refresh
 
 
@@ -26,7 +26,7 @@ def strava_refresh_oauth_token(
     Raises:
         ValueError: If refresh token is invalid.
     """
-    log_structured("strava_token_refresh", "Starting token refresh", uid=uid)
+    partial_log_structured(message="Starting token refresh", uid=uid)
 
     encryption_key = get_secret(os.environ["ENCRYPTION_SECRET"])["token"]
 
@@ -36,9 +36,7 @@ def strava_refresh_oauth_token(
     client_secret = strava_secret.get("client_secret")
 
     if not client_id or not client_secret:
-        log_structured(
-            "strava_token_refresh", "Strava credentials not found", level="ERROR"
-        )
+        partial_log_structured(message="Strava credentials not found", level="ERROR")
         raise ValueError("Strava credentials not found in Secret Manager")
 
     try:
@@ -47,7 +45,7 @@ def strava_refresh_oauth_token(
             client_secret=client_secret,
             refresh_token=decrypt_token(refresh_token, encryption_key),
         )
-        log_structured("strava_token_refresh", "Token refresh successful", uid=uid)
+        partial_log_structured(message="Token refresh successful", uid=uid)
 
         new_tokens = {
             "accessToken": encrypt_token(
@@ -61,11 +59,10 @@ def strava_refresh_oauth_token(
         }
 
         strava_update_user_tokens(db=db, uid=uid, new_tokens=new_tokens)
-        log_structured("strava_token_refresh", "Tokens updated in Firestore", uid=uid)
+        partial_log_structured(message="Tokens updated in Firestore", uid=uid)
     except Exception as e:
-        log_structured(
-            "strava_token_refresh",
-            "Error refreshing token",
+        partial_log_structured(
+            message="Error refreshing token",
             uid=uid,
             error=str(e),
             level="ERROR",
@@ -84,7 +81,7 @@ def strava_update_user_tokens(
         uid: Firestore user id.
         new_tokens: New tokens.
     """
-    log_structured("strava_token_refresh", "Updating user tokens", uid=uid)
+    partial_log_structured("strava_token_refresh", "Updating user tokens", uid=uid)
     user_ref = db.collection("users").document(uid)
     user_ref.update(
         {
@@ -93,4 +90,6 @@ def strava_update_user_tokens(
             "stream=strava.expiresAt": new_tokens["expiresAt"],
         }
     )
-    log_structured("strava_token_refresh", "User tokens updated successfully", uid=uid)
+    partial_log_structured(
+        "strava_token_refresh", "User tokens updated successfully", uid=uid
+    )

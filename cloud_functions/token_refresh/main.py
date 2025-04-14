@@ -79,25 +79,25 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
             },
         )
 
-    auth_header = request.headers.get("Authorization")
-    partial_log_structured(
-        message="Received Authorization header", auth_header=auth_header
-    )
-    if not auth_header or not auth_header.startswith("Bearer "):
-        partial_log_structured(message="Invalid Authorization header", level="ERROR")
-        return https_fn.Response(
-            status=400,
-            response=json.dumps(
-                {
-                    "error": "Bad Request",
-                    "message": "Bad Request - Missing or invalid Authorization header",
-                }
-            ),
-            headers={
-                "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*",
-            },
-        )
+    # auth_header = request.headers.get("Authorization")
+    # partial_log_structured(
+    #     message="Received Authorization header", auth_header=auth_header
+    # )
+    # if not auth_header or not auth_header.startswith("Bearer "):
+    #     partial_log_structured(message="Invalid Authorization header", level="ERROR")
+    #     return https_fn.Response(
+    #         status=400,
+    #         response=json.dumps(
+    #             {
+    #                 "error": "Bad Request",
+    #                 "message": "Bad Request - Missing or invalid Authorization header",
+    #             }
+    #         ),
+    #         headers={
+    #             "Content-Type": "application/json",
+    #             "Access-Control-Allow-Origin": "*",
+    #         },
+    #     )
 
     try:
         # Verify the Firebase ID token

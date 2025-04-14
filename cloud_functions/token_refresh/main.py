@@ -28,7 +28,6 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
     """
     # Log all request details at the start
     log_structured(
-        "token_refresh",
         "Request received",
         method=request.method,
         headers=dict(request.headers),
@@ -37,10 +36,10 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
     )
     try:
         body = request.get_json(silent=True)
-        log_structured("token_refresh", "Request body", body=body)
+        log_structured("Request body", body=body)
     except Exception as e:
         log_structured(
-            "token_refresh", "Error parsing request body", error=str(e), level="ERROR"
+            "Error parsing request body", error=str(e), level="ERROR"
         )
 
     # Handle OPTIONS request for CORS preflight
@@ -58,19 +57,35 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
     # Get data_source from query parameters instead of body
     data_source = request.args.get("data_source")
     if not data_source:
-        log_structured("token_refresh", "Missing data_source parameter", level="ERROR")
+        log_structured("Missing data_source parameter", level="ERROR")
         return https_fn.Response(
-            status=400, response="Required data_source parameter is missing!"
+            status=400,
+            response=json.dumps({
+                "error": "Bad Request",
+                "message": "Required data_source parameter is missing!"
+            }),
+            headers={
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*",
+            },
         )
 
     auth_header = request.headers.get("Authorization")
     log_structured(
-        "token_refresh", "Received Authorization header", auth_header=auth_header
+        "Received Authorization header", auth_header=auth_header
     )
     if not auth_header or not auth_header.startswith("Bearer "):
-        log_structured("token_refresh", "Invalid Authorization header", level="ERROR")
+        log_structured("Invalid Authorization header", level="ERROR")
         return https_fn.Response(
-            status=400, response="Bad Request - Missing or invalid Authorization header"
+            status=400,
+            response=json.dumps({
+                "error": "Bad Request",
+                "message": "Bad Request - Missing or invalid Authorization header"
+            }),
+            headers={
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*",
+            },
         )
 
     try:
@@ -78,23 +93,29 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
         token = auth_header.split("Bearer ")[1]
         decoded_token = auth.verify_id_token(token)
         uid = decoded_token["uid"]  # Get uid from verified token
-        log_structured("token_refresh", "Token verified", uid=uid)
+        log_structured("Token verified", uid=uid)
 
         db = firestore.Client()
         doc = db.collection("users").document(uid).get()
 
         if not doc.exists:
-            log_structured("token_refresh", "User not found", uid=uid, level="ERROR")
+            log_structured("User not found", uid=uid, level="ERROR")
             return https_fn.Response(
                 status=404,
-                response=f"Not Found - User {uid} does not exist in Firestore",
+                response=json.dumps({
+                    "error": "Not Found",
+                    "message": f"User {uid} does not exist in Firestore"
+                }),
+                headers={
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": "*",
+                },
             )
 
         stream_data = doc.to_dict()[f"stream={data_source}"]
 
         if not stream_data or not stream_data.get("refreshToken"):
             log_structured(
-                "token_refresh",
                 "No refresh token found",
                 uid=uid,
                 data_source=data_source,
@@ -102,57 +123,122 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
             )
             return https_fn.Response(
                 status=400,
-                response=f"Bad Request - No refresh token found for user {uid} and data source {data_source}",
+                response=json.dumps({
+                    "error": "Bad Request",
+                    "message": f"Bad Request - No refresh token found for user {uid} and data source {data_source}"
+                }),
+                headers={
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": "*",
+                },
             )
 
         if data_source == "strava":
             try:
                 strava_refresh_oauth_token(db, uid, stream_data["refreshToken"])
                 log_structured(
-                    "token_refresh",
                     "Token refresh successful",
                     uid=uid,
                     data_source=data_source,
                 )
                 return https_fn.Response(
-                    status=200, response="Token refreshed successfully for Strava."
+                    status=200,
+                    response=json.dumps({
+                        "message": "Token refreshed successfully for Strava."
+                    }),
+                    headers={
+                        "Content-Type": "application/json",
+                        "Access-Control-Allow-Origin": "*",
+                    },
                 )
             except ValueError as e:
                 if "credentials not found" in str(e):
                     log_structured(
-                        "token_refresh",
                         "Strava credentials not found",
                         error=str(e),
                         level="ERROR",
                     )
                     return https_fn.Response(
                         status=500,
-                        response="Internal Server Error - Strava credentials not found in Secret Manager",
+                        response=json.dumps({
+                            "error": "Internal Server Error",
+                            "message": "Internal Server Error - Strava credentials not found in Secret Manager"
+                        }),
+                        headers={
+                            "Content-Type": "application/json",
+                            "Access-Control-Allow-Origin": "*",
+                        },
                     )
                 raise
         else:
             log_structured(
-                "token_refresh",
                 "Unsupported data source",
                 data_source=data_source,
                 level="ERROR",
             )
             return https_fn.Response(
                 status=400,
-                response=f"Bad Request - Unsupported data source: {data_source}",
+                response=json.dumps({
+                    "error": "Bad Request",
+                    "message": f"Bad Request - Unsupported data source: {data_source}"
+                }),
+                headers={
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": "*",
+                },
             )
 
     except auth.InvalidIdTokenError:
-        log_structured("token_refresh", "Invalid token", level="ERROR")
-        return https_fn.Response(status=401, response="Unauthorized - Invalid token")
+        log_structured("Invalid token", level="ERROR")
+        return https_fn.Response(
+            status=401,
+            response=json.dumps({
+                "error": "Unauthorized",
+                "message": "Unauthorized - Invalid token"
+            }),
+            headers={
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*",
+            },
+        )
     except auth.ExpiredIdTokenError:
-        log_structured("token_refresh", "Expired token", level="ERROR")
-        return https_fn.Response(status=401, response="Unauthorized - Expired token")
+        log_structured("Expired token", level="ERROR")
+        return https_fn.Response(
+            status=401,
+            response=json.dumps({
+                "error": "Unauthorized",
+                "message": "Unauthorized - Expired token"
+            }),
+            headers={
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*",
+            },
+        )
     except auth.RevokedIdTokenError:
-        log_structured("token_refresh", "Revoked token", level="ERROR")
-        return https_fn.Response(status=401, response="Unauthorized - Revoked token")
+        log_structured("Revoked token", level="ERROR")
+        return https_fn.Response(
+            status=401,
+            response=json.dumps({
+                "error": "Unauthorized",
+                "message": "Unauthorized - Revoked token"
+            }),
+            headers={
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*",
+            },
+        )
     except Exception as e:
         log_structured(
-            "token_refresh", "Error in token refresh", error=str(e), level="ERROR"
+            "Error in token refresh", error=str(e), level="ERROR"
         )
-        return https_fn.Response(status=500, response=str(e))
+        return https_fn.Response(
+            status=500,
+            response=json.dumps({
+                "error": "Internal Server Error",
+                "message": str(e)
+            }),
+            headers={
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*",
+            },
+        )

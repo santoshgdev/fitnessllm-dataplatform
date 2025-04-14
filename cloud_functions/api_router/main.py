@@ -11,9 +11,7 @@ from google.cloud import functions_v2, run_v2
 from .utils.logger_utils import partial_log_structured
 
 
-def invoke_cloud_function(
-    function_name: str, payload: Dict, auth_header: Optional[str] = None
-) -> https_fn.Response:
+def invoke_cloud_function(function_name: str, payload: Dict) -> https_fn.Response:
     """Invoke a Cloud Function using HTTPS.
 
     Args:
@@ -43,7 +41,7 @@ def invoke_cloud_function(
             partial_log_structured(message="Modified URL with query params", url=url)
 
         # Prepare headers
-        headers = {}
+        headers: dict = {}
 
         # Make the request
         response = requests.post(url=url, json=payload, headers=headers)

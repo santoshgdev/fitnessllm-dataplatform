@@ -1,6 +1,7 @@
 """Main Entry point for cloud function."""
 import json
 import os
+import traceback
 from typing import Dict, Optional
 
 import functions_framework
@@ -93,6 +94,7 @@ def invoke_cloud_function(function_name: str, payload: Dict) -> https_fn.Respons
                 error=str(e),
                 response_text=response.text,
                 level="ERROR",
+                traceback=traceback.format_exc(),
             )
             return https_fn.Response(
                 status=500,
@@ -102,7 +104,10 @@ def invoke_cloud_function(function_name: str, payload: Dict) -> https_fn.Respons
 
     except Exception as e:
         partial_log_structured(
-            message="Error invoking cloud function", error=str(e), level="ERROR"
+            message="Error invoking cloud function",
+            error=str(e),
+            level="ERROR",
+            traceback=traceback.format_exc(),
         )
         return https_fn.Response(
             status=500,
@@ -192,6 +197,7 @@ def invoke_cloud_run(
                 error=str(e),
                 response_text=response.text,
                 level="ERROR",
+                traceback=traceback.format_exc(),
             )
             return https_fn.Response(
                 status=500,
@@ -201,7 +207,10 @@ def invoke_cloud_run(
 
     except Exception as e:
         partial_log_structured(
-            message="Error invoking cloud run service", error=str(e), level="ERROR"
+            message="Error invoking cloud run service",
+            error=str(e),
+            level="ERROR",
+            traceback=traceback.format_exc(),
         )
         return https_fn.Response(
             status=500,
@@ -230,7 +239,10 @@ def api_router(request):
         partial_log_structured(message="Request body", body=body)
     except Exception as e:
         partial_log_structured(
-            message="Error parsing request body", error=str(e), level="ERROR"
+            message="Error parsing request body",
+            error=str(e),
+            level="ERROR",
+            traceback=traceback.format_exc(),
         )
 
     # Handle OPTIONS request for CORS preflight
@@ -277,7 +289,7 @@ def api_router(request):
         # Route to appropriate service
         if target_api == "token_refresh":
             function_name = f"projects/{project_id}/locations/{region}/functions/{environment}-token-refresh"
-            return invoke_cloud_function(function_name, payload, auth_header)
+            return invoke_cloud_function(function_name, payload)
         elif target_api == "data_run":
             service_name = f"projects/{project_id}/locations/{region}/services/{environment}-fitnessllm-dp"
             return invoke_cloud_run(service_name, payload, auth_header)
@@ -290,7 +302,10 @@ def api_router(request):
 
     except Exception as e:
         partial_log_structured(
-            message="Error in api_router", error=str(e), level="ERROR"
+            message="Error in api_router",
+            error=str(e),
+            level="ERROR",
+            traceback=traceback.format_exc(),
         )
         return https_fn.Response(
             status=500,

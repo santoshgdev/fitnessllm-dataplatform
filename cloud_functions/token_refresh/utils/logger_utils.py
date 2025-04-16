@@ -49,7 +49,7 @@ def log_structured(function_name: str, message: str, **kwargs):
         message: The main log message
         **kwargs: Additional key-value pairs to include in the log
     """
-    log_data = {"function": function_name, "message": message, **kwargs}
+    log_data = {"function": function_name, "message": f"{function_name}-{message}", **kwargs}
     logger.info(json.dumps(log_data))
 
 

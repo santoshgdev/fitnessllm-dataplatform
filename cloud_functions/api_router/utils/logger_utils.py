@@ -41,15 +41,16 @@ def setup_logger(name: Optional[str] = None, level: int = logging.DEBUG) -> Logg
 logger = setup_logger()
 
 
-def log_structured(message: str, **kwargs):
+def log_structured(function_name: str, message: str, **kwargs):
     """Helper function to log in structured JSON format.
 
     Args:
+        function_name: Name of the function
         message: The main log message
         **kwargs: Additional key-value pairs to include in the log
     """
-    log_data = {"function": "api_router", "message": message, **kwargs}
+    log_data = {"function": function_name, "message": f"{function_name}-{message}", **kwargs}
     logger.info(json.dumps(log_data))
 
 
-partial_log_structured = partial(log_structured, function_name="data_run")
+partial_log_structured = partial(log_structured, function_name="api_router")

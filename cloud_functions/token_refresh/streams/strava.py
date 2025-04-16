@@ -12,8 +12,7 @@ from ..utils.cloud_utils import get_secret
 from ..utils.logger_utils import partial_log_structured
 from ..utils.task_utils import decrypt_token, encrypt_token, update_last_refresh
 
-# Add this at the top of the file to suppress Strava client logs
-logging.getLogger('stravalib').setLevel(logging.WARNING)  # or logging.ERROR for even less logging
+logging.getLogger('stravalib').setLevel(logging.WARNING)
 
 @beartype
 def strava_refresh_oauth_token(

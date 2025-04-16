@@ -12,12 +12,13 @@ from google.cloud import functions_v2, run_v2
 from .utils.logger_utils import partial_log_structured
 
 
-def invoke_cloud_function(function_name: str, payload: Dict) -> https_fn.Response:
+def invoke_cloud_function(function_name: str, payload: Dict, auth_header: Optional[str] = None) -> https_fn.Response:
     """Invoke a Cloud Function using HTTPS.
 
     Args:
         function_name: Full resource name of the function
         payload: The JSON payload to send
+        auth_header: Authorization header from original request
 
     Returns:
         https_fn.Response object with the function's response
@@ -33,6 +34,7 @@ def invoke_cloud_function(function_name: str, payload: Dict) -> https_fn.Respons
             url=url,
             payload=payload,
             target_function=function_name.split("/")[-1],
+            auth_header_present="Authorization" in headers if headers else False
         )
 
         # For token refresh, we need to pass the data_source as a query parameter
@@ -40,8 +42,14 @@ def invoke_cloud_function(function_name: str, payload: Dict) -> https_fn.Respons
             url = f"{url}?data_source={payload['data_source']}"
             partial_log_structured(message="Modified URL with query params", url=url)
 
-        # Prepare headers
-        headers: dict = {}
+        # Prepare headers with auth if provided
+        headers = {}
+        if auth_header:
+            headers["Authorization"] = auth_header
+            partial_log_structured(
+                message="Added authorization header",
+                header_present=True
+            )
 
         # Make the request
         response = requests.post(url=url, json=payload, headers=headers)
@@ -288,7 +296,7 @@ def api_router(request):
         # Route to appropriate service
         if target_api == "token_refresh":
             function_name = f"projects/{project_id}/locations/{region}/functions/{environment}-token-refresh"
-            return invoke_cloud_function(function_name, payload)
+            return invoke_cloud_function(function_name, payload, auth_header)
         elif target_api == "data_run":
             service_name = f"projects/{project_id}/locations/{region}/services/{environment}-fitnessllm-dp"
             return invoke_cloud_run(service_name, payload, auth_header)

@@ -29,19 +29,6 @@ def invoke_cloud_function(function_name: str, payload: Dict, auth_header: Option
         function = client.get_function(name=function_name)
         url = function.service_config.uri
 
-        partial_log_structured(
-            message="Invoking cloud function",
-            url=url,
-            payload=payload,
-            target_function=function_name.split("/")[-1],
-            auth_header_present="Authorization" in headers if headers else False
-        )
-
-        # For token refresh, we need to pass the data_source as a query parameter
-        if "data_source" in payload:
-            url = f"{url}?data_source={payload['data_source']}"
-            partial_log_structured(message="Modified URL with query params", url=url)
-
         # Prepare headers with auth if provided
         headers = {}
         if auth_header:
@@ -50,6 +37,19 @@ def invoke_cloud_function(function_name: str, payload: Dict, auth_header: Option
                 message="Added authorization header",
                 header_present=True
             )
+
+        partial_log_structured(
+            message="Invoking cloud function",
+            url=url,
+            payload=payload,
+            target_function=function_name.split("/")[-1],
+            auth_header_present="Authorization" in headers
+        )
+
+        # For token refresh, we need to pass the data_source as a query parameter
+        if "data_source" in payload:
+            url = f"{url}?data_source={payload['data_source']}"
+            partial_log_structured(message="Modified URL with query params", url=url)
 
         # Make the request
         response = requests.post(url=url, json=payload, headers=headers)

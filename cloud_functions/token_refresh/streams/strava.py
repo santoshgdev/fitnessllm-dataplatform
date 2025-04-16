@@ -88,6 +88,7 @@ def strava_update_user_tokens(
             "stream=strava.accessToken": new_tokens["accessToken"],
             "stream=strava.refreshToken": new_tokens["refreshToken"],
             "stream=strava.expiresAt": new_tokens["expiresAt"],
+            "stream=strava.lastTokenRefresh": new_tokens["lastTokenRefresh"],
         }
     )
     partial_log_structured(

@@ -12,7 +12,9 @@ from google.cloud import functions_v2, run_v2
 from .utils.logger_utils import partial_log_structured
 
 
-def invoke_cloud_function(function_name: str, payload: Dict, auth_header: Optional[str] = None) -> https_fn.Response:
+def invoke_cloud_function(
+    function_name: str, payload: Dict, auth_header: Optional[str] = None
+) -> https_fn.Response:
     """Invoke a Cloud Function using HTTPS.
 
     Args:
@@ -34,8 +36,7 @@ def invoke_cloud_function(function_name: str, payload: Dict, auth_header: Option
         if auth_header:
             headers["Authorization"] = auth_header
             partial_log_structured(
-                message="Added authorization header",
-                header_present=True
+                message="Added authorization header", header_present=True
             )
 
         partial_log_structured(
@@ -43,7 +44,7 @@ def invoke_cloud_function(function_name: str, payload: Dict, auth_header: Option
             url=url,
             payload=payload,
             target_function=function_name.split("/")[-1],
-            auth_header_present="Authorization" in headers
+            auth_header_present="Authorization" in headers,
         )
 
         # For token refresh, we need to pass the data_source as a query parameter

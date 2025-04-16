@@ -91,6 +91,4 @@ def strava_update_user_tokens(
             "stream=strava.lastTokenRefresh": new_tokens["lastTokenRefresh"],
         }
     )
-    partial_log_structured(
-        message="User tokens updated successfully", uid=uid
-    )
+    partial_log_structured(message="User tokens updated successfully", uid=uid)

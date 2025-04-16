@@ -8,7 +8,6 @@ import google.oauth2.id_token
 from firebase_admin import auth, initialize_app
 from firebase_functions import https_fn, options
 from google.cloud import firestore
-from google.oauth2 import id_token
 
 from .streams.strava import strava_refresh_oauth_token
 from .utils.logger_utils import partial_log_structured
@@ -99,35 +98,37 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
         partial_log_structured(
             message="Received headers",
             headers=all_headers,
-            auth_header=request.headers.get('Authorization', 'No Authorization header found')
+            auth_header=request.headers.get(
+                "Authorization", "No Authorization header found"
+            ),
         )
 
         # Get the Authorization header
-        auth_header = request.headers.get('Authorization', '')
-        if not auth_header.startswith('Bearer '):
+        auth_header = request.headers.get("Authorization", "")
+        if not auth_header.startswith("Bearer "):
             partial_log_structured(
                 message="Invalid Authorization header",
                 received_header=auth_header,
-                level="ERROR"
+                level="ERROR",
             )
-            raise auth.InvalidIdTokenError('No valid authorization header found')
-        
+            raise auth.InvalidIdTokenError("No valid authorization header found")
+
         # Extract the token from the Authorization header
-        token = auth_header.split('Bearer ')[1]
-        
+        token = auth_header.split("Bearer ")[1]
+
         # Verify the Firebase ID token and log its contents
         decoded_token = auth.verify_id_token(token)
         partial_log_structured(
             message="Decoded token contents",
             decoded_token=decoded_token,  # Log the entire decoded token
-            token_keys=list(decoded_token.keys())  # Log available keys
+            token_keys=list(decoded_token.keys()),  # Log available keys
         )
-        
+
         # Try to get uid from sub claim if uid is not present
-        uid = decoded_token.get('uid') or decoded_token.get('sub')
+        uid = decoded_token.get("uid") or decoded_token.get("sub")
         if not uid:
-            raise auth.InvalidIdTokenError('No uid or sub claim found in token')
-            
+            raise auth.InvalidIdTokenError("No uid or sub claim found in token")
+
         partial_log_structured(message="Token verified", uid=uid)
 
         db = firestore.Client()

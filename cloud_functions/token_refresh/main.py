@@ -30,7 +30,7 @@ except Exception as e:
 def get_auth(receiving_function_url: str) -> str:
     """Get the auth token for the receiving function."""
     auth_req = google.auth.transport.requests.Request()
-    return google.oauth2.id_token.fetch_id_token(auth_req, receiving_function_url)
+    return google.oauth2.id_token.fetch_id_token(auth_req, environ["PROJECT_ID"])
 
 
 @https_fn.on_request(
@@ -99,9 +99,7 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
         decoded_token = id_token.verify_oauth2_token(
             token,
             google.auth.transport.requests.Request(),
-            audience=environ[
-                "PROJECT_ID"
-            ],  # Crucially, specify the expected audience URL
+            audience=environ["PROJECT_ID"],
         )
         uid = decoded_token["uid"]  # Get uid from verified token
         partial_log_structured(message="Token verified", uid=uid)

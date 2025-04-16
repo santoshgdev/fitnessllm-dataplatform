@@ -18,7 +18,6 @@ def invoke_cloud_function(function_name: str, payload: Dict) -> https_fn.Respons
     Args:
         function_name: Full resource name of the function
         payload: The JSON payload to send
-        auth_header: Authorization header from original request
 
     Returns:
         https_fn.Response object with the function's response

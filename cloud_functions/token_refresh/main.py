@@ -98,7 +98,7 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
         token = get_auth(request.url)
         decoded_token = id_token.verify_oauth2_token(
             token,
-            request.Request(),
+            google.auth.transport.requests.Request(),
             audience=environ[
                 "PROJECT_ID"
             ],  # Crucially, specify the expected audience URL

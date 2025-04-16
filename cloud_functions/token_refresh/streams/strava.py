@@ -12,7 +12,8 @@ from ..utils.cloud_utils import get_secret
 from ..utils.logger_utils import partial_log_structured
 from ..utils.task_utils import decrypt_token, encrypt_token, update_last_refresh
 
-logging.getLogger('stravalib').setLevel(logging.WARNING)
+logging.getLogger("stravalib").setLevel(logging.WARNING)
+
 
 @beartype
 def strava_refresh_oauth_token(

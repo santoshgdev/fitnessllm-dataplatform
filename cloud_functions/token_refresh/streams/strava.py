@@ -81,7 +81,7 @@ def strava_update_user_tokens(
         uid: Firestore user id.
         new_tokens: New tokens.
     """
-    partial_log_structured("strava_token_refresh", "Updating user tokens", uid=uid)
+    partial_log_structured(message="Updating user tokens", uid=uid)
     user_ref = db.collection("users").document(uid)
     user_ref.update(
         {
@@ -91,5 +91,5 @@ def strava_update_user_tokens(
         }
     )
     partial_log_structured(
-        "strava_token_refresh", "User tokens updated successfully", uid=uid
+        message="User tokens updated successfully", uid=uid
     )

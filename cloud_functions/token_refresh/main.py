@@ -94,14 +94,27 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
         )
 
     try:
-        # Verify the Firebase ID token
-        token = get_auth(request.url)
-        decoded_token = id_token.verify_oauth2_token(
-            token,
-            google.auth.transport.requests.Request(),
-            audience=environ["PROJECT_ID"],
+        # Get the Authorization header
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer '):
+            raise auth.InvalidIdTokenError('No valid authorization header found')
+        
+        # Extract the token from the Authorization header
+        token = auth_header.split('Bearer ')[1]
+        
+        # Verify the Firebase ID token and log its contents
+        decoded_token = auth.verify_id_token(token)
+        partial_log_structured(
+            message="Decoded token contents",
+            decoded_token=decoded_token,  # Log the entire decoded token
+            token_keys=list(decoded_token.keys())  # Log available keys
         )
-        uid = decoded_token["uid"]  # Get uid from verified token
+        
+        # Try to get uid from sub claim if uid is not present
+        uid = decoded_token.get('uid') or decoded_token.get('sub')
+        if not uid:
+            raise auth.InvalidIdTokenError('No uid or sub claim found in token')
+            
         partial_log_structured(message="Token verified", uid=uid)
 
         db = firestore.Client()

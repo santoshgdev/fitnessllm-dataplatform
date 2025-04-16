@@ -94,9 +94,22 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
         )
 
     try:
+        # Log all headers for debugging
+        all_headers = dict(request.headers)
+        partial_log_structured(
+            message="Received headers",
+            headers=all_headers,
+            auth_header=request.headers.get('Authorization', 'No Authorization header found')
+        )
+
         # Get the Authorization header
         auth_header = request.headers.get('Authorization', '')
         if not auth_header.startswith('Bearer '):
+            partial_log_structured(
+                message="Invalid Authorization header",
+                received_header=auth_header,
+                level="ERROR"
+            )
             raise auth.InvalidIdTokenError('No valid authorization header found')
         
         # Extract the token from the Authorization header

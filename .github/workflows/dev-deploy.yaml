@@ -2,6 +2,7 @@
 name: Dev Deploy
 
 on:
+    workflow_dispatch:  # Add manual trigger
     push:
         branches:
             - main
@@ -40,13 +41,13 @@ jobs:
                   fi
 
             - name: Set up Python
-              if: steps.check_changes.outputs.changes_detected == 'true'
+              if: steps.check_changes.outputs.changes_detected == 'true' || github.event_name == 'workflow_dispatch'
               uses: actions/setup-python@v4
               with:
                   python-version: 3.12.2
 
             - name: Install Poetry
-              if: steps.check_changes.outputs.changes_detected == 'true'
+              if: steps.check_changes.outputs.changes_detected == 'true' || github.event_name == 'workflow_dispatch'
               uses: snok/install-poetry@v1
               with:
                   version: 2.0.1
@@ -54,21 +55,21 @@ jobs:
                   virtualenvs-in-project: true
 
             - name: Update Poetry lock file
-              if: steps.check_changes.outputs.changes_detected == 'true'
+              if: steps.check_changes.outputs.changes_detected == 'true' || github.event_name == 'workflow_dispatch'
               run: |
                   poetry lock
 
             - name: Install dependencies
-              if: steps.check_changes.outputs.changes_detected == 'true'
+              if: steps.check_changes.outputs.changes_detected == 'true' || github.event_name == 'workflow_dispatch'
               run: |
                   poetry install --no-interaction
 
             - name: Run pytest
-              if: steps.check_changes.outputs.changes_detected == 'true'
+              if: steps.check_changes.outputs.changes_detected == 'true' || github.event_name == 'workflow_dispatch'
               run: poetry run pytest tests/
 
             - name: Cache pre-commit
-              if: steps.check_changes.outputs.changes_detected == 'true' && steps.cache-pre-commit.outputs.cache-hit != 'true'
+              if: (steps.check_changes.outputs.changes_detected == 'true' || github.event_name == 'workflow_dispatch') && steps.cache-pre-commit.outputs.cache-hit != 'true'
               id: cache-pre-commit
               uses: actions/cache@v4
               with:
@@ -80,7 +81,7 @@ jobs:
                       ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}-${{ runner.os }}-pre-commit-
 
             - name: Install and initialize pre-commit
-              if: steps.check_changes.outputs.changes_detected == 'true' && steps.cache-pre-commit.outputs.cache-hit != 'true'
+              if: (steps.check_changes.outputs.changes_detected == 'true' || github.event_name == 'workflow_dispatch') && steps.cache-pre-commit.outputs.cache-hit != 'true'
               run: |
                   pip install pre-commit
                   pre-commit install
@@ -88,7 +89,7 @@ jobs:
                   pre-commit run --all-files || true
 
             - name: Save pre-commit cache
-              if: steps.check_changes.outputs.changes_detected == 'true' && steps.cache-pre-commit.outputs.cache-hit != 'true'
+              if: (steps.check_changes.outputs.changes_detected == 'true' || github.event_name == 'workflow_dispatch') && steps.cache-pre-commit.outputs.cache-hit != 'true'
               uses: actions/cache/save@v4
               with:
                   path: |
@@ -97,7 +98,7 @@ jobs:
                   key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}-${{ hashFiles('**/poetry.lock') }}
 
             - name: Run pre-commit checks
-              if: steps.check_changes.outputs.changes_detected == 'true'
+              if: steps.check_changes.outputs.changes_detected == 'true' || github.event_name == 'workflow_dispatch'
               run: |
                   pre-commit run --all-files
 
@@ -113,15 +114,15 @@ jobs:
                   version: latest
 
             - name: Configure Docker for Artifact Registry
-              if: steps.check_changes.outputs.changes_detected == 'true'
+              if: steps.check_changes.outputs.changes_detected == 'true' || github.event_name == 'workflow_dispatch'
               run: gcloud auth configure-docker us-west1-docker.pkg.dev --quiet
 
             - name: Set up Docker Buildx
-              if: steps.check_changes.outputs.changes_detected == 'true'
+              if: steps.check_changes.outputs.changes_detected == 'true' || github.event_name == 'workflow_dispatch'
               uses: docker/setup-buildx-action@v3
 
             - name: Cache Docker layers
-              if: steps.check_changes.outputs.changes_detected == 'true'
+              if: steps.check_changes.outputs.changes_detected == 'true' || github.event_name == 'workflow_dispatch'
               uses: actions/cache@v4
               with:
                   path: /tmp/.buildx-cache
@@ -130,7 +131,7 @@ jobs:
                       ${{ runner.os }}-buildx-
 
             - name: Build Docker image
-              if: steps.check_changes.outputs.changes_detected == 'true'
+              if: steps.check_changes.outputs.changes_detected == 'true' || github.event_name == 'workflow_dispatch'
               run: |
                   # Create cache directory if it doesn't exist
                   mkdir -p /tmp/.buildx-cache
@@ -143,7 +144,7 @@ jobs:
                     --load
 
             - name: Push Docker image to Artifact Registry
-              if: steps.check_changes.outputs.changes_detected == 'true'
+              if: steps.check_changes.outputs.changes_detected == 'true' || github.event_name == 'workflow_dispatch'
               run: |
                   docker push ${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }}
 
@@ -204,7 +205,7 @@ jobs:
               uses: google-github-actions/setup-gcloud@v2
 
             - name: Deploy Function
-              if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true'
+              if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true' || github.event_name == 'workflow_dispatch'
               run: |
                   gcloud functions deploy ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') \
                     --gen2 \

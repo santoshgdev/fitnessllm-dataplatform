@@ -88,10 +88,10 @@ def strava_update_user_tokens(
     user_ref = db.collection("users").document(uid)
     user_ref.update(
         {
-            "stream=strava.accessToken": new_tokens["accessToken"],
-            "stream=strava.refreshToken": new_tokens["refreshToken"],
-            "stream=strava.expiresAt": new_tokens["expiresAt"],
-            "stream=strava.lastTokenRefresh": new_tokens["lastTokenRefresh"],
+            "stream.strava.accessToken": new_tokens["accessToken"],
+            "stream.strava.refreshToken": new_tokens["refreshToken"],
+            "stream.strava.expiresAt": new_tokens["expiresAt"],
+            "stream.strava.lastTokenRefresh": new_tokens["lastTokenRefresh"],
         }
     )
     partial_log_structured(message="User tokens updated successfully", uid=uid)

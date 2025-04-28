@@ -298,6 +298,9 @@ def api_router(request):
         if target_api == "token_refresh":
             function_name = f"projects/{project_id}/locations/{region}/functions/{environment}-token-refresh"
             return invoke_cloud_function(function_name, payload, auth_header)
+        elif target_api == "strava_auth_initiate":
+            function_name = f"projects/{project_id}/locations/{region}/functions/{environment}-strava-auth-initiate"
+            return invoke_cloud_function(function_name, payload, auth_header)
         elif target_api == "data_run":
             service_name = f"projects/{project_id}/locations/{region}/services/{environment}-fitnessllm-dp"
             return invoke_cloud_run(service_name, payload, auth_header)

@@ -241,7 +241,7 @@ jobs:
 
     cloud_function_deploy:
         needs: cloud_function_detect_changes
-        if: needs.cloud_function_detect_changes.outputs.has_changes == 'true'
+        if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true'
         runs-on: ubuntu-latest
         environment: dev
         strategy:

@@ -34,9 +34,13 @@ def invoke_cloud_function(
         # Prepare headers with auth if provided
         headers = {}
         if auth_header:
+            if not auth_header.startswith("Bearer "):
+                auth_header = f"Bearer {auth_header}"
             headers["Authorization"] = auth_header
             partial_log_structured(
-                message="Added authorization header", header_present=True
+                message="Added authorization header", 
+                header_present=True,
+                header_value=auth_header
             )
 
         partial_log_structured(
@@ -70,7 +74,7 @@ def invoke_cloud_function(
         # Handle non-200 responses
         if response.status_code != 200:
             partial_log_structured(
-                message="Non-200 response received",
+                message="Non-200 response received when attempting to invoke cloud function",
                 status_code=response.status_code,
                 response_text=response.text,
                 level="ERROR",
@@ -173,7 +177,7 @@ def invoke_cloud_run(
         # Handle non-200 responses
         if response.status_code != 200:
             partial_log_structured(
-                message="Non-200 response received",
+                message="Non-200 response received when attempting to invoke cloud run service",
                 status_code=response.status_code,
                 response_text=response.text,
                 level="ERROR",

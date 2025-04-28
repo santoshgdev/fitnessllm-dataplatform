@@ -178,32 +178,37 @@ jobs:
     cloud_function_detect_changes:
         runs-on: ubuntu-latest
         outputs:
-            token_refresh: ${{ steps.filter.outputs.token_refresh }}
-            api_router: ${{ steps.filter.outputs.api_router }}
-            strava_auth_initiate: ${{ steps.filter.outputs.strava_auth_initiate }}
+            token_refresh: ${{ steps.check_changes.outputs.token_refresh }}
+            api_router: ${{ steps.check_changes.outputs.api_router }}
+            strava_auth_initiate: ${{ steps.check_changes.outputs.strava_auth_initiate }}
         steps:
             - uses: actions/checkout@v4
               with:
                   fetch-depth: 2  # We need the last 2 commits to compare HEAD and HEAD^
 
-            - name: Get changed files
-              id: changed-files
+            - name: Check for function changes
+              id: check_changes
               run: |
-                  git diff --name-only HEAD^ HEAD > changed_files.txt
-                  echo "Changed files:"
-                  cat changed_files.txt
-                  # Format the files as a newline-separated list
-                  CHANGED_FILES=$(cat changed_files.txt | tr '\n' ' ')
-                  echo "changed_files=$CHANGED_FILES" >> $GITHUB_OUTPUT
+                  # Check token_refresh changes
+                  if git diff --name-only HEAD^ HEAD | grep -q "^cloud_functions/token_refresh/"; then
+                    echo "token_refresh=true" >> $GITHUB_OUTPUT
+                  else
+                    echo "token_refresh=false" >> $GITHUB_OUTPUT
+                  fi
 
-            - uses: dorny/paths-filter@v3
-              id: filter
-              with:
-                  list-files: ${{ steps.changed-files.outputs.changed_files }}
-                  filters: |
-                      token_refresh: 'cloud_functions/token_refresh/**'
-                      api_router: 'cloud_functions/api_router/**'
-                      strava_auth_initiate: 'cloud_functions/strava_auth_initiate/**'
+                  # Check api_router changes
+                  if git diff --name-only HEAD^ HEAD | grep -q "^cloud_functions/api_router/"; then
+                    echo "api_router=true" >> $GITHUB_OUTPUT
+                  else
+                    echo "api_router=false" >> $GITHUB_OUTPUT
+                  fi
+
+                  # Check strava_auth_initiate changes
+                  if git diff --name-only HEAD^ HEAD | grep -q "^cloud_functions/strava_auth_initiate/"; then
+                    echo "strava_auth_initiate=true" >> $GITHUB_OUTPUT
+                  else
+                    echo "strava_auth_initiate=false" >> $GITHUB_OUTPUT
+                  fi
 
     cloud_function_deploy:
         needs: cloud_function_detect_changes

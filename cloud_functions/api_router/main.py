@@ -1,4 +1,4 @@
-"""Main Entry point for cloud function."""
+"""Main Entry point for API Router."""
 import json
 import os
 import traceback

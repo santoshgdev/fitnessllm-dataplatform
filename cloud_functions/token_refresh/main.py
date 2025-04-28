@@ -12,7 +12,6 @@ from google.cloud import firestore
 from .streams.strava import strava_refresh_oauth_token
 from .utils.logger_utils import partial_log_structured
 
-# Initialize Firebase Admin with default credentials
 try:
     initialize_app()
     partial_log_structured(message="Firebase Admin initialized successfully")

@@ -15,7 +15,6 @@ from .utils.cloud_utils import get_secret
 from .utils.logger_utils import partial_log_structured
 from .utils.task_utils import encrypt_token
 
-# Initialize Firebase Admin with default credentials
 try:
     initialize_app()
     partial_log_structured(message="Firebase Admin initialized successfully")

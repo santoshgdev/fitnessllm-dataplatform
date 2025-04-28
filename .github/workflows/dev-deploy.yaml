@@ -192,9 +192,9 @@ jobs:
                   git diff --name-only HEAD^ HEAD > changed_files.txt
                   echo "Changed files:"
                   cat changed_files.txt
-                  echo "changed_files<<EOF" >> $GITHUB_OUTPUT
-                  cat changed_files.txt >> $GITHUB_OUTPUT
-                  echo "EOF" >> $GITHUB_OUTPUT
+                  # Format the files as a newline-separated list
+                  CHANGED_FILES=$(cat changed_files.txt | tr '\n' ' ')
+                  echo "changed_files=$CHANGED_FILES" >> $GITHUB_OUTPUT
 
             - uses: dorny/paths-filter@v3
               id: filter

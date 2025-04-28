@@ -189,6 +189,7 @@ jobs:
             - uses: dorny/paths-filter@v3
               id: filter
               with:
+                  since: last push
                   filters: |
                       token_refresh: 'cloud_functions/token_refresh/**'
                       api_router: 'cloud_functions/api_router/**'

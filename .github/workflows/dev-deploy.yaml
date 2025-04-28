@@ -174,6 +174,7 @@ jobs:
         outputs:
             token_refresh: ${{ steps.filter.outputs.token_refresh }}
             api_router: ${{ steps.filter.outputs.api_router }}
+            strava_auth_initiate: ${{ steps.filter.outputs.strava_auth_initiate }}
         steps:
             - uses: actions/checkout@v4
               with:
@@ -185,6 +186,7 @@ jobs:
                   filters: |
                       token_refresh: 'cloud_functions/token_refresh/**'
                       api_router: 'cloud_functions/api_router/**'
+                      strava_auth_initiate: 'cloud_functions/strava_auth_initiate/**'
 
     cloud_function_deploy:
         needs: cloud_function_detect_changes

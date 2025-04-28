@@ -189,26 +189,44 @@ jobs:
             - name: Check for function changes
               id: check_changes
               run: |
-                  # Check token_refresh changes
+                  echo "=== Debug: Checking for changes between HEAD^ and HEAD ==="
+                  echo "Current commit: $(git rev-parse HEAD)"
+                  echo "Previous commit: $(git rev-parse HEAD^)"
+                  
+                  echo "=== Debug: All changed files ==="
+                  git diff --name-only HEAD^ HEAD
+                  
+                  echo "=== Debug: Checking token_refresh changes ==="
                   if git diff --name-only HEAD^ HEAD | grep -q "^cloud_functions/token_refresh/"; then
+                    echo "Found changes in token_refresh"
                     echo "token_refresh=true" >> $GITHUB_OUTPUT
                   else
+                    echo "No changes in token_refresh"
                     echo "token_refresh=false" >> $GITHUB_OUTPUT
                   fi
 
-                  # Check api_router changes
+                  echo "=== Debug: Checking api_router changes ==="
                   if git diff --name-only HEAD^ HEAD | grep -q "^cloud_functions/api_router/"; then
+                    echo "Found changes in api_router"
                     echo "api_router=true" >> $GITHUB_OUTPUT
                   else
+                    echo "No changes in api_router"
                     echo "api_router=false" >> $GITHUB_OUTPUT
                   fi
 
-                  # Check strava_auth_initiate changes
+                  echo "=== Debug: Checking strava_auth_initiate changes ==="
                   if git diff --name-only HEAD^ HEAD | grep -q "^cloud_functions/strava_auth_initiate/"; then
+                    echo "Found changes in strava_auth_initiate"
                     echo "strava_auth_initiate=true" >> $GITHUB_OUTPUT
                   else
+                    echo "No changes in strava_auth_initiate"
                     echo "strava_auth_initiate=false" >> $GITHUB_OUTPUT
                   fi
+
+                  echo "=== Debug: Final outputs ==="
+                  echo "token_refresh: ${{ steps.check_changes.outputs.token_refresh }}"
+                  echo "api_router: ${{ steps.check_changes.outputs.api_router }}"
+                  echo "strava_auth_initiate: ${{ steps.check_changes.outputs.strava_auth_initiate }}"
 
     cloud_function_deploy:
         needs: cloud_function_detect_changes
@@ -228,9 +246,18 @@ jobs:
             - name: Set up gcloud CLI
               uses: google-github-actions/setup-gcloud@v2
 
+            - name: Debug deployment condition
+              run: |
+                  echo "=== Debug: Deployment condition check ==="
+                  echo "Matrix function: ${{ matrix.function }}"
+                  echo "Change detected: ${{ needs.cloud_function_detect_changes.outputs[matrix.function] }}"
+                  echo "Workflow dispatch: ${{ github.event_name == 'workflow_dispatch' }}"
+                  echo "Force deploy: ${{ github.event.inputs.force_deploy }}"
+
             - name: Deploy Function
               if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy == 'true')
               run: |
+                  echo "=== Debug: Deploying function ${{ matrix.function }} ==="
                   gcloud functions deploy ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') \
                     --gen2 \
                     --region=${{ env.REGION }} \

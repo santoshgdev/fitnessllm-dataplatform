@@ -71,7 +71,7 @@ def strava_auth_initiate(request):
         authorization_code = data.get("code")
         if not authorization_code:
             return https_fn.Response(
-                status=401, headers=headers, error="Authorization code required"
+                status=401, headers=headers, response=json.dumps({"error": "Unauthorized", "message":"Authorization code required" })
             )
 
         # Retrieve secret

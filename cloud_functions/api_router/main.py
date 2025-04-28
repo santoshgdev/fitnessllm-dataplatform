@@ -312,9 +312,6 @@ def api_router(request):
             function_level="Parent",
             message="Authorization header diagnostics",
             target_api=target_api,
-            project_id=project_id,
-            region=region,
-            environment=environment,
             payload=payload,
             header_value=auth_header if auth_header else None,
             starts_with_bearer=auth_header.startswith("Bearer ") if auth_header else False,
@@ -324,6 +321,12 @@ def api_router(request):
 
         # Validate authorization header
         if not auth_header:
+            partial_log_structured(
+                function_level="Parent",
+                message="Missing Authorization header",
+                target_api=target_api,
+                headers=dict(request.headers)
+            )
             return https_fn.Response(
                 status=902,
                 response=json.dumps({
@@ -338,6 +341,12 @@ def api_router(request):
             )
 
         if not auth_header.startswith("Bearer "):
+            partial_log_structured(
+                function_level="Parent",
+                message="Missing Authorization header",
+                target_api=target_api,
+                auth_header=auth_header
+            )
             return https_fn.Response(
                 status=903,
                 response=json.dumps({

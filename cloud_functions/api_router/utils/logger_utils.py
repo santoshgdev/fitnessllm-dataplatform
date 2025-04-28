@@ -1,6 +1,7 @@
 """Logging utilities."""
 import json
 import logging
+import os
 from functools import partial
 from logging import Logger
 
@@ -57,4 +58,4 @@ def log_structured(function_name: str, message: str, **kwargs):
     logger.info(json.dumps(log_data))
 
 
-partial_log_structured = partial(log_structured, function_name="api_router")
+partial_log_structured = partial(log_structured, function_name="api_router", project_id=os.environ["PROJECT_ID"], region=os.environ["REGION"], environment=os.environ["ENVIRONMENT"])

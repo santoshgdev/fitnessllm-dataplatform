@@ -31,6 +31,13 @@ def invoke_cloud_function(
         function = client.get_function(name=function_name)
         url = function.service_config.uri
 
+        partial_log_structured(
+            message="Attempting to invoke cloud function",
+            url=url,
+            payload=payload,
+            auth_header=auth_header,
+        )
+
         # Prepare headers with auth if provided
         headers = {}
         if auth_header:
@@ -47,7 +54,6 @@ def invoke_cloud_function(
             message="Invoking cloud function",
             url=url,
             payload=payload,
-            target_function=function_name.split("/")[-1],
             auth_header_present="Authorization" in headers,
         )
 

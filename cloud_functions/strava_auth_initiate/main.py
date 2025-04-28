@@ -50,18 +50,28 @@ def strava_auth_initiate(request):
         auth_header = request.headers.get("Authorization")
         if not auth_header or not auth_header.startswith("Bearer "):
             return https_fn.Response(
-                status=401, 
-                headers=headers, 
-                response=json.dumps({"error": "Unauthorized", "message": "Invalid Authorization header format"})
+                status=401,
+                headers=headers,
+                response=json.dumps(
+                    {
+                        "error": "Unauthorized",
+                        "message": "Invalid Authorization header format",
+                    }
+                ),
             )
 
         # Extract the token from the Authorization header
         id_token = auth_header.split("Bearer ")[1].strip()
         if not id_token:
             return https_fn.Response(
-                status=401, 
-                headers=headers, 
-                response=json.dumps({"error": "Unauthorized", "message": "Missing token in Authorization header"})
+                status=401,
+                headers=headers,
+                response=json.dumps(
+                    {
+                        "error": "Unauthorized",
+                        "message": "Missing token in Authorization header",
+                    }
+                ),
             )
 
         auth = firebase_admin.auth.verify_id_token(id_token)
@@ -71,11 +81,15 @@ def strava_auth_initiate(request):
         authorization_code = data.get("code")
         if not authorization_code:
             return https_fn.Response(
-                status=401, headers=headers, response=json.dumps({"error": "Unauthorized", "message":"Authorization code required" })
+                status=401,
+                headers=headers,
+                response=json.dumps(
+                    {"error": "Unauthorized", "message": "Authorization code required"}
+                ),
             )
 
         # Retrieve secret
-        strava_keys = json.loads(os.environ["STRAVA_SECRET"])
+        strava_keys = json.loads(get_secret(os.environ["STRAVA_SECRET"]))
 
         encryption_key = get_secret(os.environ["ENCRYPTION_SECRET"])["token"]
 

@@ -45,9 +45,9 @@ def invoke_cloud_function(
                 auth_header = f"Bearer {auth_header}"
             headers["Authorization"] = auth_header
             partial_log_structured(
-                message="Added authorization header", 
+                message="Added authorization header",
                 header_present=True,
-                header_value=auth_header
+                header_value=auth_header,
             )
 
         partial_log_structured(
@@ -55,7 +55,7 @@ def invoke_cloud_function(
             url=url,
             payload=payload,
             auth_header_present="Authorization" in headers,
-            headers=headers
+            headers=headers,
         )
 
         # For token refresh, we need to pass the data_source as a query parameter
@@ -314,9 +314,11 @@ def api_router(request):
             target_api=target_api,
             payload=payload,
             header_value=auth_header if auth_header else None,
-            starts_with_bearer=auth_header.startswith("Bearer ") if auth_header else False,
+            starts_with_bearer=auth_header.startswith("Bearer ")
+            if auth_header
+            else False,
             header_length=len(auth_header) if auth_header else 0,
-            all_headers=dict(request.headers)
+            all_headers=dict(request.headers),
         )
 
         # Validate authorization header
@@ -325,18 +327,20 @@ def api_router(request):
                 function_level="Parent",
                 message="Missing Authorization header",
                 target_api=target_api,
-                headers=dict(request.headers)
+                headers=dict(request.headers),
             )
             return https_fn.Response(
                 status=902,
-                response=json.dumps({
-                    "error": "Unauthorized",
-                    "message": "Missing Authorization header",
-                    "diagnostics": {
-                        "header_present": False,
-                        "all_headers": dict(request.headers)
+                response=json.dumps(
+                    {
+                        "error": "Unauthorized",
+                        "message": "Missing Authorization header",
+                        "diagnostics": {
+                            "header_present": False,
+                            "all_headers": dict(request.headers),
+                        },
                     }
-                }),
+                ),
                 headers={"Access-Control-Allow-Origin": "*"},
             )
 
@@ -345,20 +349,22 @@ def api_router(request):
                 function_level="Parent",
                 message="Missing Authorization header",
                 target_api=target_api,
-                auth_header=auth_header
+                auth_header=auth_header,
             )
             return https_fn.Response(
                 status=903,
-                response=json.dumps({
-                    "error": "Unauthorized",
-                    "message": "Invalid Authorization header format",
-                    "diagnostics": {
-                        "header_present": True,
-                        "starts_with_bearer": False,
-                        "header_value": auth_header,
-                        "expected_format": "Bearer <token>"
+                response=json.dumps(
+                    {
+                        "error": "Unauthorized",
+                        "message": "Invalid Authorization header format",
+                        "diagnostics": {
+                            "header_present": True,
+                            "starts_with_bearer": False,
+                            "header_value": auth_header,
+                            "expected_format": "Bearer <token>",
+                        },
                     }
-                }),
+                ),
                 headers={"Access-Control-Allow-Origin": "*"},
             )
 
@@ -367,16 +373,18 @@ def api_router(request):
         if not token:
             return https_fn.Response(
                 status=904,
-                response=json.dumps({
-                    "error": "Unauthorized",
-                    "message": "Missing token in Authorization header",
-                    "diagnostics": {
-                        "header_present": True,
-                        "starts_with_bearer": True,
-                        "token_present": False,
-                        "header_value": auth_header
+                response=json.dumps(
+                    {
+                        "error": "Unauthorized",
+                        "message": "Missing token in Authorization header",
+                        "diagnostics": {
+                            "header_present": True,
+                            "starts_with_bearer": True,
+                            "token_present": False,
+                            "header_value": auth_header,
+                        },
                     }
-                }),
+                ),
                 headers={"Access-Control-Allow-Origin": "*"},
             )
 

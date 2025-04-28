@@ -26,5 +26,7 @@ def get_secret(name: str) -> dict:
         secret_payload = response.payload.data.decode("UTF-8")
         return json.loads(secret_payload)
     except Exception as e:
-        partial_log_structured(message=f"Failed to retrieve or decode secret {name}: {e}")
+        partial_log_structured(
+            message=f"Failed to retrieve or decode secret {name}: {e}"
+        )
         raise

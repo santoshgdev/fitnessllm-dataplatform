@@ -166,7 +166,7 @@ jobs:
               if: steps.check_changes.outputs.changes_detected == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
                   == 'true')
               run: |
-                  docker push ${{ env.REGION }}-docker.pkg.dev/${{ secryeahets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }}
+                  docker push ${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }}
 
             - name: Deploy to Cloud Run
               run: |

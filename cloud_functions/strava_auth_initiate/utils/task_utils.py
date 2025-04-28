@@ -7,6 +7,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
+
 @beartype
 def encrypt_token(token: str, key: str) -> str:
     """Encrypt a token using AES-256-CBC with PKCS#7 padding.

@@ -1,5 +1,12 @@
 setup:
 	brew install pre-commit
+	curl https://pyenv.run | bash
+	echo 'export PATH="$HOME/.pyenv/bin:$PATH"' >> ~/.bashrc
+	echo 'eval "$(pyenv init -)"' >> ~/.bashrc
+	echo 'eval "$(pyenv virtualenv-init -)"' >> ~/.bashrc
+	source ~/.bashrc
+	pyenv install 3.12.2
+	poetry install --sync
 
 clean:
 	poetry env remove --all

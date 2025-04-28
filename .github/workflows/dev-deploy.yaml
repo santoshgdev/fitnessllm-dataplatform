@@ -223,6 +223,8 @@ jobs:
                     echo "strava_auth_initiate=false" >> $GITHUB_OUTPUT
                   fi
 
+            - name: Debug outputs
+              run: |
                   echo "=== Debug: Final outputs ==="
                   echo "token_refresh: ${{ steps.check_changes.outputs.token_refresh }}"
                   echo "api_router: ${{ steps.check_changes.outputs.api_router }}"
@@ -255,7 +257,7 @@ jobs:
                   echo "Force deploy: ${{ github.event.inputs.force_deploy }}"
 
             - name: Deploy Function
-              if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy == 'true')
+              if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true'
               run: |
                   echo "=== Debug: Deploying function ${{ matrix.function }} ==="
                   gcloud functions deploy ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') \

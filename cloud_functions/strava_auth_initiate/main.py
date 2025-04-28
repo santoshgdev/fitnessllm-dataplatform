@@ -50,7 +50,7 @@ def strava_auth_initiate(request):
         auth_header = request.headers.get("Authorization")
         if not auth_header or not auth_header.startswith("Bearer "):
             return https_fn.Response(
-                status=401, headers=headers, message="Unauthorized"
+                status=401, headers=headers, response="Unauthorized"
             )
 
         id_token = auth_header.split("Bearer ")[1]
@@ -76,7 +76,7 @@ def strava_auth_initiate(request):
                 "client_id": int(strava_keys["client_id"]),
                 "client_secret": strava_keys["client_secret"],
                 "code": authorization_code,
-                "grant_type": secret_payload["grant_type"],
+                "grant_type": strava_keys["grant_type"],
             },
         )
         response.raise_for_status()

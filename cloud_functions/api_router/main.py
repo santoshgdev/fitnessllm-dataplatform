@@ -55,6 +55,7 @@ def invoke_cloud_function(
             url=url,
             payload=payload,
             auth_header_present="Authorization" in headers,
+            headers=headers
         )
 
         # For token refresh, we need to pass the data_source as a query parameter

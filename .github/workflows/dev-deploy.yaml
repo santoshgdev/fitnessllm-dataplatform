@@ -181,6 +181,7 @@ jobs:
             token_refresh: ${{ steps.check_changes.outputs.token_refresh }}
             api_router: ${{ steps.check_changes.outputs.api_router }}
             strava_auth_initiate: ${{ steps.check_changes.outputs.strava_auth_initiate }}
+            has_changes: ${{ steps.check_changes.outputs.has_changes }}
         steps:
             - uses: actions/checkout@v4
               with:
@@ -196,10 +197,13 @@ jobs:
                   echo "=== Debug: All changed files ==="
                   git diff --name-only HEAD^ HEAD
                   
+                  HAS_CHANGES=false
+                  
                   echo "=== Debug: Checking token_refresh changes ==="
                   if git diff --name-only HEAD^ HEAD | grep -q "^cloud_functions/token_refresh/"; then
                     echo "Found changes in token_refresh"
                     echo "token_refresh=true" >> $GITHUB_OUTPUT
+                    HAS_CHANGES=true
                   else
                     echo "No changes in token_refresh"
                     echo "token_refresh=false" >> $GITHUB_OUTPUT
@@ -209,6 +213,7 @@ jobs:
                   if git diff --name-only HEAD^ HEAD | grep -q "^cloud_functions/api_router/"; then
                     echo "Found changes in api_router"
                     echo "api_router=true" >> $GITHUB_OUTPUT
+                    HAS_CHANGES=true
                   else
                     echo "No changes in api_router"
                     echo "api_router=false" >> $GITHUB_OUTPUT
@@ -218,10 +223,13 @@ jobs:
                   if git diff --name-only HEAD^ HEAD | grep -q "^cloud_functions/strava_auth_initiate/"; then
                     echo "Found changes in strava_auth_initiate"
                     echo "strava_auth_initiate=true" >> $GITHUB_OUTPUT
+                    HAS_CHANGES=true
                   else
                     echo "No changes in strava_auth_initiate"
                     echo "strava_auth_initiate=false" >> $GITHUB_OUTPUT
                   fi
+
+                  echo "has_changes=$HAS_CHANGES" >> $GITHUB_OUTPUT
 
             - name: Debug outputs
               run: |
@@ -229,9 +237,11 @@ jobs:
                   echo "token_refresh: ${{ steps.check_changes.outputs.token_refresh }}"
                   echo "api_router: ${{ steps.check_changes.outputs.api_router }}"
                   echo "strava_auth_initiate: ${{ steps.check_changes.outputs.strava_auth_initiate }}"
+                  echo "has_changes: ${{ steps.check_changes.outputs.has_changes }}"
 
     cloud_function_deploy:
         needs: cloud_function_detect_changes
+        if: needs.cloud_function_detect_changes.outputs.has_changes == 'true'
         runs-on: ubuntu-latest
         environment: dev
         strategy:

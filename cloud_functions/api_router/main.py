@@ -285,7 +285,7 @@ def api_router(request):
         request_data = request.get_json(silent=True)
         if not request_data:
             return https_fn.Response(
-                status=400,
+                status=900,
                 response="Bad Request - No payload provided",
                 headers={"Access-Control-Allow-Origin": "*"},
             )
@@ -296,7 +296,7 @@ def api_router(request):
 
         if not target_api:
             return https_fn.Response(
-                status=400,
+                status=901,
                 response="Bad Request - No target API specified",
                 headers={"Access-Control-Allow-Origin": "*"},
             )
@@ -325,7 +325,7 @@ def api_router(request):
         # Validate authorization header
         if not auth_header:
             return https_fn.Response(
-                status=401,
+                status=902,
                 response=json.dumps({
                     "error": "Unauthorized",
                     "message": "Missing Authorization header",
@@ -339,7 +339,7 @@ def api_router(request):
 
         if not auth_header.startswith("Bearer "):
             return https_fn.Response(
-                status=401,
+                status=903,
                 response=json.dumps({
                     "error": "Unauthorized",
                     "message": "Invalid Authorization header format",
@@ -357,7 +357,7 @@ def api_router(request):
         token = auth_header.split("Bearer ")[1].strip()
         if not token:
             return https_fn.Response(
-                status=401,
+                status=904,
                 response=json.dumps({
                     "error": "Unauthorized",
                     "message": "Missing token in Authorization header",
@@ -383,7 +383,7 @@ def api_router(request):
             return invoke_cloud_run(service_name, payload, auth_header)
         else:
             return https_fn.Response(
-                status=400,
+                status=905,
                 response=f"Bad Request - Invalid target API: {target_api}",
                 headers={"Access-Control-Allow-Origin": "*"},
             )
@@ -396,7 +396,7 @@ def api_router(request):
             traceback=traceback.format_exc(),
         )
         return https_fn.Response(
-            status=500,
+            status=906,
             response=str(e),
             headers={"Access-Control-Allow-Origin": "*"},
         )

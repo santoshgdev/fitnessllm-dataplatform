@@ -57,4 +57,4 @@ def log_structured(function_name: str, message: str, **kwargs):
     logger.info(json.dumps(log_data))
 
 
-partial_log_structured = partial(log_structured, function_name="token_refresh")
+partial_log_structured = partial(log_structured, function_name="strava_auth_initiate")

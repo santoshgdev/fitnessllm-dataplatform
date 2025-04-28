@@ -147,7 +147,7 @@ def strava_auth_initiate(request):
             status=200,
             success=True,
             athleteId=strava_data["athlete"]["id"],
-            scope=strava_data["scope"],
+            scope=strava_data.get("scope", "read,activity:read"),
             headers=headers,
         )
 

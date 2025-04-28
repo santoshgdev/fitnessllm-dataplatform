@@ -184,12 +184,22 @@ jobs:
         steps:
             - uses: actions/checkout@v4
               with:
-                  fetch-depth: 0  # Get full history to properly detect changes
+                  fetch-depth: 1  # We only need the last 2 commits
+
+            - name: Get changed files
+              id: changed-files
+              run: |
+                  git diff --name-only HEAD^ HEAD > changed_files.txt
+                  echo "Changed files:"
+                  cat changed_files.txt
+                  echo "changed_files<<EOF" >> $GITHUB_OUTPUT
+                  cat changed_files.txt >> $GITHUB_OUTPUT
+                  echo "EOF" >> $GITHUB_OUTPUT
 
             - uses: dorny/paths-filter@v3
               id: filter
               with:
-                  ref: HEAD^
+                  list-files: ${{ steps.changed-files.outputs.changed_files }}
                   filters: |
                       token_refresh: 'cloud_functions/token_refresh/**'
                       api_router: 'cloud_functions/api_router/**'

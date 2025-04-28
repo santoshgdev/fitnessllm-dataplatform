@@ -52,6 +52,10 @@ def invoke_cloud_function(
             url = f"{url}?data_source={payload['data_source']}"
             partial_log_structured(message="Modified URL with query params", url=url)
 
+        # if "code" in payload:
+        #     url = f"{url}?code={payload['code']}"
+        #     partial_log_structured(message="Modified URL with query params", url=url)
+
         # Make the request
         response = requests.post(url=url, json=payload, headers=headers)
 

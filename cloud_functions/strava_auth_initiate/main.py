@@ -58,14 +58,14 @@ def strava_auth_initiate(request):
         user_id = auth["uid"]
 
         data = request.get_json()
-        authorization_code = data.get("authorizationCode")
+        authorization_code = data.get("code")
         if not authorization_code:
             return https_fn.Response(
                 status=401, headers=headers, error="Authorization code required"
             )
 
         # Retrieve secret
-        secret_payload = json.loads(strava_secret.value)
+        strava_keys = json.loads(os.environ["STRAVA_SECRET"])
 
         encryption_key = get_secret(os.environ["ENCRYPTION_SECRET"])["token"]
 
@@ -73,8 +73,8 @@ def strava_auth_initiate(request):
         response = requests.post(
             "https://www.strava.com/oauth/token",
             data={
-                "client_id": int(secret_payload["client_id"]),
-                "client_secret": secret_payload["client_secret"],
+                "client_id": int(strava_keys["client_id"]),
+                "client_secret": strava_keys["client_secret"],
                 "code": authorization_code,
                 "grant_type": secret_payload["grant_type"],
             },

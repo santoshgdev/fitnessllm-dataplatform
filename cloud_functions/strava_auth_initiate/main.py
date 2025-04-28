@@ -88,7 +88,7 @@ def strava_auth_initiate(request):
             )
 
         # Retrieve secret
-        strava_keys = json.loads(get_secret(os.environ["STRAVA_SECRET"]))
+        strava_keys = get_secret(os.environ["STRAVA_SECRET"])
 
         encryption_key = get_secret(os.environ["ENCRYPTION_SECRET"])["token"]
 

@@ -292,7 +292,7 @@ def api_router(request):
 
         # Extract the target API and payload
         target_api = request_data.get("target_api")
-        payload = request_data.get("payload", {})
+        payload = request_data.get("payload")
 
         if not target_api:
             return https_fn.Response(

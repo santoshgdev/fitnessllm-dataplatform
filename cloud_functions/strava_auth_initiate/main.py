@@ -6,7 +6,6 @@ from firebase_functions import params, https_fn, options
 import requests
 import json
 import os
-import crypto
 import logging
 
 from .utils.cloud_utils import get_secret

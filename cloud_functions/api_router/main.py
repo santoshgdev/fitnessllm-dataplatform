@@ -305,8 +305,64 @@ def api_router(request):
         region = os.environ["REGION"]
         environment = os.environ["ENVIRONMENT"]
 
-        # Get authorization header
+        # Get authorization header and log diagnostics
         auth_header = request.headers.get("Authorization")
+        partial_log_structured(
+            message="Authorization header diagnostics",
+            header_value=auth_header if auth_header else None,
+            starts_with_bearer=auth_header.startswith("Bearer ") if auth_header else False,
+            header_length=len(auth_header) if auth_header else 0,
+            all_headers=dict(request.headers)
+        )
+
+        # Validate authorization header
+        if not auth_header:
+            return https_fn.Response(
+                status=401,
+                response=json.dumps({
+                    "error": "Unauthorized",
+                    "message": "Missing Authorization header",
+                    "diagnostics": {
+                        "header_present": False,
+                        "all_headers": dict(request.headers)
+                    }
+                }),
+                headers={"Access-Control-Allow-Origin": "*"},
+            )
+
+        if not auth_header.startswith("Bearer "):
+            return https_fn.Response(
+                status=401,
+                response=json.dumps({
+                    "error": "Unauthorized",
+                    "message": "Invalid Authorization header format",
+                    "diagnostics": {
+                        "header_present": True,
+                        "starts_with_bearer": False,
+                        "header_value": auth_header,
+                        "expected_format": "Bearer <token>"
+                    }
+                }),
+                headers={"Access-Control-Allow-Origin": "*"},
+            )
+
+        # Extract token and validate
+        token = auth_header.split("Bearer ")[1].strip()
+        if not token:
+            return https_fn.Response(
+                status=401,
+                response=json.dumps({
+                    "error": "Unauthorized",
+                    "message": "Missing token in Authorization header",
+                    "diagnostics": {
+                        "header_present": True,
+                        "starts_with_bearer": True,
+                        "token_present": False,
+                        "header_value": auth_header
+                    }
+                }),
+                headers={"Access-Control-Allow-Origin": "*"},
+            )
 
         # Route to appropriate service
         if target_api == "token_refresh":

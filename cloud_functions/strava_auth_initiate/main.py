@@ -50,10 +50,20 @@ def strava_auth_initiate(request):
         auth_header = request.headers.get("Authorization")
         if not auth_header or not auth_header.startswith("Bearer "):
             return https_fn.Response(
-                status=401, headers=headers, response="Unauthorized"
+                status=401, 
+                headers=headers, 
+                response=json.dumps({"error": "Unauthorized", "message": "Invalid Authorization header format"})
             )
 
-        id_token = auth_header.split("Bearer ")[1]
+        # Extract the token from the Authorization header
+        id_token = auth_header.split("Bearer ")[1].strip()
+        if not id_token:
+            return https_fn.Response(
+                status=401, 
+                headers=headers, 
+                response=json.dumps({"error": "Unauthorized", "message": "Missing token in Authorization header"})
+            )
+
         auth = firebase_admin.auth.verify_id_token(id_token)
         user_id = auth["uid"]
 

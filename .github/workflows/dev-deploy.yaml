@@ -260,19 +260,9 @@ jobs:
               if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true'
               uses: google-github-actions/setup-gcloud@v2
 
-            - name: Debug deployment condition
-              if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true'
-              run: |
-                  echo "=== Debug: Deployment condition check ==="
-                  echo "Matrix function: ${{ matrix.function }}"
-                  echo "Change detected: ${{ needs.cloud_function_detect_changes.outputs[matrix.function] }}"
-                  echo "Workflow dispatch: ${{ github.event_name == 'workflow_dispatch' }}"
-                  echo "Force deploy: ${{ github.event.inputs.force_deploy }}"
-
             - name: Deploy Function
               if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true'
               run: |
-                  echo "=== Debug: Deploying function ${{ matrix.function }} ==="
                   gcloud functions deploy ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') \
                     --gen2 \
                     --region=${{ env.REGION }} \

@@ -309,7 +309,13 @@ def api_router(request):
         # Get authorization header and log diagnostics
         auth_header = request.headers.get("Authorization")
         partial_log_structured(
+            function_level="Parent",
             message="Authorization header diagnostics",
+            target_api=target_api,
+            project_id=project_id,
+            region=region,
+            environment=environment,
+            payload=payload,
             header_value=auth_header if auth_header else None,
             starts_with_bearer=auth_header.startswith("Bearer ") if auth_header else False,
             header_length=len(auth_header) if auth_header else 0,

@@ -98,18 +98,22 @@ def strava_auth_initiate(request):
             client_id=int(strava_keys["client_id"]),
             client_secret=strava_keys["client_secret"],
             code=authorization_code,
+            return_athlete=True
         )
         access_token = token_response["access_token"]
         refresh_token = token_response["refresh_token"]
         expires_at = token_response["expires_at"]
         scope = token_response.get("scope", "read,activity:read")
-        athlete = token_response["athlete"]
+
+
+        client = Client(access_token=access_token)
+        athlete = client.get_athlete()
 
         # Athlete details
-        athlete_id = athlete["id"]
-        firstname = athlete.get("firstname", "")
-        lastname = athlete.get("lastname", "")
-        profile = athlete.get("profile", "")
+        athlete_id = athlete.id
+        firstname = athlete.firstname
+        lastname = athlete.lastname
+        profile = athlete.profile_original
 
         # Encrypt tokens
         access_token_enc = encrypt_token(access_token, encryption_key)

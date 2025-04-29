@@ -4,7 +4,7 @@ import logging
 import os
 import time
 import traceback
-
+from stravalib import Client
 import firebase_admin
 import functions_framework
 import requests
@@ -93,21 +93,27 @@ def strava_auth_initiate(request):
         encryption_key = get_secret(os.environ["ENCRYPTION_SECRET"])["token"]
 
         # Exchange code with Strava
-        response = requests.post(
-            "https://www.strava.com/oauth/token",
-            data={
-                "client_id": int(strava_keys["client_id"]),
-                "client_secret": strava_keys["client_secret"],
-                "code": authorization_code,
-                "grant_type": strava_keys["grant_type"],
-            },
+        client = Client()
+        token_response = client.exchange_code_for_token(
+            client_id=int(strava_keys["client_id"]),
+            client_secret=strava_keys["client_secret"],
+            code=authorization_code,
         )
-        response.raise_for_status()
-        strava_data = response.json()
+        access_token = token_response["access_token"]
+        refresh_token = token_response["refresh_token"]
+        expires_at = token_response["expires_at"]
+        scope = token_response.get("scope", "read,activity:read")
+        athlete = token_response["athlete"]
+
+        # Athlete details
+        athlete_id = athlete["id"]
+        firstname = athlete.get("firstname", "")
+        lastname = athlete.get("lastname", "")
+        profile = athlete.get("profile", "")
 
         # Encrypt tokens
-        access_token_enc = encrypt_token(strava_data["access_token"], encryption_key)
-        refresh_token_enc = encrypt_token(strava_data["refresh_token"], encryption_key)
+        access_token_enc = encrypt_token(access_token, encryption_key)
+        refresh_token_enc = encrypt_token(refresh_token, encryption_key)
 
         # Prepare Firestore update
         db = firestore.client()
@@ -118,36 +124,28 @@ def strava_auth_initiate(request):
             "stream=strava": {
                 "accessToken": access_token_enc,
                 "refreshToken": refresh_token_enc,
-                "expiresAt": strava_data.get("expires_at", int(time.time()) + 21600),
-                "tokenType": strava_data.get("token_type", "Bearer"),
-                "scope": strava_data.get("scope", "read,activity:read"),
-                "athleteId": strava_data["athlete"]["id"],
+                "expiresAt": expires_at,
+                "scope": scope,
                 "athlete": {
-                    "id": strava_data["athlete"]["id"],
-                    "firstname": strava_data["athlete"].get("firstname", ""),
-                    "lastname": strava_data["athlete"].get("lastname", ""),
-                    "profile": strava_data["athlete"].get("profile", ""),
+                    "id": athlete_id,
+                    "firstname": firstname,
+                    "lastname": lastname,
+                    "profile": profile,
                 },
                 "lastUpdated": now,
                 "lastTokenRefresh": now,
                 "connectionStatus": "active",
-                "version": "1.0",
-            },
-            "integrations.strava": {
                 "connected": True,
-                "athleteId": strava_data["athlete"]["id"],
-                "lastUpdated": now,
-                "connectionStatus": "active",
-                "scope": strava_data.get("scope", "read,activity:read"),
-            },
+                "version": "1.0",
+            }
         }
 
         user_ref.update(update_data)
         return https_fn.Response(
             status=200,
             success=True,
-            athleteId=strava_data["athlete"]["id"],
-            scope=strava_data.get("scope", "read,activity:read"),
+            athleteId=athlete_id,
+            scope=scope,
             headers=headers,
         )
 

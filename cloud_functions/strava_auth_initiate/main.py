@@ -135,6 +135,7 @@ def strava_auth_initiate(request):
                     "lastname": lastname,
                     "profile": profile,
                 },
+                "firstConnected": now,
                 "lastUpdated": now,
                 "lastTokenRefresh": now,
                 "connectionStatus": "active",

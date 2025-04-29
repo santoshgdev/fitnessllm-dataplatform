@@ -123,25 +123,28 @@ def strava_auth_initiate(request):
         user_ref = db.collection("users").document(user_id)
         now = firestore.SERVER_TIMESTAMP
 
-        update_data = {
-            "stream=strava": {
-                "accessToken": access_token_enc,
-                "refreshToken": refresh_token_enc,
-                "expiresAt": expires_at,
-                "scope": scope,
-                "athlete": {
-                    "id": athlete_id,
-                    "firstname": firstname,
-                    "lastname": lastname,
-                    "profile": profile,
-                },
-                "firstConnected": now,
-                "lastUpdated": now,
-                "lastTokenRefresh": now,
-                "connectionStatus": "active",
-                "connected": True,
-                "version": "1.0",
-            }
+        stream_ref = user_ref.collection("stream")
+
+        # Reference the 'strava' subcollection within 'stream'
+        strava_ref = stream_ref.document("strava")
+
+        # Prepare the data for the 'strava' document
+        strava_data = {
+            "accessToken": access_token_enc,
+            "refreshToken": refresh_token_enc,
+            "expiresAt": expires_at,
+            "scope": scope,
+            "athlete": {
+                "id": athlete_id,
+                "firstname": firstname,
+                "lastname": lastname,
+                "profile": profile,
+            },
+            "firstConnected": now,
+            "lastUpdated": now,
+            "lastTokenRefresh": now,
+            "connected": True,
+            "version": "1.0",
         }
 
         user_ref.update(update_data)

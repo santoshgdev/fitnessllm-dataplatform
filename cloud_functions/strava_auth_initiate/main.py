@@ -147,7 +147,7 @@ def strava_auth_initiate(request):
             "version": "1.0",
         }
 
-        user_ref.update(strava_data)
+        strava_ref.update(strava_data)
         return https_fn.Response(
             status=200,
             headers=headers,

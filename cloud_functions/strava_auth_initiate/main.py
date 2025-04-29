@@ -146,9 +146,7 @@ def strava_auth_initiate(request):
         user_ref.update(update_data)
         return https_fn.Response(
             status=200,
-            success=True,
-            athleteId=athlete_id,
-            scope=scope,
+            response=json.dumps(update_data),
             headers=headers,
         )
 

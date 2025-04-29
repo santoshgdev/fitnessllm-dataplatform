@@ -146,8 +146,8 @@ def strava_auth_initiate(request):
         user_ref.update(update_data)
         return https_fn.Response(
             status=200,
-            response=json.dumps(update_data),
             headers=headers,
+            response=json.dumps({"message": "Strava connection successful", "athleete": athlete_id}),
         )
 
     except Exception as e:

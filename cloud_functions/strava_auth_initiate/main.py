@@ -98,7 +98,6 @@ def strava_auth_initiate(request):
             client_id=int(strava_keys["client_id"]),
             client_secret=strava_keys["client_secret"],
             code=authorization_code,
-            return_athlete=True
         )
         access_token = token_response["access_token"]
         refresh_token = token_response["refresh_token"]

@@ -130,6 +130,7 @@ def strava_auth_initiate(request):
 
         # Prepare the data for the 'strava' document
         strava_data = {
+            "uid": user_id,
             "type": "strava",
             "accessToken": access_token_enc,
             "refreshToken": refresh_token_enc,

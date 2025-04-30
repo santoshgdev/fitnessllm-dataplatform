@@ -130,7 +130,7 @@ def strava_auth_initiate(request):
 
         # Prepare the data for the 'strava' document
         strava_data = {
-            "tyoe": "strava"
+            "type": "strava",
             "accessToken": access_token_enc,
             "refreshToken": refresh_token_enc,
             "expiresAt": expires_at,
@@ -152,7 +152,7 @@ def strava_auth_initiate(request):
         return https_fn.Response(
             status=200,
             headers=headers,
-            response=json.dumps({"message": "Strava connection successful", "athleete": athlete_id}),
+            response=json.dumps({"message": "Strava connection successful", "athlete": athlete_id}),
         )
 
     except Exception as e:

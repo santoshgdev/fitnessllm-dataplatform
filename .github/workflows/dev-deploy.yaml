@@ -22,6 +22,7 @@ env:
     PROJECT_ID: ${{ secrets.PROJECT_ID }}
     ENCRYPTION_SECRET: ${{ secrets.ENCRYPTION_SECRET }}
     STRAVA_SECRET: ${{ secrets.STRAVA_SECRET }}
+    INFRASTRUCTURE_SECRET: ${{ secrets.INFRASTRUCTURE_SECRET }}
 
 jobs:
     cloud_run_deploy:
@@ -177,7 +178,7 @@ jobs:
                     --allow-unauthenticated \
                     --service-account=${{ secrets.GCP_DP_SA_EMAIL }} \
                     --port=8080 \
-                    --set-env-vars PROJECT_ID=${{ secrets.PROJECT_ID }},ENVIRONMENT=${{ env.ENVIRONMENT }},ENCRYPTION_SECRET=${{ secrets.ENCRYPTION_SECRET }},STRAVA_SECRET=${{ secrets.STRAVA_SECRET }},REGION=${{ env.REGION }}
+                    --set-env-vars PROJECT_ID=${{ secrets.PROJECT_ID }},ENVIRONMENT=${{ env.ENVIRONMENT }},ENCRYPTION_SECRET=${{ secrets.ENCRYPTION_SECRET }},STRAVA_SECRET=${{ secrets.STRAVA_SECRET }},REGION=${{ env.REGION }},INFRASTRUCTURE_SECRET=${{ env.INFRASTRUCTURE_SECRET }}
 
             - name: Clean up old revisions
               run: |
@@ -288,7 +289,7 @@ jobs:
                     --min-instances=0 \
                     --memory=256MB \
                     --allow-unauthenticated \
-                    --set-env-vars=PROJECT_ID=${{ env.PROJECT_ID }},ENVIRONMENT=${{ env.ENVIRONMENT }},ENCRYPTION_SECRET=${{ env.ENCRYPTION_SECRET }},STRAVA_SECRET=${{ env.STRAVA_SECRET }},REGION=${{ env.REGION }} \
+                    --set-env-vars=PROJECT_ID=${{ env.PROJECT_ID }},ENVIRONMENT=${{ env.ENVIRONMENT }},ENCRYPTION_SECRET=${{ env.ENCRYPTION_SECRET }},STRAVA_SECRET=${{ env.STRAVA_SECRET }},REGION=${{ env.REGION }},INFRASTRUCTURE_SECRET=${{ env.INFRASTRUCTURE_SECRET }} \
                     --service-account=${{ secrets.GCP_DP_SA_EMAIL }}
                   gcloud run services update ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') --region=${{ env.REGION }} --add-custom-audiences=${{ env.PROJECT_ID }}
 

@@ -2,14 +2,14 @@
 import json
 import logging
 import os
-import time
 import traceback
-from stravalib import Client
+
 import firebase_admin
 import functions_framework
 import requests
 from firebase_admin import firestore, initialize_app
 from firebase_functions import https_fn, options
+from stravalib import Client
 
 from .utils.cloud_utils import get_secret
 from .utils.logger_utils import partial_log_structured
@@ -104,7 +104,6 @@ def strava_auth_initiate(request):
         expires_at = token_response["expires_at"]
         scope = token_response.get("scope", "read,activity:read")
 
-
         client = Client(access_token=access_token)
         athlete = client.get_athlete()
 
@@ -153,7 +152,9 @@ def strava_auth_initiate(request):
         return https_fn.Response(
             status=200,
             headers=headers,
-            response=json.dumps({"message": "Strava connection successful", "athlete": athlete_id}),
+            response=json.dumps(
+                {"message": "Strava connection successful", "athlete": athlete_id}
+            ),
         )
 
     except Exception as e:

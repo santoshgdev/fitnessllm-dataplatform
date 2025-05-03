@@ -156,7 +156,7 @@ def invoke_cloud_run_job(
         project_id = os.environ["PROJECT_ID"]
         region = os.environ["REGION"]
 
-        url = f"https://{region}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/{project_id}/jobs/{servce_name}:run"
+        url = f"https://{region}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/{project_id}/jobs/{service_name}:run"
 
         partial_log_structured(
             message="Invoking cloud run service",

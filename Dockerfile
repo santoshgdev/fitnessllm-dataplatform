@@ -36,4 +36,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 ENV PORT=8080
 
 # Run the HTTP server
-CMD ["poetry", "run", "python", "-m", "fitnessllm_dataplatform.task_handler"]
+ENTRYPOINT ["poetry", "run", "python", "-m", "fitnessllm_dataplatform.task_handler"]

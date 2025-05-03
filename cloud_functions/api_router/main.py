@@ -4,6 +4,7 @@ import os
 import traceback
 from typing import Dict, Optional
 
+import firebase_admin
 import functions_framework
 import requests
 from firebase_functions import https_fn
@@ -164,9 +165,12 @@ def invoke_cloud_run_job(
             "Content-Type": "application/json",
             "Authorization": f"Bearer {get_oauth_token()}",
         }
+        new_payload = {
+            "args": ["full_etl", f"--uid={payload['uid']}", "--data_source=STRAVA"]
+        }
 
         # Make the request
-        response = requests.post(url, json=payload, headers=headers)
+        response = requests.post(url, json=new_payload, headers=headers)
 
         # Log the response details
         partial_log_structured(
@@ -243,6 +247,12 @@ def api_router(request):
 
     Routes requests to different endpoints based on the payload.
     """
+    auth_header = request.headers.get("Authorization")
+    id_token = auth_header.split("Bearer ")[1].strip()
+
+    auth = firebase_admin.auth.verify_id_token(id_token)
+    uid = auth["uid"]
+
     # Log all request details at the start
     partial_log_structured(
         message="Request received",
@@ -391,6 +401,7 @@ def api_router(request):
             function_name = f"projects/{project_id}/locations/{region}/functions/{environment}-strava-auth-initiate"
             return invoke_cloud_function(function_name, payload, auth_header)
         elif target_api == "data_run":
+            payload["uid"] = uid
             service_name = f"projects/{project_id}/locations/{region}/services/{environment}-fitnessllm-dp"
             return invoke_cloud_run_job(service_name, payload, auth_header)
         else:

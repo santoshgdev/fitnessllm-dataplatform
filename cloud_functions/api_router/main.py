@@ -14,6 +14,20 @@ from .utils.cloud_utils import get_oauth_token
 from .utils.logger_utils import partial_log_structured
 
 
+try:
+    firebase_admin.initialize_app()
+    partial_log_structured(message="Firebase Admin initialized successfully")
+except Exception as e:
+    partial_log_structured(
+        message="Error initializing Firebase Admin",
+        error=str(e),
+        level="ERROR",
+        traceback=traceback.format_exc(),
+    )
+    raise
+
+
+
 def invoke_cloud_function(
     function_name: str, payload: Dict, auth_header: Optional[str] = None
 ) -> https_fn.Response:

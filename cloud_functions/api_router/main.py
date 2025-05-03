@@ -185,6 +185,7 @@ def invoke_cloud_run_job(
                 "taskCount": 1,
                 "containerOverrides": [
                     {
+                        "command": ["python", "-m", "fitnessllm_dataplatform.task_handler"],
                         "args": ["full_etl", f"--uid={payload['uid']}", "--data_source=STRAVA"]
                     }
                 ]

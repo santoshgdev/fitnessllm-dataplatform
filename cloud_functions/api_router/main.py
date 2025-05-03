@@ -13,7 +13,6 @@ from google.cloud import functions_v2
 from .utils.cloud_utils import get_oauth_token
 from .utils.logger_utils import partial_log_structured
 
-
 try:
     firebase_admin.initialize_app()
     partial_log_structured(message="Firebase Admin initialized successfully")
@@ -25,7 +24,6 @@ except Exception as e:
         traceback=traceback.format_exc(),
     )
     raise
-
 
 
 def invoke_cloud_function(
@@ -185,9 +183,13 @@ def invoke_cloud_run_job(
                 "taskCount": 1,
                 "containerOverrides": [
                     {
-                        "args": ["full_etl", f"--uid={payload['uid']}", "--data_source=STRAVA"]
+                        "args": [
+                            "full_etl",
+                            f"--uid={payload['uid']}",
+                            "--data_source=STRAVA",
+                        ]
                     }
-                ]
+                ],
             }
         }
 
@@ -281,7 +283,6 @@ def api_router(request):
             },
         )
 
-    
     partial_log_structured(
         message="Request received",
         method=request.method,

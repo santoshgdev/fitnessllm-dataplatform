@@ -169,13 +169,28 @@ jobs:
               run: |
                   docker push ${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }}
 
+            - name: Debug deployment configuration
+              run: |
+                  echo "=== Debug: Deployment Configuration ==="
+                  echo "Service Account Email is set: ${{ secrets.GCP_DP_SA_EMAIL != '' }}"
+                  echo "Project ID: ${{ secrets.PROJECT_ID }}"
+                  echo "Environment: ${{ env.ENVIRONMENT }}"
+                  echo "Service Name: ${{ env.SERVICE_NAME }}"
+                  echo "Region: ${{ env.REGION }}"
+                  echo "Full deployment command (with masked secrets):"
+                  echo "gcloud run jobs deploy ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }} \
+                    --image ${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }} \
+                    --region ${{ env.REGION }} \
+                    --service-account=[MASKED] \
+                    --set-env-vars PROJECT_ID=${{ secrets.PROJECT_ID }},ENVIRONMENT=${{ env.ENVIRONMENT }},ENCRYPTION_SECRET=[MASKED],STRAVA_SECRET=[MASKED],REGION=${{ env.REGION }},INFRASTRUCTURE_SECRET=infrastructure,STAGE=dev"
+
             - name: Deploy to Cloud Run
               run: |
                   gcloud run jobs deploy ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }} \
                     --image ${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }} \
                     --region ${{ env.REGION }} \
                     --service-account=${{ secrets.GCP_DP_SA_EMAIL }} \
-                    --set-env-vars PROJECT_ID=${{ secrets.PROJECT_ID }},ENVIRONMENT=${{ env.ENVIRONMENT }},ENCRYPTION_SECRET=${{ secrets.ENCRYPTION_SECRET }},STRAVA_SECRET=${{ secrets.STRAVA_SECRET }},REGION=${{ env.REGION }},INFRASTRUCTURE_SECRET=${{ env.INFRASTRUCTURE_SECRET }}
+                    --set-env-vars PROJECT_ID=${{ secrets.PROJECT_ID }},ENVIRONMENT=${{ env.ENVIRONMENT }},ENCRYPTION_SECRET=${{ secrets.ENCRYPTION_SECRET }},STRAVA_SECRET=${{ secrets.STRAVA_SECRET }},REGION=${{ env.REGION }},INFRASTRUCTURE_SECRET=${{ env.INFRASTRUCTURE_SECRET }},STAGE=${{ env.ENVIRONMENT }}
 
 
     cloud_function_detect_changes:

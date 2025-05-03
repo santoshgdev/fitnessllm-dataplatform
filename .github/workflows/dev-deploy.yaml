@@ -174,8 +174,6 @@ jobs:
                   gcloud run jobs deploy ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }} \
                     --image ${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }} \
                     --region ${{ env.REGION }} \
-                    --platform managed \
-                    --allow-unauthenticated \
                     --service-account=${{ secrets.GCP_DP_SA_EMAIL }} \
                     --set-env-vars PROJECT_ID=${{ secrets.PROJECT_ID }},ENVIRONMENT=${{ env.ENVIRONMENT }},ENCRYPTION_SECRET=${{ secrets.ENCRYPTION_SECRET }},STRAVA_SECRET=${{ secrets.STRAVA_SECRET }},REGION=${{ env.REGION }},INFRASTRUCTURE_SECRET=${{ env.INFRASTRUCTURE_SECRET }}
 

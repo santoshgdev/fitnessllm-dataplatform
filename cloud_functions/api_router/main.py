@@ -9,6 +9,7 @@ import requests
 from firebase_functions import https_fn
 from google.cloud import functions_v2
 
+from .utils.cloud_utils import get_oauth_token
 from .utils.logger_utils import partial_log_structured
 
 
@@ -39,16 +40,10 @@ def invoke_cloud_function(
         )
 
         # Prepare headers with auth if provided
-        headers = {}
-        if auth_header:
-            if not auth_header.startswith("Bearer "):
-                auth_header = f"Bearer {auth_header}"
-            headers["Authorization"] = auth_header
-            partial_log_structured(
-                message="Added authorization header",
-                header_present=True,
-                header_value=auth_header,
-            )
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {get_oauth_token()}",
+        }
 
         partial_log_structured(
             message="Invoking cloud function",
@@ -62,10 +57,6 @@ def invoke_cloud_function(
         if "data_source" in payload:
             url = f"{url}?data_source={payload['data_source']}"
             partial_log_structured(message="Modified URL with query params", url=url)
-
-        # if "code" in payload:
-        #     url = f"{url}?code={payload['code']}"
-        #     partial_log_structured(message="Modified URL with query params", url=url)
 
         # Make the request
         response = requests.post(url=url, json=payload, headers=headers)
@@ -169,9 +160,10 @@ def invoke_cloud_run_job(
         )
 
         # Prepare headers
-        headers = {"Content-Type": "application/json"}
-        if auth_header:
-            headers["Authorization"] = auth_header
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {get_oauth_token()}",
+        }
 
         # Make the request
         response = requests.post(url, json=payload, headers=headers)

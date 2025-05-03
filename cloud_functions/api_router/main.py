@@ -247,6 +247,19 @@ def api_router(request):
 
     Routes requests to different endpoints based on the payload.
     """
+    # Handle OPTIONS request for CORS preflight FIRST!
+    if request.method == "OPTIONS":
+        return https_fn.Response(
+            status=204,
+            headers={
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "POST",
+                "Access-Control-Allow-Headers": "Authorization, Content-Type",
+                "Access-Control-Max-Age": "3600",
+            },
+        )
+
+    
     partial_log_structured(
         message="Request received",
         method=request.method,
@@ -257,7 +270,6 @@ def api_router(request):
 
     auth_header = request.headers.get("Authorization")
     id_token = auth_header.split("Bearer ")[1].strip()
-
     auth = firebase_admin.auth.verify_id_token(id_token)
     uid = auth["uid"]
 
@@ -270,18 +282,6 @@ def api_router(request):
             error=str(e),
             level="ERROR",
             traceback=traceback.format_exc(),
-        )
-
-    # Handle OPTIONS request for CORS preflight
-    if request.method == "OPTIONS":
-        return https_fn.Response(
-            status=204,
-            headers={
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods": "POST",
-                "Access-Control-Allow-Headers": "Authorization, Content-Type",
-                "Access-Control-Max-Age": "3600",
-            },
         )
 
     try:

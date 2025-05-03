@@ -171,23 +171,22 @@ jobs:
 
             - name: Deploy to Cloud Run
               run: |
-                  gcloud run deploy ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }} \
+                  gcloud run jobs deploy ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }} \
                     --image ${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }} \
                     --region ${{ env.REGION }} \
                     --platform managed \
                     --allow-unauthenticated \
                     --service-account=${{ secrets.GCP_DP_SA_EMAIL }} \
-                    --port=8080 \
                     --set-env-vars PROJECT_ID=${{ secrets.PROJECT_ID }},ENVIRONMENT=${{ env.ENVIRONMENT }},ENCRYPTION_SECRET=${{ secrets.ENCRYPTION_SECRET }},STRAVA_SECRET=${{ secrets.STRAVA_SECRET }},REGION=${{ env.REGION }},INFRASTRUCTURE_SECRET=${{ env.INFRASTRUCTURE_SECRET }}
 
             - name: Clean up old revisions
               run: |
                   # Get the latest revision
-                  LATEST_REVISION=$(gcloud run revisions list --service ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }} --region ${{ env.REGION }} --format="value(name)" --sort-by=~creationTimestamp --limit=1)
+                  LATEST_REVISION=$(gcloud run jobs revisions list --service ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }} --region ${{ env.REGION }} --format="value(name)" --sort-by=~creationTimestamp --limit=1)
 
                   # Delete old revisions one by one
-                  for revision in $(gcloud run revisions list --service ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }} --region ${{ env.REGION }} --format="value(name)" | grep -v "$LATEST_REVISION"); do
-                    gcloud run revisions delete $revision --region ${{ env.REGION }} --quiet
+                  for revision in $(gcloud run jobs revisions list --service ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }} --region ${{ env.REGION }} --format="value(name)" | grep -v "$LATEST_REVISION"); do
+                    gcloud run jobs revisions delete $revision --region ${{ env.REGION }} --quiet
                   done
 
     cloud_function_detect_changes:

@@ -139,7 +139,7 @@ def invoke_cloud_function(
         )
 
 
-def invoke_cloud_run(
+def invoke_cloud_run_job(
     service_name: str, payload: Dict, auth_header: Optional[str] = None
 ) -> https_fn.Response:
     """Invoke a Cloud Run service using HTTPS.
@@ -153,10 +153,10 @@ def invoke_cloud_run(
         https_fn.Response object with the service's response
     """
     try:
-        # Get the service URL
-        client = run_v2.ServicesClient()
-        service = client.get_service(name=service_name)
-        url = service.uri
+        project_id = os.environ["PROJECT_ID"]
+        region = os.environ["REGION"]
+
+        url = f"https://{region}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/{project_id}/jobs/{servce_name}:run"
 
         partial_log_structured(
             message="Invoking cloud run service",
@@ -166,7 +166,7 @@ def invoke_cloud_run(
         )
 
         # Prepare headers
-        headers = {}
+        headers = {"Content-Type": "application/json"}
         if auth_header:
             headers["Authorization"] = auth_header
 
@@ -177,7 +177,7 @@ def invoke_cloud_run(
         partial_log_structured(
             message="Received response",
             status_code=response.status_code,
-            headers=dict(response.headers),
+            headers=headers,
             content=response.text,
         )
 
@@ -397,7 +397,7 @@ def api_router(request):
             return invoke_cloud_function(function_name, payload, auth_header)
         elif target_api == "data_run":
             service_name = f"projects/{project_id}/locations/{region}/services/{environment}-fitnessllm-dp"
-            return invoke_cloud_run(service_name, payload, auth_header)
+            return invoke_cloud_run_job(service_name, payload, auth_header)
         else:
             return https_fn.Response(
                 status=905,

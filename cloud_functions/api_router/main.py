@@ -179,8 +179,16 @@ def invoke_cloud_run_job(
             "Content-Type": "application/json",
             "Authorization": f"Bearer {get_oauth_token()}",
         }
+        # Use the correct overrides structure for Cloud Run jobs
         new_payload = {
-            "args": ["full_etl", f"--uid={payload['uid']}", "--data_source=STRAVA"]
+            "overrides": {
+                "taskCount": 1,
+                "containerOverrides": [
+                    {
+                        "args": ["full_etl", f"--uid={payload['uid']}", "--data_source=STRAVA"]
+                    }
+                ]
+            }
         }
 
         # Make the request

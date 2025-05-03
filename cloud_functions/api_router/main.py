@@ -7,7 +7,7 @@ from typing import Dict, Optional
 import functions_framework
 import requests
 from firebase_functions import https_fn
-from google.cloud import functions_v2, run_v2
+from google.cloud import functions_v2
 
 from .utils.logger_utils import partial_log_structured
 
@@ -155,8 +155,11 @@ def invoke_cloud_run_job(
     try:
         project_id = os.environ["PROJECT_ID"]
         region = os.environ["REGION"]
-
-        url = f"https://{region}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/{project_id}/jobs/{service_name}:run"
+        environment = os.environ["ENVIRONMENT"]
+        url = (
+            f"https://{region}-run.googleapis.com/apis/run.googleapis.com/v1/"
+            f"namespaces/{project_id}/jobs/{environment}-fitnessllm-dp:run"
+        )
 
         partial_log_structured(
             message="Invoking cloud run service",

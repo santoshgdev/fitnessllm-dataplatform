@@ -247,13 +247,6 @@ def api_router(request):
 
     Routes requests to different endpoints based on the payload.
     """
-    auth_header = request.headers.get("Authorization")
-    id_token = auth_header.split("Bearer ")[1].strip()
-
-    auth = firebase_admin.auth.verify_id_token(id_token)
-    uid = auth["uid"]
-
-    # Log all request details at the start
     partial_log_structured(
         message="Request received",
         method=request.method,
@@ -261,6 +254,12 @@ def api_router(request):
         url=request.url,
         args=dict(request.args),
     )
+
+    auth_header = request.headers.get("Authorization")
+    id_token = auth_header.split("Bearer ")[1].strip()
+
+    auth = firebase_admin.auth.verify_id_token(id_token)
+    uid = auth["uid"]
 
     try:
         body = request.get_json(silent=True)

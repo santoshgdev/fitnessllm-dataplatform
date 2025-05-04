@@ -5,20 +5,7 @@ from unittest.mock import patch
 from fitnessllm_dataplatform.utils.logging_utils import logger
 from cloud_functions.token_refresh.main import token_refresh
 
-@pytest.fixture(autouse=True)
-def cleanup_firebase():
-    """Clean up Firebase app after each test."""
-    try:
-        logger.info("Cleaning up Firebase app, pre test")
-        delete_app(get_app())
-    except ValueError:
-        pass
-    yield
-    try:
-        logger.info("Cleaning up Firebase app, post test")
-        delete_app(get_app())
-    except ValueError:
-        pass
+
 
 def test_token_refresh_success(test_user_data, mock_request, mock_decoded_token):
     """Test successful token refresh."""

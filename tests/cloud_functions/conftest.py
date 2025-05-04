@@ -10,8 +10,27 @@ import random
 import uuid
 from unittest.mock import patch
 
+from fitnessllm_dataplatform.utils.logging_utils import logger
+
 # Initialize Faker
 fake = Faker()
+
+
+@pytest.fixture(autouse=True)
+def cleanup_firebase():
+    """Clean up Firebase app after each test."""
+    try:
+        logger.info("Cleaning up Firebase app, pre test")
+        delete_app(get_app())
+    except ValueError:
+        pass
+    yield
+    try:
+        logger.info("Cleaning up Firebase app, post test")
+        delete_app(get_app())
+    except ValueError:
+        pass
+
 
 @pytest.fixture(scope="session")
 def firebase_emulator():

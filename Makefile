@@ -29,9 +29,9 @@ coverage:
 
 run:
 	docker run -it \
+	  --entrypoint /bin/bash \
 	  -v "$$PWD:/app/fitnessllm-dataplatform" \
-	  fitnessllm-dp:latest \
-	  bash
+	  fitnessllm-dp:latest
 
 lint:
 	pre-commit run --all-files

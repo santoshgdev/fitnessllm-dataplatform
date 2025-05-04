@@ -12,3 +12,11 @@ services:
             - ../api_dev:/app/api_dev
         environment:
             - PYTHONPATH=/app
+            - FIRESTORE_EMULATOR_HOST=localhost:8080
+            - GCLOUD_PROJECT=test-project
+        ports:
+            - "8080:8080"  # Firestore emulator
+            - "4000:4000"  # Emulator UI
+        command: >
+          bash -c "firebase emulators:start --only firestore &&
+                  poetry run python -m fitnessllm_dataplatform.task_handler"

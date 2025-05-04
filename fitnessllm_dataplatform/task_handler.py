@@ -63,7 +63,13 @@ class Startup:
             raise ValueError(f"Unsupported data source: {data_source}")
 
         if data_source == FitnessLLMDataSource.STRAVA.value:
-            strava_user_data = self.firebase.read_user().collection("stream").document(data_source.lower()).get().to_dict()
+            strava_user_data = (
+                self.firebase.read_user()
+                .collection("stream")
+                .document(data_source.lower())
+                .get()
+                .to_dict()
+            )
             if strava_user_data is None:
                 raise ValueError(f"User {uid} has no {data_source} data")
 
@@ -97,7 +103,13 @@ class Startup:
             self._startUp(uid)
 
         if data_source == FitnessLLMDataSource.STRAVA.value:
-            strava_user_data = self.firebase.read_user().collection("stream").document(data_source.lower()).get().to_dict()
+            strava_user_data = (
+                self.firebase.read_user()
+                .collection("stream")
+                .document(data_source.lower())
+                .get()
+                .to_dict()
+            )
             strava_etl_interface = BronzeStravaETLInterface(
                 infrastructure_names=self.InfrastructureNames,
                 athlete_id=str(strava_user_data["athleteId"]),
@@ -122,7 +134,13 @@ class Startup:
             self._startUp(uid)
 
         if data_source == FitnessLLMDataSource.STRAVA.value:
-            strava_user_data = self.firebase.read_user().collection("stream").document(data_source.lower()).get().to_dict()
+            strava_user_data = (
+                self.firebase.read_user()
+                .collection("stream")
+                .document(data_source.lower())
+                .get()
+                .to_dict()
+            )
             strava_etl_interface = SilverStravaETLInterface(
                 athlete_id=str(strava_user_data["athleteId"]),
             )

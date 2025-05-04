@@ -16,7 +16,7 @@ fake = Faker()
 @pytest.fixture(scope="session")
 def firebase_emulator():
     """Setup Firebase emulator connection"""
-    os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
+    os.environ["FIRESTORE_EMULATOR_HOST"] = "firebase-emulator:8080"
     os.environ["GCLOUD_PROJECT"] = "test-project"
     
     # Clean up any existing apps

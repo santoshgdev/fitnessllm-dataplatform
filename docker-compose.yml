@@ -15,10 +15,12 @@ services:
     networks:
       - firebase-test-network
 
-  test-runner:
+  fitnessllm-dp:
+    platform: ${TARGETPLATFORM:-linux/amd64}
     build:
       context: .
-      dockerfile: Dockerfile  # Your original Python/Poetry Dockerfile
+      dockerfile: Dockerfile
+    entrypoint: []
     volumes:
       - .:/app
     environment:

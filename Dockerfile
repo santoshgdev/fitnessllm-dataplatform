@@ -16,8 +16,6 @@ RUN apt-get update && apt-get install -y \
     && curl -sSL https://install.python-poetry.org | python3 - --version ${POETRY_VERSION}
 
 
-
-
 # Set up application directory
 RUN mkdir /app
 WORKDIR /app

@@ -1,22 +1,35 @@
----
 services:
-    fitnessllm-dataplatform:
-        build:
-            context: .
-            dockerfile: Dockerfile
-            args:
-                BUILDKIT_PROGRESS: plain
-        volumes:
-            - ~/.config/gcloud:/root/.config/gcloud
-            - .:/app/fitnessllm-dataplatform
-            - ../api_dev:/app/api_dev
-        environment:
-            - PYTHONPATH=/app
-            - FIRESTORE_EMULATOR_HOST=localhost:8080
-            - GCLOUD_PROJECT=test-project
-        ports:
-            - "8080:8080"  # Firestore emulator
-            - "4000:4000"  # Emulator UI
-        command: >
-          bash -c "firebase emulators:start --only firestore &&
-                  poetry run python -m fitnessllm_dataplatform.task_handler"
+  firebase-emulator:
+    build:
+      context: .
+      dockerfile: Dockerfile.firebase-emulator
+    ports:
+      - "8080:8080"
+      - "5000:5000"
+      - "4400:4400"
+      - "9150:9150"
+    volumes:
+      - ./firebase.json:/app/firebase.json
+    environment:
+      - GCLOUD_PROJECT=test-project
+    networks:
+      - firebase-test-network
+
+  test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile  # Your original Python/Poetry Dockerfile
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONPATH=/app
+      - FIRESTORE_EMULATOR_HOST=firebase-emulator:8080
+      - GCLOUD_PROJECT=test-project
+    depends_on:
+      - firebase-emulator
+    networks:
+      - firebase-test-network
+
+networks:
+  firebase-test-network:
+    driver: bridge 

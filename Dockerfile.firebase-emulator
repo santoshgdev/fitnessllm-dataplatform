@@ -1,7 +1,7 @@
 FROM node:20-slim
 
 # Install Java (required for Firestore emulator)
-RUN apt-get update && apt-get install -y openjdk-11-jre-headless
+RUN apt-get update && apt-get install -y openjdk-17-jre-headless
 
 WORKDIR /app
 

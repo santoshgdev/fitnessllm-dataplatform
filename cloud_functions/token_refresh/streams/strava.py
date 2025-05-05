@@ -70,6 +70,8 @@ def strava_refresh_oauth_token(
         raise
 
 
+# Bear type is removed here due to a test that has a testing component located in tests/.
+# This is done so that the testing components don't need to be shipped with the production code.
 def strava_update_user_tokens(
     db: firestore.Client, uid: str, new_tokens: Dict[str, Any]
 ) -> None:

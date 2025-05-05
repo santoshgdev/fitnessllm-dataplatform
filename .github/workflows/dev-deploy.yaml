@@ -211,40 +211,40 @@ jobs:
                   echo "=== Debug: Checking for changes between HEAD^ and HEAD ==="
                   echo "Current commit: $(git rev-parse HEAD)"
                   echo "Previous commit: $(git rev-parse HEAD^)"
-
                   echo "=== Debug: All changed files ==="
                   git diff --name-only HEAD^ HEAD
 
                   HAS_CHANGES=false
 
-                  echo "=== Debug: Checking token_refresh changes ==="
-                  if git diff --name-only HEAD^ HEAD | grep -q "^cloud_functions/token_refresh/"; then
-                    echo "Found changes in token_refresh"
+                  # If shared code changes, redeploy all functions
+                  if git diff --name-only HEAD^ HEAD | grep -q "^cloud_functions/shared/"; then
+                    echo "Shared code changed, redeploying all functions"
                     echo "token_refresh=true" >> $GITHUB_OUTPUT
-                    HAS_CHANGES=true
-                  else
-                    echo "No changes in token_refresh"
-                    echo "token_refresh=false" >> $GITHUB_OUTPUT
-                  fi
-
-                  echo "=== Debug: Checking api_router changes ==="
-                  if git diff --name-only HEAD^ HEAD | grep -q "^cloud_functions/api_router/"; then
-                    echo "Found changes in api_router"
                     echo "api_router=true" >> $GITHUB_OUTPUT
-                    HAS_CHANGES=true
-                  else
-                    echo "No changes in api_router"
-                    echo "api_router=false" >> $GITHUB_OUTPUT
-                  fi
-
-                  echo "=== Debug: Checking strava_auth_initiate changes ==="
-                  if git diff --name-only HEAD^ HEAD | grep -q "^cloud_functions/strava_auth_initiate/"; then
-                    echo "Found changes in strava_auth_initiate"
                     echo "strava_auth_initiate=true" >> $GITHUB_OUTPUT
                     HAS_CHANGES=true
                   else
-                    echo "No changes in strava_auth_initiate"
-                    echo "strava_auth_initiate=false" >> $GITHUB_OUTPUT
+                    # Check each function individually
+                    if git diff --name-only HEAD^ HEAD | grep -q "^cloud_functions/token_refresh/"; then
+                      echo "token_refresh=true" >> $GITHUB_OUTPUT
+                      HAS_CHANGES=true
+                    else
+                      echo "token_refresh=false" >> $GITHUB_OUTPUT
+                    fi
+
+                    if git diff --name-only HEAD^ HEAD | grep -q "^cloud_functions/api_router/"; then
+                      echo "api_router=true" >> $GITHUB_OUTPUT
+                      HAS_CHANGES=true
+                    else
+                      echo "api_router=false" >> $GITHUB_OUTPUT
+                    fi
+
+                    if git diff --name-only HEAD^ HEAD | grep -q "^cloud_functions/strava_auth_initiate/"; then
+                      echo "strava_auth_initiate=true" >> $GITHUB_OUTPUT
+                      HAS_CHANGES=true
+                    else
+                      echo "strava_auth_initiate=false" >> $GITHUB_OUTPUT
+                    fi
                   fi
 
                   echo "has_changes=$HAS_CHANGES" >> $GITHUB_OUTPUT

@@ -5,7 +5,7 @@ from os import environ
 from beartype import beartype
 from google.cloud import secretmanager
 
-from .logger_utils import partial_log_structured
+from ..shared.logger_utils import partial_log_structured
 
 
 @beartype

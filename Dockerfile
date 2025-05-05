@@ -10,7 +10,9 @@ ENV PYTHONUNBUFFERED=1 \
 ENV PATH="$POETRY_HOME/bin:$PATH"
 
 # Install system dependencies and Poetry
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    dash \
+    bash \
     curl \
     && rm -rf /var/lib/apt/lists/* \
     && curl -sSL https://install.python-poetry.org | python3 - --version ${POETRY_VERSION}
@@ -33,7 +35,7 @@ RUN poetry install --no-root
 RUN poetry export -f requirements.txt -o requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-ENV PORT=8080
+#ENV PORT=8080
 
 # Run the HTTP server
-ENTRYPOINT ["poetry", "run", "python", "-m", "fitnessllm_dataplatform.task_handler"]
+#ENTRYPOINT ["poetry", "run", "python", "-m", "fitnessllm_dataplatform.task_handler"]

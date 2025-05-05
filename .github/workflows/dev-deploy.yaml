@@ -184,7 +184,7 @@ jobs:
                     --service-account=[MASKED] \
                     --set-env-vars PROJECT_ID=${{ secrets.PROJECT_ID }},ENVIRONMENT=${{ env.ENVIRONMENT }},ENCRYPTION_SECRET=[MASKED],STRAVA_SECRET=[MASKED],REGION=${{ env.REGION }},INFRASTRUCTURE_SECRET=infrastructure,STAGE=dev"
 
-            - name: Deploy to Cloud Run
+            - name: Deploy to Cloud Run Jobs
               run: |
                   gcloud run jobs deploy ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }} \
                     --image ${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }} \
@@ -267,6 +267,16 @@ jobs:
                 function: [token_refresh, api_router, strava_auth_initiate]
         steps:
             - uses: actions/checkout@v4
+
+            - name: Copy shared code into each function directory
+              run: |
+                for fn in cloud_functions/*; do
+                  if [ -d "$fn" ] && [ "$(basename $fn)" != "shared" ]; then
+                    rm -rf "$fn/shared"
+                    mkdir -p "$fn/shared"
+                    cp -r cloud_functions/shared/. "$fn/shared/"
+                  fi
+                done
 
             - name: Authenticate to Google Cloud
               if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true'

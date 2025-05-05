@@ -55,7 +55,7 @@ def invoke_cloud_function(
         # Prepare headers with auth if provided
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {get_oauth_token()}",
+            "Authorization": auth_header,
         }
 
         partial_log_structured(
@@ -143,9 +143,7 @@ def invoke_cloud_function(
         )
 
 
-def invoke_cloud_run_job(
-    service_name: str, payload: Dict, auth_header: Optional[str] = None
-) -> https_fn.Response:
+def invoke_cloud_run_job(service_name: str, payload: Dict) -> https_fn.Response:
     """Invoke a Cloud Run service using HTTPS.
 
     Args:
@@ -425,7 +423,7 @@ def api_router(request):
         elif target_api == "data_run":
             payload["uid"] = uid
             service_name = f"projects/{project_id}/locations/{region}/services/{environment}-fitnessllm-dp"
-            return invoke_cloud_run_job(service_name, payload, auth_header)
+            return invoke_cloud_run_job(service_name, payload)
         else:
             return https_fn.Response(
                 status=905,

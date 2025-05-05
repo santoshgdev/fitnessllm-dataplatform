@@ -149,7 +149,13 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
                 },
             )
 
-        stream_doc = db.collection("users").document(uid).collection("stream").document(data_source).get()
+        stream_doc = (
+            db.collection("users")
+            .document(uid)
+            .collection("stream")
+            .document(data_source)
+            .get()
+        )
         if not stream_doc.exists:
             # handle error (e.g., return 404 or similar)
             return https_fn.Response(

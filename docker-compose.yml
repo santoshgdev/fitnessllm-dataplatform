@@ -1,37 +1,38 @@
+---
 services:
-  firebase-emulator:
-    build:
-      context: .
-      dockerfile: Dockerfile.firebase-emulator
-    ports:
-      - "8080:8080"
-      - "5000:5000"
-      - "4400:4400"
-      - "9150:9150"
-    volumes:
-      - ./firebase.json:/app/firebase.json
-    environment:
-      - GCLOUD_PROJECT=test-project
-    networks:
-      - firebase-test-network
+    firebase-emulator:
+        build:
+            context: .
+            dockerfile: Dockerfile.firebase-emulator
+        ports:
+            - 8080:8080
+            - 5000:5000
+            - 4400:4400
+            - 9150:9150
+        volumes:
+            - ./firebase.json:/app/firebase.json
+        environment:
+            - GCLOUD_PROJECT=test-project
+        networks:
+            - firebase-test-network
 
-  fitnessllm-dp:
-    platform: ${TARGETPLATFORM:-linux/amd64}
-    build:
-      context: .
-      dockerfile: Dockerfile
-    entrypoint: []
-    volumes:
-      - .:/app
-    environment:
-      - PYTHONPATH=/app
-      - FIRESTORE_EMULATOR_HOST=firebase-emulator:8080
-      - GCLOUD_PROJECT=test-project
-    depends_on:
-      - firebase-emulator
-    networks:
-      - firebase-test-network
+    fitnessllm-dp:
+        platform: ${TARGETPLATFORM:-linux/amd64}
+        build:
+            context: .
+            dockerfile: Dockerfile
+        entrypoint: []
+        volumes:
+            - .:/app
+        environment:
+            - PYTHONPATH=/app
+            - FIRESTORE_EMULATOR_HOST=firebase-emulator:8080
+            - GCLOUD_PROJECT=test-project
+        depends_on:
+            - firebase-emulator
+        networks:
+            - firebase-test-network
 
 networks:
-  firebase-test-network:
-    driver: bridge 
+    firebase-test-network:
+        driver: bridge

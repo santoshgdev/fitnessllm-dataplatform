@@ -70,7 +70,6 @@ def strava_refresh_oauth_token(
         raise
 
 
-@beartype
 def strava_update_user_tokens(
     db: firestore.Client, uid: str, new_tokens: Dict[str, Any]
 ) -> None:

@@ -1,4 +1,5 @@
 """Main entry point for the data platform."""
+
 from functools import partial
 from os import environ
 
@@ -112,7 +113,7 @@ class Startup:
             )
             strava_etl_interface = BronzeStravaETLInterface(
                 infrastructure_names=self.InfrastructureNames,
-                athlete_id=str(strava_user_data["athleteId"]),
+                athlete_id=str(strava_user_data["athlete"]["id"]),
                 data_streams=data_streams,
             )
             strava_etl_interface.load_json_into_bq()
@@ -142,7 +143,7 @@ class Startup:
                 .to_dict()
             )
             strava_etl_interface = SilverStravaETLInterface(
-                athlete_id=str(strava_user_data["athleteId"]),
+                athlete_id=str(strava_user_data["athlete"]["id"]),
             )
             strava_etl_interface.task_handler()
         else:

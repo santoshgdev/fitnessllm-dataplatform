@@ -5,8 +5,6 @@ import flask
 from firebase_admin import auth
 
 from cloud_functions.token_refresh.main import token_refresh
-
-# Import your in-memory Firestore and population function
 from tests.cloud_functions.testing_utils import (
     populate_inmemory_firestore_with_users_and_streams,
 )
@@ -22,7 +20,6 @@ from tests.cloud_functions.testing_utils import (
 )
 @patch("firebase_admin.auth.verify_id_token")
 def test_token_refresh_success(mock_verify, mock_request, mock_decoded_token):
-    # Setup in-memory Firestore with one user and strava stream
     db, user_ids = populate_inmemory_firestore_with_users_and_streams(num_users=1)
     user_id = user_ids[0]
     mock_decoded_token["uid"] = user_id
@@ -59,8 +56,6 @@ def test_token_refresh_missing_data_source(
     mock_verify, mock_request, mock_decoded_token
 ):
     """Test token refresh with missing data source."""
-
-    # Setup in-memory Firestore with one user and strava stream
     db, user_ids = populate_inmemory_firestore_with_users_and_streams(num_users=1)
     user_id = user_ids[0]
     mock_decoded_token["uid"] = user_id

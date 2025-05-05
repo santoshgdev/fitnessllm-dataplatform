@@ -7,8 +7,6 @@ from beartype.typing import Any, Dict
 from google.cloud import firestore
 from stravalib.client import Client
 
-from tests.cloud_functions.testing_utils import InMemoryFirestoreClient
-
 from ..shared.cloud_utils import get_secret
 from ..shared.logger_utils import partial_log_structured
 from ..utils.task_utils import decrypt_token, encrypt_token, update_last_refresh
@@ -74,7 +72,7 @@ def strava_refresh_oauth_token(
 
 @beartype
 def strava_update_user_tokens(
-    db: firestore.Client | InMemoryFirestoreClient, uid: str, new_tokens: Dict[str, Any]
+    db: firestore.Client, uid: str, new_tokens: Dict[str, Any]
 ) -> None:
     """Update user document with new tokens.
 

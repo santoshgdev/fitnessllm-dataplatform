@@ -182,7 +182,9 @@ def invoke_cloud_run_job(service_name: str, payload: Dict) -> https_fn.Response:
                 "containerOverrides": [
                     {
                         "args": [
-                            "full_etl",
+                            "python",
+                            "-m",
+                            "fitnessllm_dataplatform.task_handler" "full_etl",
                             f"--uid={payload['uid']}",
                             "--data_source=STRAVA",
                         ]

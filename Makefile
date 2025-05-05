@@ -13,7 +13,7 @@ clean:
 	poetry install --sync
 
 build:
-	docker buildx bake -f docker-compose.yml --set "*.platform=$(uname -m | sed 's/x86_64/linux\/amd64/;s/arm64/linux\/arm64/')" --load
+	docker build . -t fitnessllm-dp
 
 test:
 	docker run -it \

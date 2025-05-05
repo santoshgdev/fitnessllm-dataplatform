@@ -149,7 +149,24 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
                 },
             )
 
-        stream_data = doc.to_dict()[f"stream={data_source}"]
+        stream_doc = db.collection("users").document(uid).collection("stream").document(data_source).get()
+        if not stream_doc.exists:
+            # handle error (e.g., return 404 or similar)
+            return https_fn.Response(
+                status=404,
+                response=json.dumps(
+                    {
+                        "error": "Not Found",
+                        "message": f"Stream data for user {uid} and data source {data_source} not found",
+                    }
+                ),
+                headers={
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": "*",
+                },
+            )
+
+        stream_data = stream_doc.to_dict()
 
         if not stream_data or not stream_data.get("refreshToken"):
             partial_log_structured(

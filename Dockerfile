@@ -19,9 +19,11 @@ RUN apt-get update && apt-get install -y \
 # Set up application directory
 RUN mkdir /app
 WORKDIR /app
+RUN mkdir fitnessllm-dataplatform
 
-COPY fitnessllm_dataplatform ./fitnessllm_dataplatform
-COPY cloud_functions ./cloud_functions
+COPY fitnessllm_dataplatform fitnessllm-dataplatform/fitnessllm_dataplatform
+COPY cloud_functions fitnessllm-dataplatform/cloud_functions
+COPY tests fitnessllm-dataplatform/tests
 COPY pyproject.toml poetry.lock ./
 
 # Install dependencies

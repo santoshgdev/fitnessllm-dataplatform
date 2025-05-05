@@ -1,20 +1,19 @@
 from unittest.mock import  MagicMock
 import pytest
 
+
+
 @pytest.fixture
 def mock_request():
-    """Create a mock request object."""
-    request = MagicMock()
-    request.method = "POST"
-    request.args = {"data_source": "strava"}
-    request.headers = {"Authorization": "Bearer mock_token"}
-    request.get_json.return_value = {}
-    return request
+    class MockRequest:
+        method = "POST"
+        headers = {"Authorization": "Bearer test_token"}
+        url = "fake_url"
+        args = {"data_source": "strava"}
+        def get_json(self):
+            return {}
+    return MockRequest()
 
 @pytest.fixture
 def mock_decoded_token():
-    """Create a mock decoded token."""
-    return {
-        "uid": "test_uid",
-        "sub": "test_uid"
-    }
+    return {"uid": "fake_user_id", "sub": "test_uid"}

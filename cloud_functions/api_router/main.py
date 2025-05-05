@@ -184,7 +184,8 @@ def invoke_cloud_run_job(service_name: str, payload: Dict) -> https_fn.Response:
                         "args": [
                             "python",
                             "-m",
-                            "fitnessllm_dataplatform.task_handler" "full_etl",
+                            "fitnessllm_dataplatform.task_handler",
+                            "full_etl",
                             f"--uid={payload['uid']}",
                             "--data_source=STRAVA",
                         ]

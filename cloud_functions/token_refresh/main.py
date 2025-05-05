@@ -9,8 +9,8 @@ from firebase_admin import auth, initialize_app
 from firebase_functions import https_fn, options
 from google.cloud import firestore
 
-from .streams.strava import strava_refresh_oauth_token
 from .shared.logger_utils import partial_log_structured
+from .streams.strava import strava_refresh_oauth_token
 
 try:
     initialize_app()

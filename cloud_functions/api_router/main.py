@@ -10,8 +10,8 @@ import requests
 from firebase_functions import https_fn
 from google.cloud import functions_v2
 
-from .utils.cloud_utils import get_oauth_token
 from .shared.logger_utils import partial_log_structured
+from .utils.cloud_utils import get_oauth_token
 
 try:
     firebase_admin.initialize_app()

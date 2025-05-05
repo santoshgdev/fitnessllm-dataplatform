@@ -270,13 +270,13 @@ jobs:
 
             - name: Copy shared code into each function directory
               run: |
-                for fn in cloud_functions/*; do
-                  if [ -d "$fn" ] && [ "$(basename $fn)" != "shared" ]; then
-                    rm -rf "$fn/shared"
-                    mkdir -p "$fn/shared"
-                    cp -r cloud_functions/shared/. "$fn/shared/"
-                  fi
-                done
+                  for fn in cloud_functions/*; do
+                    if [ -d "$fn" ] && [ "$(basename $fn)" != "shared" ]; then
+                      rm -rf "$fn/shared"
+                      mkdir -p "$fn/shared"
+                      cp -r cloud_functions/shared/. "$fn/shared/"
+                    fi
+                  done
 
             - name: Authenticate to Google Cloud
               if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true'

@@ -7,6 +7,8 @@ from beartype.typing import Any, Dict
 from google.cloud import firestore
 from stravalib.client import Client
 
+from tests.cloud_functions.testing_utils import InMemoryFirestoreClient
+
 from ..shared.cloud_utils import get_secret
 from ..shared.logger_utils import partial_log_structured
 from ..utils.task_utils import decrypt_token, encrypt_token, update_last_refresh
@@ -72,7 +74,7 @@ def strava_refresh_oauth_token(
 
 @beartype
 def strava_update_user_tokens(
-    db: firestore.Client, uid: str, new_tokens: Dict[str, Any]
+    db: firestore.Client | InMemoryFirestoreClient, uid: str, new_tokens: Dict[str, Any]
 ) -> None:
     """Update user document with new tokens.
 
@@ -82,13 +84,16 @@ def strava_update_user_tokens(
         new_tokens: New tokens.
     """
     partial_log_structured(message="Updating user tokens", uid=uid)
-    user_ref = db.collection("users").document(uid)
-    user_ref.update(
+    # Get the reference to the strava document in the stream subcollection
+    strava_ref = (
+        db.collection("users").document(uid).collection("stream").document("strava")
+    )
+    strava_ref.update(
         {
-            "stream.strava.accessToken": new_tokens["accessToken"],
-            "stream.strava.refreshToken": new_tokens["refreshToken"],
-            "stream.strava.expiresAt": new_tokens["expiresAt"],
-            "stream.strava.lastTokenRefresh": new_tokens["lastTokenRefresh"],
+            "accessToken": new_tokens["accessToken"],
+            "refreshToken": new_tokens["refreshToken"],
+            "expiresAt": new_tokens["expiresAt"],
+            "lastTokenRefresh": new_tokens["lastTokenRefresh"],
         }
     )
     partial_log_structured(message="User tokens updated successfully", uid=uid)

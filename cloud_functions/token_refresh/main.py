@@ -257,12 +257,18 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
 
     except auth.InvalidIdTokenError:
         partial_log_structured(
-            message="Invalid token", level="ERROR", traceback=traceback.format_exc()
+            message="Invalid Firebase ID Token; JWT Token Issue",
+            level="ERROR",
+            traceback=traceback.format_exc(),
         )
         return https_fn.Response(
             status=401,
             response=json.dumps(
-                {"error": "Unauthorized", "message": "Unauthorized - Invalid token"}
+                {
+                    "error": "Unauthorized",
+                    "message": "Unauthorized - Invalid token",
+                    "auth": auth_header,
+                }
             ),
             headers={
                 "Content-Type": "application/json",

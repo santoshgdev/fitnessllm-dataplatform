@@ -35,6 +35,8 @@ RUN poetry install --no-root
 RUN poetry export -f requirements.txt -o requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
+WORKDIR /app/fitnessllm-dataplatform
+
 #ENV PORT=8080
 
 # Run the HTTP server

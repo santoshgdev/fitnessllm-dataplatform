@@ -1,14 +1,11 @@
 """Conftest for cloud_functions."""
-import os
 import random
 import uuid
-from datetime import datetime, timedelta
-from unittest.mock import patch
+from datetime import datetime, timedelta, timezone
 
-import firebase_admin
 import pytest
 from faker import Faker
-from firebase_admin import delete_app, firestore, get_app
+from firebase_admin import delete_app, get_app
 
 from fitnessllm_dataplatform.utils.logging_utils import logger
 
@@ -31,42 +28,10 @@ def cleanup_firebase():
         pass
 
 
-@pytest.fixture(scope="session")
-def firebase_emulator():
-    """Setup Firebase emulator connection."""
-    os.environ["FIRESTORE_EMULATOR_HOST"] = "firebase-emulator:8080"
-    os.environ["GCLOUD_PROJECT"] = "test-project"
-
-    # Clean up any existing apps
-    try:
-        delete_app(get_app())
-    except ValueError:
-        pass
-
-    # Mock the credentials loading
-    with patch("google.auth.default") as mock_auth:
-        mock_auth.return_value = (None, "test-project")
-
-        # Initialize with emulator configuration
-        app = firebase_admin.initialize_app(
-            options={
-                "projectId": "test-project",
-                "databaseURL": "http://localhost:8080",
-            }
-        )
-        try:
-            yield firestore.client()
-        finally:
-            try:
-                firebase_admin.delete_app(app)
-            except ValueError:
-                pass
-
-
 def generate_fake_strava_doc():
     """Generate a fake Strava document for testing."""
     user_id = str(uuid.uuid4()).replace("-", "")[:28]
-    now = datetime.now()
+    now = datetime.now(tz=timezone.utc)
     created_date = now - timedelta(days=random.randint(5, 30))
     connected_date = created_date + timedelta(days=random.randint(1, 4))
     first_name = fake.first_name()
@@ -83,7 +48,9 @@ def generate_fake_strava_doc():
         },
         "connected": True,
         "expiresAt": int((now + timedelta(days=90)).timestamp()),
-        "firstConnected": datetime.fromtimestamp(connected_date.timestamp()),
+        "firstConnected": datetime.fromtimestamp(
+            connected_date.timestamp(), tz=timezone.utc
+        ),
         "lastTokenRefresh": datetime.fromtimestamp(connected_date.timestamp()),
         "lastUpdated": datetime.fromtimestamp(connected_date.timestamp()),
         "refreshToken": f"X/{fake.sha256()[:40]}=={fake.sha256()[:60]}",
@@ -108,4 +75,7 @@ def test_user_data(firebase_emulator):
         "strava"
     ).set(strava_doc)
     yield {"user_id": user_id, "db": db}
+    db.collection("users").document(user_id).collection("stream").document(
+        "strava"
+    ).delete()
     db.collection("users").document(user_id).delete()

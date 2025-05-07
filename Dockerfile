@@ -29,11 +29,11 @@ COPY tests fitnessllm-dataplatform/tests
 COPY pyproject.toml poetry.lock ./
 
 # Install dependencies
-RUN poetry config virtualenvs.in-project true
-RUN poetry lock
-RUN poetry install --no-root
-RUN poetry export -f requirements.txt -o requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+RUN poetry config virtualenvs.in-project true \
+    && poetry lock \
+    && poetry install --no-root \
+    && poetry export -f requirements.txt -o requirements.txt \
+    && pip install --no-cache-dir -r requirements.txt
 
 WORKDIR /app/fitnessllm-dataplatform
 

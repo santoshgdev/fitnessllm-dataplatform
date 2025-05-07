@@ -176,6 +176,10 @@ def invoke_cloud_run_job(service_name: str, payload: Dict) -> https_fn.Response:
             "Authorization": f"Bearer {get_oauth_token()}",
         }
         # Use the correct overrides structure for Cloud Run jobs
+
+        if "uid" not in payload:
+            raise ValueError("Payload is missing uid.")
+
         new_payload = {
             "overrides": {
                 "taskCount": 1,

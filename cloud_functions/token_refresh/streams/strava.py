@@ -87,6 +87,18 @@ def strava_update_user_tokens(
     strava_ref = (
         db.collection("users").document(uid).collection("stream").document("strava")
     )
+
+    doc = strava_ref.get()
+    if not doc.exists:
+        partial_log_structured(
+            message="Strava document doesn't exist in stream subcollection",
+            uid=uid,
+            level="ERROR",
+        )
+        # Create the document with default values
+        strava_ref.set(new_tokens)
+        return
+
     strava_ref.update(
         {
             "accessToken": new_tokens["accessToken"],

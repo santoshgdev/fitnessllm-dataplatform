@@ -2,7 +2,7 @@ from cloud_functions.token_refresh.streams.strava import strava_update_user_toke
 from tests.cloud_functions.testing_utils import InMemoryFirestoreClient
 
 
-def test_strava_update_user_tokens():
+def test_strava_update_user_tokens() -> None:
     db = InMemoryFirestoreClient()
     uid = "testuser123"
 

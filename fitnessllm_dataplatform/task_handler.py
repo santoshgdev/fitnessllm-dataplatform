@@ -36,14 +36,14 @@ class Startup:
         )
         self.firebase = FirebaseConnect(uid)
         self.decryptor = partial(
-            decrypt_token, key=get_secret(environ["ENCRYPTION_SECRET"])["token"]
+            decrypt_token,
+            key=get_secret(environ["ENCRYPTION_SECRET"])["token"],
         )
         self.user_data = self.firebase.read_user().get().to_dict()
 
     def __init__(self) -> None:
         """Initializes the data platform."""
         self.initialized = False
-        pass
 
     @beartype
     def ingest(self, uid: str, data_source: str) -> None:
@@ -111,6 +111,17 @@ class Startup:
                 .get()
                 .to_dict()
             )
+
+            if strava_user_data is None:
+                raise ValueError(f"User {uid} has no {data_source} data")
+            if (
+                "athlete" not in strava_user_data
+                or "id" not in strava_user_data["athlete"]
+            ):
+                raise ValueError(
+                    f"User {uid} has incomplete {data_source} data: missing athlete ID"
+                )
+
             strava_etl_interface = BronzeStravaETLInterface(
                 infrastructure_names=self.InfrastructureNames,
                 athlete_id=str(strava_user_data["athlete"]["id"]),
@@ -142,6 +153,17 @@ class Startup:
                 .get()
                 .to_dict()
             )
+
+            if strava_user_data is None:
+                raise ValueError(f"User {uid} has no {data_source} data")
+            if (
+                "athlete" not in strava_user_data
+                or "id" not in strava_user_data["athlete"]
+            ):
+                raise ValueError(
+                    f"User {uid} has incomplete {data_source} data: missing athlete ID"
+                )
+
             strava_etl_interface = SilverStravaETLInterface(
                 athlete_id=str(strava_user_data["athlete"]["id"]),
             )

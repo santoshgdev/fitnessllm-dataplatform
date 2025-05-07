@@ -1,0 +1,3 @@
+# Preserve symlinks during checkout (especially important for Windows)
+* text=auto
+cloud_functions/*/shared symlink

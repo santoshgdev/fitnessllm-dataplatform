@@ -53,11 +53,9 @@ def invoke_cloud_function(
         )
 
         # Prepare headers with auth if provided
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": auth_header,
-        }
-
+        headers = {"Content-Type": "application/json"}
+        if auth_header:
+            headers["Authorization"] = auth_header
         partial_log_structured(
             message="Invoking cloud function",
             url=url,

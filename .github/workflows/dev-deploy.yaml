@@ -52,7 +52,7 @@ jobs:
                   fi
 
     cloud_run_job_deploy:
-        needs: check_changes
+        needs: cloud_run_job_detect_changes
         if: needs.check_changes.outputs.changes_detected == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy == 'true')
         runs-on: ubuntu-latest
         environment: dev

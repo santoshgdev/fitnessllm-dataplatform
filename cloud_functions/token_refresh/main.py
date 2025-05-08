@@ -1,18 +1,27 @@
-"""Main Entry point for cloud function."""
-import os
+"""Main Entry point for Token Refresh."""
+import json
+import traceback
 
 from firebase_admin import auth, initialize_app
 from firebase_functions import https_fn, options
 from google.cloud import firestore
 
+from .shared.logger_utils import create_structured_logger
 from .streams.strava import strava_refresh_oauth_token
-from .utils.logger_utils import logger
 
-initialize_app(
-    options={
-        "projectId": os.getenv("PROJECT_ID"),  # Replace with your actual project ID
-    }
-)
+structured_logger = create_structured_logger(__name__)
+
+try:
+    initialize_app()
+    structured_logger(message="Firebase Admin initialized successfully")
+except Exception as e:
+    structured_logger(
+        message="Error initializing Firebase Admin",
+        error=str(e),
+        level="ERROR",
+        traceback=traceback.format_exc(),
+    )
+    raise
 
 
 @https_fn.on_request(
@@ -27,17 +36,23 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
     Note: At current time, it registers the parameters uid (firebase user id) and data_source.
     """
     # Log all request details at the start
-    logger.info("=== Request Details ===")
-    logger.info(f"Method: {request.method}")
-    logger.info(f"Headers: {dict(request.headers)}")
-    logger.info(f"URL: {request.url}")
-    logger.info(f"Args: {dict(request.args)}")
+    structured_logger(
+        message="Request received",
+        method=request.method,
+        headers=dict(request.headers),
+        url=request.url,
+        args=dict(request.args),
+    )
     try:
         body = request.get_json(silent=True)
-        logger.info(f"Body: {body}")
+        structured_logger(message="Request body", body=body)
     except Exception as e:
-        logger.error(f"Error parsing body: {e}")
-    logger.info("=== End Request Details ===")
+        structured_logger(
+            message="Error parsing request body",
+            error=str(e),
+            level="ERROR",
+            traceback=traceback.format_exc(),
+        )
 
     # Handle OPTIONS request for CORS preflight
     if request.method == "OPTIONS":
@@ -54,65 +69,246 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
     # Get data_source from query parameters instead of body
     data_source = request.args.get("data_source")
     if not data_source:
+        structured_logger(message="Missing data_source parameter", level="ERROR")
         return https_fn.Response(
-            status=400, response="Required data_source parameter is missing!"
-        )
-
-    auth_header = request.headers.get("Authorization")
-    logger.info(f"Received Authorization header: {auth_header}")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        return https_fn.Response(
-            status=400, response="Bad Request - Missing or invalid Authorization header"
+            status=400,
+            response=json.dumps(
+                {
+                    "error": "Bad Request",
+                    "message": "Required data_source parameter is missing!",
+                }
+            ),
+            headers={
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*",
+            },
         )
 
     try:
-        # Verify the Firebase ID token
+        # Log all headers for debugging
+        all_headers = dict(request.headers)
+        structured_logger(
+            message="Received headers",
+            headers=all_headers,
+            auth_header=request.headers.get(
+                "Authorization", "No Authorization header found"
+            ),
+        )
+
+        # Get the Authorization header
+        auth_header = request.headers.get("Authorization", "")
+        if not auth_header.startswith("Bearer "):
+            structured_logger(
+                message="Invalid Authorization header",
+                received_header=auth_header,
+                level="ERROR",
+            )
+            raise auth.InvalidIdTokenError("No valid authorization header found")
+
+        # Extract the token from the Authorization header
         token = auth_header.split("Bearer ")[1]
+        if not token:
+            structured_logger(message="Empty Bearer token", level="ERROR")
+            raise auth.InvalidIdTokenError("Empty Bearer token")
+
+        # Verify the Firebase ID token and log its contents
         decoded_token = auth.verify_id_token(token)
-        uid = decoded_token["uid"]  # Get uid from verified token
+        structured_logger(
+            message="Decoded token contents",
+            token_empty=decoded_token is None or decoded_token == "",
+        )
+
+        uid = decoded_token.get("uid") or decoded_token.get("sub")
+        if not uid:
+            raise auth.InvalidIdTokenError("No uid or sub claim found in token")
+
+        structured_logger(message="Token verified", uid=uid)
 
         db = firestore.Client()
         doc = db.collection("users").document(uid).get()
 
         if not doc.exists:
+            structured_logger(message="User not found", uid=uid, level="ERROR")
             return https_fn.Response(
                 status=404,
-                response=f"Not Found - User {uid} does not exist in Firestore",
+                response=json.dumps(
+                    {
+                        "error": "Not Found",
+                        "message": f"User {uid} does not exist in Firestore",
+                    }
+                ),
+                headers={
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": "*",
+                },
             )
 
-        stream_data = doc.to_dict()[f"stream={data_source}"]
+        stream_doc = (
+            db.collection("users")
+            .document(uid)
+            .collection("stream")
+            .document(data_source)
+            .get()
+        )
+        if not stream_doc.exists:
+            # handle error (e.g., return 404 or similar)
+            return https_fn.Response(
+                status=404,
+                response=json.dumps(
+                    {
+                        "error": "Not Found",
+                        "message": f"Stream data for user {uid} and data source {data_source} not found",
+                    }
+                ),
+                headers={
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": "*",
+                },
+            )
+
+        stream_data = stream_doc.to_dict()
 
         if not stream_data or not stream_data.get("refreshToken"):
+            structured_logger(
+                message="No refresh token found",
+                uid=uid,
+                data_source=data_source,
+                level="ERROR",
+            )
             return https_fn.Response(
                 status=400,
-                response=f"Bad Request - No refresh token found for user {uid} and data source {data_source}",
+                response=json.dumps(
+                    {
+                        "error": "Bad Request",
+                        "message": f"Bad Request - No refresh token found for user {uid} and data source {data_source}",
+                    }
+                ),
+                headers={
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": "*",
+                },
             )
 
         if data_source == "strava":
             try:
                 strava_refresh_oauth_token(db, uid, stream_data["refreshToken"])
+                structured_logger(
+                    message="Token refresh successful",
+                    uid=uid,
+                    data_source=data_source,
+                )
                 return https_fn.Response(
-                    status=200, response="Token refreshed successfully for Strava."
+                    status=200,
+                    response=json.dumps(
+                        {"message": "Token refreshed successfully for Strava."}
+                    ),
+                    headers={
+                        "Content-Type": "application/json",
+                        "Access-Control-Allow-Origin": "*",
+                    },
                 )
             except ValueError as e:
                 if "credentials not found" in str(e):
+                    structured_logger(
+                        message="Strava credentials not found",
+                        error=str(e),
+                        level="ERROR",
+                        traceback=traceback.format_exc(),
+                    )
                     return https_fn.Response(
                         status=500,
-                        response="Internal Server Error - Strava credentials not found in Secret Manager",
+                        response=json.dumps(
+                            {
+                                "error": "Internal Server Error",
+                                "message": "Internal Server Error - Strava credentials not found in Secret Manager",
+                            }
+                        ),
+                        headers={
+                            "Content-Type": "application/json",
+                            "Access-Control-Allow-Origin": "*",
+                        },
                     )
                 raise
         else:
+            structured_logger(
+                message="Unsupported data source",
+                data_source=data_source,
+                level="ERROR",
+            )
             return https_fn.Response(
                 status=400,
-                response=f"Bad Request - Unsupported data source: {data_source}",
+                response=json.dumps(
+                    {
+                        "error": "Bad Request",
+                        "message": f"Bad Request - Unsupported data source: {data_source}",
+                    }
+                ),
+                headers={
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": "*",
+                },
             )
 
     except auth.InvalidIdTokenError:
-        return https_fn.Response(status=401, response="Unauthorized - Invalid token")
+        structured_logger(
+            message="Invalid Firebase ID Token; JWT Token Issue",
+            level="ERROR",
+            auth=auth_header,
+            traceback=traceback.format_exc(),
+        )
+        return https_fn.Response(
+            status=401,
+            response=json.dumps(
+                {
+                    "error": "Invalid Token",
+                    "message": "Invalid Firebase ID Token; JWT Token Issue",
+                }
+            ),
+            headers={
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*",
+            },
+        )
     except auth.ExpiredIdTokenError:
-        return https_fn.Response(status=401, response="Unauthorized - Expired token")
+        structured_logger(
+            message="Expired token", level="ERROR", traceback=traceback.format_exc()
+        )
+        return https_fn.Response(
+            status=401,
+            response=json.dumps(
+                {"error": "Unauthorized", "message": "Unauthorized - Expired token"}
+            ),
+            headers={
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*",
+            },
+        )
     except auth.RevokedIdTokenError:
-        return https_fn.Response(status=401, response="Unauthorized - Revoked token")
+        structured_logger(
+            message="Revoked token", level="ERROR", traceback=traceback.format_exc()
+        )
+        return https_fn.Response(
+            status=401,
+            response=json.dumps(
+                {"error": "Unauthorized", "message": "Unauthorized - Revoked token"}
+            ),
+            headers={
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*",
+            },
+        )
     except Exception as e:
-        logger.error(f"Error in refresh_token: {str(e)}")
-        return https_fn.Response(status=500, response=str(e))
+        structured_logger(
+            message="Error in token refresh",
+            error=str(e),
+            level="ERROR",
+            traceback=traceback.format_exc(),
+        )
+        return https_fn.Response(
+            status=500,
+            response=json.dumps({"error": "Internal Server Error", "message": str(e)}),
+            headers={
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*",
+            },
+        )

@@ -22,11 +22,14 @@ env:
     PROJECT_ID: ${{ secrets.PROJECT_ID }}
     ENCRYPTION_SECRET: ${{ secrets.ENCRYPTION_SECRET }}
     STRAVA_SECRET: ${{ secrets.STRAVA_SECRET }}
+    INFRASTRUCTURE_SECRET: ${{ secrets.INFRASTRUCTURE_SECRET }}
+    SHOULD_SETUP: ${{ steps.check_changes.outputs.changes_detected == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
+        == 'true') }}
 
 jobs:
     cloud_run_deploy:
         runs-on: ubuntu-latest
-
+        environment: dev
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
@@ -47,15 +50,13 @@ jobs:
                   fi
 
             - name: Set up Python
-              if: steps.check_changes.outputs.changes_detected == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
-                  == 'true')
+              if: env.SHOULD_SETUP == 'true'
               uses: actions/setup-python@v4
               with:
                   python-version: 3.12.2
 
             - name: Install Poetry
-              if: steps.check_changes.outputs.changes_detected == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
-                  == 'true')
+              if: env.SHOULD_SETUP == 'true'
               uses: snok/install-poetry@v1
               with:
                   version: 2.0.1
@@ -63,25 +64,21 @@ jobs:
                   virtualenvs-in-project: true
 
             - name: Update Poetry lock file
-              if: steps.check_changes.outputs.changes_detected == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
-                  == 'true')
+              if: env.SHOULD_SETUP == 'true'
               run: |
                   poetry lock
 
             - name: Install dependencies
-              if: steps.check_changes.outputs.changes_detected == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
-                  == 'true')
+              if: env.SHOULD_SETUP == 'true'
               run: |
                   poetry install --no-interaction
 
             - name: Run pytest
-              if: steps.check_changes.outputs.changes_detected == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
-                  == 'true')
+              if: env.SHOULD_SETUP == 'true'
               run: poetry run pytest tests/
 
             - name: Cache pre-commit
-              if: (steps.check_changes.outputs.changes_detected == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
-                  == 'true')) && steps.cache-pre-commit.outputs.cache-hit != 'true'
+              if: env.SHOULD_SETUP == 'true' && steps.cache-pre-commit.outputs.cache-hit != 'true'
               id: cache-pre-commit
               uses: actions/cache@v4
               with:
@@ -93,8 +90,7 @@ jobs:
                       ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}-${{ runner.os }}-pre-commit-
 
             - name: Install and initialize pre-commit
-              if: (steps.check_changes.outputs.changes_detected == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
-                  == 'true')) && steps.cache-pre-commit.outputs.cache-hit != 'true'
+              if: env.SHOULD_SETUP == 'true' && steps.cache-pre-commit.outputs.cache-hit != 'true'
               run: |
                   pip install pre-commit
                   pre-commit install
@@ -102,8 +98,7 @@ jobs:
                   pre-commit run --all-files || true
 
             - name: Save pre-commit cache
-              if: (steps.check_changes.outputs.changes_detected == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
-                  == 'true')) && steps.cache-pre-commit.outputs.cache-hit != 'true'
+              if: env.SHOULD_SETUP == 'true' && steps.cache-pre-commit.outputs.cache-hit != 'true'
               uses: actions/cache/save@v4
               with:
                   path: |
@@ -112,8 +107,7 @@ jobs:
                   key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}-${{ hashFiles('**/poetry.lock') }}
 
             - name: Run pre-commit checks
-              if: steps.check_changes.outputs.changes_detected == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
-                  == 'true')
+              if: env.SHOULD_SETUP == 'true'
               run: |
                   pre-commit run --all-files
 
@@ -129,18 +123,15 @@ jobs:
                   version: latest
 
             - name: Configure Docker for Artifact Registry
-              if: steps.check_changes.outputs.changes_detected == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
-                  == 'true')
+              if: env.SHOULD_SETUP == 'true'
               run: gcloud auth configure-docker us-west1-docker.pkg.dev --quiet
 
             - name: Set up Docker Buildx
-              if: steps.check_changes.outputs.changes_detected == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
-                  == 'true')
+              if: env.SHOULD_SETUP == 'true'
               uses: docker/setup-buildx-action@v3
 
             - name: Cache Docker layers
-              if: steps.check_changes.outputs.changes_detected == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
-                  == 'true')
+              if: env.SHOULD_SETUP == 'true'
               uses: actions/cache@v4
               with:
                   path: /tmp/.buildx-cache
@@ -149,8 +140,7 @@ jobs:
                       ${{ runner.os }}-buildx-
 
             - name: Build Docker image
-              if: steps.check_changes.outputs.changes_detected == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
-                  == 'true')
+              if: env.SHOULD_SETUP == 'true'
               run: |
                   # Create cache directory if it doesn't exist
                   mkdir -p /tmp/.buildx-cache
@@ -163,31 +153,41 @@ jobs:
                     --load
 
             - name: Push Docker image to Artifact Registry
-              if: steps.check_changes.outputs.changes_detected == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
-                  == 'true')
+              if: env.SHOULD_SETUP == 'true'
               run: |
                   docker push ${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }}
 
-            - name: Deploy to Cloud Run
+            - name: Debug deployment configuration
               run: |
-                  gcloud run deploy ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }} \
+                  echo "=== Debug: Deployment Configuration ==="
+                  echo "Service Account Email is set: ${{ secrets.GCP_DP_SA_EMAIL != '' }}"
+                  echo "Project ID: ${{ secrets.PROJECT_ID }}"
+                  echo "Environment: ${{ env.ENVIRONMENT }}"
+                  echo "Service Name: ${{ env.SERVICE_NAME }}"
+                  echo "Region: ${{ env.REGION }}"
+                  echo "Full deployment command (with masked secrets):"
+                  echo "gcloud run jobs deploy ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }} \
                     --image ${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }} \
                     --region ${{ env.REGION }} \
-                    --platform managed \
-                    --allow-unauthenticated \
-                    --service-account=${{ secrets.GCP_DP_SA_EMAIL }} \
-                    --port=8080 \
-                    --set-env-vars PROJECT_ID=${{ secrets.PROJECT_ID }},ENVIRONMENT=${{ env.ENVIRONMENT }},ENCRYPTION_SECRET=${{ secrets.ENCRYPTION_SECRET }},STRAVA_SECRET=${{ secrets.STRAVA_SECRET }},REGION=${{ env.REGION }}
+                    --service-account=[MASKED] \
+                    --set-env-vars PROJECT_ID=${{ secrets.PROJECT_ID }},ENVIRONMENT=${{ env.ENVIRONMENT }},ENCRYPTION_SECRET=$${{ env.ENCRYPTION_SECRET }},STRAVA_SECRET=${{ env.STRAVA_SECRET }},REGION=${{ env.REGION }},INFRASTRUCTURE_SECRET=${{ env.INFRASTRUCTURE_SECRET }},STAGE=dev"
 
-            - name: Clean up old revisions
+            - name: Deploy to Cloud Run Jobs
               run: |
-                  # Get the latest revision
-                  LATEST_REVISION=$(gcloud run revisions list --service ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }} --region ${{ env.REGION }} --format="value(name)" --sort-by=~creationTimestamp --limit=1)
-
-                  # Delete old revisions one by one
-                  for revision in $(gcloud run revisions list --service ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }} --region ${{ env.REGION }} --format="value(name)" | grep -v "$LATEST_REVISION"); do
-                    gcloud run revisions delete $revision --region ${{ env.REGION }} --quiet
-                  done
+                  ENV_VARS="\
+                    PROJECT_ID=${{ secrets.PROJECT_ID }},\
+                    ENVIRONMENT=${{ env.ENVIRONMENT }},\
+                    ENCRYPTION_SECRET=${{ secrets.ENCRYPTION_SECRET }},\
+                    STRAVA_SECRET=${{ secrets.STRAVA_SECRET }},\
+                    REGION=${{ env.REGION }},\
+                    INFRASTRUCTURE_SECRET=${{ env.INFRASTRUCTURE_SECRET }},\
+                    STAGE=${{ env.ENVIRONMENT }},\
+                    PYTHONPATH=/app/fitnessllm-dataplatform"
+                  gcloud run jobs deploy ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }} \
+                    --image ${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }} \
+                    --region ${{ env.REGION }} \
+                    --service-account=${{ secrets.GCP_DP_SA_EMAIL }} \
+                    --set-env-vars "$ENV_VARS"
 
     cloud_function_detect_changes:
         runs-on: ubuntu-latest
@@ -213,34 +213,35 @@ jobs:
 
                   HAS_CHANGES=false
 
-                  echo "=== Debug: Checking token_refresh changes ==="
-                  if git diff --name-only HEAD^ HEAD | grep -q "^cloud_functions/token_refresh/"; then
-                    echo "Found changes in token_refresh"
+                  # If shared code changes, redeploy all functions
+                  if git diff --name-only HEAD^ HEAD | grep -q "^cloud_functions/shared/"; then
+                    echo "Shared code changed, redeploying all functions"
                     echo "token_refresh=true" >> $GITHUB_OUTPUT
-                    HAS_CHANGES=true
-                  else
-                    echo "No changes in token_refresh"
-                    echo "token_refresh=false" >> $GITHUB_OUTPUT
-                  fi
-
-                  echo "=== Debug: Checking api_router changes ==="
-                  if git diff --name-only HEAD^ HEAD | grep -q "^cloud_functions/api_router/"; then
-                    echo "Found changes in api_router"
                     echo "api_router=true" >> $GITHUB_OUTPUT
-                    HAS_CHANGES=true
-                  else
-                    echo "No changes in api_router"
-                    echo "api_router=false" >> $GITHUB_OUTPUT
-                  fi
-
-                  echo "=== Debug: Checking strava_auth_initiate changes ==="
-                  if git diff --name-only HEAD^ HEAD | grep -q "^cloud_functions/strava_auth_initiate/"; then
-                    echo "Found changes in strava_auth_initiate"
                     echo "strava_auth_initiate=true" >> $GITHUB_OUTPUT
                     HAS_CHANGES=true
                   else
-                    echo "No changes in strava_auth_initiate"
-                    echo "strava_auth_initiate=false" >> $GITHUB_OUTPUT
+                    # Check each function individually
+                    if git diff --name-only HEAD^ HEAD | grep -q "^cloud_functions/token_refresh/"; then
+                      echo "token_refresh=true" >> $GITHUB_OUTPUT
+                      HAS_CHANGES=true
+                    else
+                      echo "token_refresh=false" >> $GITHUB_OUTPUT
+                    fi
+
+                    if git diff --name-only HEAD^ HEAD | grep -q "^cloud_functions/api_router/"; then
+                      echo "api_router=true" >> $GITHUB_OUTPUT
+                      HAS_CHANGES=true
+                    else
+                      echo "api_router=false" >> $GITHUB_OUTPUT
+                    fi
+
+                    if git diff --name-only HEAD^ HEAD | grep -q "^cloud_functions/strava_auth_initiate/"; then
+                      echo "strava_auth_initiate=true" >> $GITHUB_OUTPUT
+                      HAS_CHANGES=true
+                    else
+                      echo "strava_auth_initiate=false" >> $GITHUB_OUTPUT
+                    fi
                   fi
 
                   echo "has_changes=$HAS_CHANGES" >> $GITHUB_OUTPUT
@@ -263,6 +264,16 @@ jobs:
                 function: [token_refresh, api_router, strava_auth_initiate]
         steps:
             - uses: actions/checkout@v4
+
+            - name: Copy shared code into each function directory
+              run: |
+                  for fn in cloud_functions/*; do
+                    if [ -d "$fn" ] && [ "$(basename $fn)" != "shared" ]; then
+                      rm -rf "$fn/shared"
+                      mkdir -p "$fn/shared"
+                      cp -r cloud_functions/shared/. "$fn/shared/"
+                    fi
+                  done
 
             - name: Authenticate to Google Cloud
               if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true'
@@ -288,7 +299,7 @@ jobs:
                     --min-instances=0 \
                     --memory=256MB \
                     --allow-unauthenticated \
-                    --set-env-vars=PROJECT_ID=${{ env.PROJECT_ID }},ENVIRONMENT=${{ env.ENVIRONMENT }},ENCRYPTION_SECRET=${{ env.ENCRYPTION_SECRET }},STRAVA_SECRET=${{ env.STRAVA_SECRET }},REGION=${{ env.REGION }} \
+                    --set-env-vars=PROJECT_ID=${{ env.PROJECT_ID }},ENVIRONMENT=${{ env.ENVIRONMENT }},ENCRYPTION_SECRET=${{ env.ENCRYPTION_SECRET }},STRAVA_SECRET=${{ env.STRAVA_SECRET }},REGION=${{ env.REGION }},INFRASTRUCTURE_SECRET=${{ env.INFRASTRUCTURE_SECRET }} \
                     --service-account=${{ secrets.GCP_DP_SA_EMAIL }}
                   gcloud run services update ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') --region=${{ env.REGION }} --add-custom-audiences=${{ env.PROJECT_ID }}
 

@@ -51,7 +51,7 @@ class BatchHandler:
         """
         users = self.get_all_users()
         logger.info(f"Found {len(users)} users to process")
-
+        # TODO: Need to add that if nothing is given to datasource, that for each user we run for all their datasources.
         for user in users:
             user_id = user.get("uid")
             if not user_id:

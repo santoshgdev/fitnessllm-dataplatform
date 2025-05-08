@@ -1,4 +1,5 @@
 """Main entry point for the data platform."""
+
 from functools import partial
 from os import environ
 
@@ -35,14 +36,14 @@ class Startup:
         )
         self.firebase = FirebaseConnect(uid)
         self.decryptor = partial(
-            decrypt_token, key=get_secret(environ["ENCRYPTION_SECRET"])["token"]
+            decrypt_token,
+            key=get_secret(environ["ENCRYPTION_SECRET"])["token"],
         )
         self.user_data = self.firebase.read_user().get().to_dict()
 
     def __init__(self) -> None:
         """Initializes the data platform."""
         self.initialized = False
-        pass
 
     @beartype
     def ingest(self, uid: str, data_source: str) -> None:
@@ -63,7 +64,13 @@ class Startup:
             raise ValueError(f"Unsupported data source: {data_source}")
 
         if data_source == FitnessLLMDataSource.STRAVA.value:
-            strava_user_data = self.user_data.get(f"stream={data_source.lower()}")
+            strava_user_data = (
+                self.firebase.read_user()
+                .collection("stream")
+                .document(data_source.lower())
+                .get()
+                .to_dict()
+            )
             if strava_user_data is None:
                 raise ValueError(f"User {uid} has no {data_source} data")
 
@@ -97,10 +104,27 @@ class Startup:
             self._startUp(uid)
 
         if data_source == FitnessLLMDataSource.STRAVA.value:
-            strava_user_data = self.user_data.get(f"stream={data_source.lower()}")
+            strava_user_data = (
+                self.firebase.read_user()
+                .collection("stream")
+                .document(data_source.lower())
+                .get()
+                .to_dict()
+            )
+
+            if strava_user_data is None:
+                raise ValueError(f"User {uid} has no {data_source} data")
+            if (
+                "athlete" not in strava_user_data
+                or "id" not in strava_user_data["athlete"]
+            ):
+                raise ValueError(
+                    f"User {uid} has incomplete {data_source} data: missing athlete ID"
+                )
+
             strava_etl_interface = BronzeStravaETLInterface(
                 infrastructure_names=self.InfrastructureNames,
-                athlete_id=str(strava_user_data["athleteId"]),
+                athlete_id=str(strava_user_data["athlete"]["id"]),
                 data_streams=data_streams,
             )
             strava_etl_interface.load_json_into_bq()
@@ -122,9 +146,26 @@ class Startup:
             self._startUp(uid)
 
         if data_source == FitnessLLMDataSource.STRAVA.value:
-            strava_user_data = self.user_data.get(f"stream={data_source.lower()}")
+            strava_user_data = (
+                self.firebase.read_user()
+                .collection("stream")
+                .document(data_source.lower())
+                .get()
+                .to_dict()
+            )
+
+            if strava_user_data is None:
+                raise ValueError(f"User {uid} has no {data_source} data")
+            if (
+                "athlete" not in strava_user_data
+                or "id" not in strava_user_data["athlete"]
+            ):
+                raise ValueError(
+                    f"User {uid} has incomplete {data_source} data: missing athlete ID"
+                )
+
             strava_etl_interface = SilverStravaETLInterface(
-                athlete_id=str(strava_user_data["athleteId"]),
+                athlete_id=str(strava_user_data["athlete"]["id"]),
             )
             strava_etl_interface.task_handler()
         else:

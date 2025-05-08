@@ -70,7 +70,7 @@ def invoke_cloud_function(
             partial_log_structured(message="Modified URL with query params", url=url)
 
         # Make the request
-        response = requests.post(url=url, json=payload, headers=headers)
+        response = requests.post(url=url, json=payload, headers=headers, timeout=10)
 
         # Log the response details
         partial_log_structured(

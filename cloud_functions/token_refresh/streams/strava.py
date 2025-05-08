@@ -83,7 +83,7 @@ def strava_update_user_tokens(
         new_tokens: New tokens.
     """
     partial_log_structured(message="Updating user tokens", uid=uid)
-    # Get the reference to the strava document in the stream subcollection
+
     strava_ref = (
         db.collection("users").document(uid).collection("stream").document("strava")
     )
@@ -96,7 +96,7 @@ def strava_update_user_tokens(
             level="ERROR",
         )
         # Create the document with default values
-        strava_ref.set(new_tokens)
+        strava_ref.set(new_tokens, merge=True)
         return
 
     strava_ref.update(

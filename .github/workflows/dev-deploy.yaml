@@ -33,12 +33,12 @@ jobs:
             - name: Checkout code
               uses: actions/checkout@v4
               with:
-                  fetch-depth: 3
+                  fetch-depth: 0
 
             - name: Check for relevant file changes
               id: check_changes
               run: |
-                  git diff --name-only HEAD^ HEAD > changed_files.txt
+                  git diff --name-only ${{ github.event.before }} ${{ github.sha }} > changed_files.txt
                   echo "Changed files:"
                   cat changed_files.txt
 

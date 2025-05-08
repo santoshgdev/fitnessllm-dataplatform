@@ -23,13 +23,12 @@ env:
     ENCRYPTION_SECRET: ${{ secrets.ENCRYPTION_SECRET }}
     STRAVA_SECRET: ${{ secrets.STRAVA_SECRET }}
     INFRASTRUCTURE_SECRET: ${{ secrets.INFRASTRUCTURE_SECRET }}
-    SHOULD_SETUP: ${{ steps.check_changes.outputs.changes_detected == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
-        == 'true') }}
 
 jobs:
-    cloud_run_deploy:
+    check_changes:
         runs-on: ubuntu-latest
-        environment: dev
+        outputs:
+            changes_detected: ${{ steps.check_changes.outputs.changes_detected }}
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
@@ -49,14 +48,23 @@ jobs:
                     echo "changes_detected=false" >> $GITHUB_OUTPUT
                   fi
 
+    cloud_run_deploy:
+        needs: check_changes
+        if: needs.check_changes.outputs.changes_detected == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy == 'true')
+        runs-on: ubuntu-latest
+        environment: dev
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 3
+
             - name: Set up Python
-              if: env.SHOULD_SETUP == 'true'
               uses: actions/setup-python@v4
               with:
                   python-version: 3.12.2
 
             - name: Install Poetry
-              if: env.SHOULD_SETUP == 'true'
               uses: snok/install-poetry@v1
               with:
                   version: 2.0.1
@@ -64,21 +72,17 @@ jobs:
                   virtualenvs-in-project: true
 
             - name: Update Poetry lock file
-              if: env.SHOULD_SETUP == 'true'
               run: |
                   poetry lock
 
             - name: Install dependencies
-              if: env.SHOULD_SETUP == 'true'
               run: |
                   poetry install --no-interaction
 
             - name: Run pytest
-              if: env.SHOULD_SETUP == 'true'
               run: poetry run pytest tests/
 
             - name: Cache pre-commit
-              if: env.SHOULD_SETUP == 'true' && steps.cache-pre-commit.outputs.cache-hit != 'true'
               id: cache-pre-commit
               uses: actions/cache@v4
               with:
@@ -90,7 +94,7 @@ jobs:
                       ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}-${{ runner.os }}-pre-commit-
 
             - name: Install and initialize pre-commit
-              if: env.SHOULD_SETUP == 'true' && steps.cache-pre-commit.outputs.cache-hit != 'true'
+              if: steps.cache-pre-commit.outputs.cache-hit != 'true'
               run: |
                   pip install pre-commit
                   pre-commit install
@@ -98,7 +102,7 @@ jobs:
                   pre-commit run --all-files || true
 
             - name: Save pre-commit cache
-              if: env.SHOULD_SETUP == 'true' && steps.cache-pre-commit.outputs.cache-hit != 'true'
+              if: steps.cache-pre-commit.outputs.cache-hit != 'true'
               uses: actions/cache/save@v4
               with:
                   path: |
@@ -107,7 +111,6 @@ jobs:
                   key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}-${{ hashFiles('**/poetry.lock') }}
 
             - name: Run pre-commit checks
-              if: env.SHOULD_SETUP == 'true'
               run: |
                   pre-commit run --all-files
 
@@ -123,15 +126,12 @@ jobs:
                   version: latest
 
             - name: Configure Docker for Artifact Registry
-              if: env.SHOULD_SETUP == 'true'
               run: gcloud auth configure-docker us-west1-docker.pkg.dev --quiet
 
             - name: Set up Docker Buildx
-              if: env.SHOULD_SETUP == 'true'
               uses: docker/setup-buildx-action@v3
 
             - name: Cache Docker layers
-              if: env.SHOULD_SETUP == 'true'
               uses: actions/cache@v4
               with:
                   path: /tmp/.buildx-cache
@@ -140,7 +140,6 @@ jobs:
                       ${{ runner.os }}-buildx-
 
             - name: Build Docker image
-              if: env.SHOULD_SETUP == 'true'
               run: |
                   # Create cache directory if it doesn't exist
                   mkdir -p /tmp/.buildx-cache
@@ -153,7 +152,6 @@ jobs:
                     --load
 
             - name: Push Docker image to Artifact Registry
-              if: env.SHOULD_SETUP == 'true'
               run: |
                   docker push ${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }}
 

@@ -4,7 +4,8 @@ name: CI Checks
 on:
     push:
         branches:
-            - '*FIT-**'
+            - '**FIT**'
+            - main
 
 jobs:
     quality-checks:

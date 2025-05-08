@@ -131,7 +131,7 @@ class InMemoryFirestoreClient:
         """Initializes an in-memory Firestore client."""
         self._collections = defaultdict(InMemoryFirestoreCollection)
 
-    def collection(self, collection_name):
+    def collection(self, collection_name: str) -> InMemoryFirestoreCollection:
         """Retrieves a collection by its name. If the collection does not exist, it creates a new one.
 
         Args:
@@ -142,7 +142,9 @@ class InMemoryFirestoreClient:
         """
         return self._collections[collection_name]
 
-    def get_subcollection(self, collection_name, doc_id, subcollection_name):
+    def get_subcollection(
+        self, collection_name: str, doc_id: str, subcollection_name: str
+    ) -> InMemoryFirestoreCollection:
         """Retrieves a subcollection of a document within a collection.
 
         If the subcollection does not exist, it creates a new one.
@@ -156,8 +158,6 @@ class InMemoryFirestoreClient:
             InMemoryFirestoreCollection: The subcollection instance.
         """
         doc = self.collection(collection_name).document(doc_id)
-        if not hasattr(doc, "_subcollections"):
-            doc._subcollections = defaultdict(InMemoryFirestoreCollection)
         return doc._subcollections[subcollection_name]
 
 

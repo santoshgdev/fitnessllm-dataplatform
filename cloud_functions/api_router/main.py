@@ -10,8 +10,8 @@ import requests
 from firebase_functions import https_fn
 from google.cloud import functions_v2
 
+from .shared.logger_utils import partial_log_structured
 from .utils.cloud_utils import get_oauth_token
-from .utils.logger_utils import partial_log_structured
 
 try:
     firebase_admin.initialize_app()
@@ -53,11 +53,9 @@ def invoke_cloud_function(
         )
 
         # Prepare headers with auth if provided
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {get_oauth_token()}",
-        }
-
+        headers = {"Content-Type": "application/json"}
+        if auth_header:
+            headers["Authorization"] = auth_header
         partial_log_structured(
             message="Invoking cloud function",
             url=url,
@@ -72,7 +70,7 @@ def invoke_cloud_function(
             partial_log_structured(message="Modified URL with query params", url=url)
 
         # Make the request
-        response = requests.post(url=url, json=payload, headers=headers)
+        response = requests.post(url=url, json=payload, headers=headers, timeout=10)
 
         # Log the response details
         partial_log_structured(
@@ -143,9 +141,7 @@ def invoke_cloud_function(
         )
 
 
-def invoke_cloud_run_job(
-    service_name: str, payload: Dict, auth_header: Optional[str] = None
-) -> https_fn.Response:
+def invoke_cloud_run_job(service_name: str, payload: Dict) -> https_fn.Response:
     """Invoke a Cloud Run service using HTTPS.
 
     Args:
@@ -178,12 +174,19 @@ def invoke_cloud_run_job(
             "Authorization": f"Bearer {get_oauth_token()}",
         }
         # Use the correct overrides structure for Cloud Run jobs
+
+        if "uid" not in payload:
+            raise ValueError("Payload is missing uid.")
+
         new_payload = {
             "overrides": {
                 "taskCount": 1,
                 "containerOverrides": [
                     {
                         "args": [
+                            "python",
+                            "-m",
+                            "fitnessllm_dataplatform.task_handler",
                             "full_etl",
                             f"--uid={payload['uid']}",
                             "--data_source=STRAVA",
@@ -425,7 +428,7 @@ def api_router(request):
         elif target_api == "data_run":
             payload["uid"] = uid
             service_name = f"projects/{project_id}/locations/{region}/services/{environment}-fitnessllm-dp"
-            return invoke_cloud_run_job(service_name, payload, auth_header)
+            return invoke_cloud_run_job(service_name, payload)
         else:
             return https_fn.Response(
                 status=905,

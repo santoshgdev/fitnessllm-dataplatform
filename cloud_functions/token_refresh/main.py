@@ -9,8 +9,8 @@ from firebase_admin import auth, initialize_app
 from firebase_functions import https_fn, options
 from google.cloud import firestore
 
+from .shared.logger_utils import partial_log_structured
 from .streams.strava import strava_refresh_oauth_token
-from .utils.logger_utils import partial_log_structured
 
 try:
     initialize_app()
@@ -149,7 +149,30 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
                 },
             )
 
-        stream_data = doc.to_dict()[f"stream={data_source}"]
+        stream_doc = (
+            db.collection("users")
+            .document(uid)
+            .collection("stream")
+            .document(data_source)
+            .get()
+        )
+        if not stream_doc.exists:
+            # handle error (e.g., return 404 or similar)
+            return https_fn.Response(
+                status=404,
+                response=json.dumps(
+                    {
+                        "error": "Not Found",
+                        "message": f"Stream data for user {uid} and data source {data_source} not found",
+                    }
+                ),
+                headers={
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": "*",
+                },
+            )
+
+        stream_data = stream_doc.to_dict()
 
         if not stream_data or not stream_data.get("refreshToken"):
             partial_log_structured(
@@ -234,12 +257,18 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
 
     except auth.InvalidIdTokenError:
         partial_log_structured(
-            message="Invalid token", level="ERROR", traceback=traceback.format_exc()
+            message="Invalid Firebase ID Token; JWT Token Issue",
+            level="ERROR",
+            auth=auth_header,
+            traceback=traceback.format_exc(),
         )
         return https_fn.Response(
             status=401,
             response=json.dumps(
-                {"error": "Unauthorized", "message": "Unauthorized - Invalid token"}
+                {
+                    "error": "Invalid Token",
+                    "message": "Invalid Firebase ID Token; JWT Token Issue",
+                }
             ),
             headers={
                 "Content-Type": "application/json",

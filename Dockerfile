@@ -10,30 +10,34 @@ ENV PYTHONUNBUFFERED=1 \
 ENV PATH="$POETRY_HOME/bin:$PATH"
 
 # Install system dependencies and Poetry
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    dash \
+    bash \
     curl \
     && rm -rf /var/lib/apt/lists/* \
     && curl -sSL https://install.python-poetry.org | python3 - --version ${POETRY_VERSION}
 
 
-
-
 # Set up application directory
 RUN mkdir /app
 WORKDIR /app
+RUN mkdir fitnessllm-dataplatform
 
-COPY fitnessllm_dataplatform ./fitnessllm_dataplatform
-COPY cloud_functions ./cloud_functions
+COPY fitnessllm_dataplatform fitnessllm-dataplatform/fitnessllm_dataplatform
+COPY cloud_functions fitnessllm-dataplatform/cloud_functions
+COPY tests fitnessllm-dataplatform/tests
 COPY pyproject.toml poetry.lock ./
 
 # Install dependencies
-RUN poetry config virtualenvs.in-project true
-RUN poetry lock
-RUN poetry install --no-root
-RUN poetry export -f requirements.txt -o requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+RUN poetry config virtualenvs.in-project true \
+    && poetry lock \
+    && poetry install --no-root \
+    && poetry export -f requirements.txt -o requirements.txt \
+    && pip install --no-cache-dir -r requirements.txt
 
-ENV PORT=8080
+WORKDIR /app/fitnessllm-dataplatform
+
+#ENV PORT=8080
 
 # Run the HTTP server
-ENTRYPOINT ["poetry", "run", "python", "-m", "fitnessllm_dataplatform.task_handler"]
+#ENTRYPOINT ["poetry", "run", "python", "-m", "fitnessllm_dataplatform.task_handler"]

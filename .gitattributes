@@ -1,0 +1,4 @@
+# Mark shared symlinks to ensure Git preserves them across platforms (especially Windows)
+* text=auto
+-cloud_functions/*/shared symlink
++cloud_functions/*/shared -text symlink

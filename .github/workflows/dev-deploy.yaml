@@ -184,14 +184,22 @@ jobs:
                     --service-account=[MASKED] \
                     --set-env-vars PROJECT_ID=${{ secrets.PROJECT_ID }},ENVIRONMENT=${{ env.ENVIRONMENT }},ENCRYPTION_SECRET=[MASKED],STRAVA_SECRET=[MASKED],REGION=${{ env.REGION }},INFRASTRUCTURE_SECRET=infrastructure,STAGE=dev"
 
-            - name: Deploy to Cloud Run
+            - name: Deploy to Cloud Run Jobs
               run: |
+                  ENV_VARS="\
+                    PROJECT_ID=${{ secrets.PROJECT_ID }},\
+                    ENVIRONMENT=${{ env.ENVIRONMENT }},\
+                    ENCRYPTION_SECRET=${{ secrets.ENCRYPTION_SECRET }},\
+                    STRAVA_SECRET=${{ secrets.STRAVA_SECRET }},\
+                    REGION=${{ env.REGION }},\
+                    INFRASTRUCTURE_SECRET=${{ env.INFRASTRUCTURE_SECRET }},\
+                    STAGE=${{ env.ENVIRONMENT }},\
+                    PYTHONPATH=/app/fitnessllm-dataplatform"
                   gcloud run jobs deploy ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }} \
                     --image ${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }} \
                     --region ${{ env.REGION }} \
                     --service-account=${{ secrets.GCP_DP_SA_EMAIL }} \
-                    --set-env-vars PROJECT_ID=${{ secrets.PROJECT_ID }},ENVIRONMENT=${{ env.ENVIRONMENT }},ENCRYPTION_SECRET=${{ secrets.ENCRYPTION_SECRET }},STRAVA_SECRET=${{ secrets.STRAVA_SECRET }},REGION=${{ env.REGION }},INFRASTRUCTURE_SECRET=${{ env.INFRASTRUCTURE_SECRET }},STAGE=${{ env.ENVIRONMENT }}
-
+                    --set-env-vars "$ENV_VARS"
 
     cloud_function_detect_changes:
         runs-on: ubuntu-latest
@@ -211,40 +219,40 @@ jobs:
                   echo "=== Debug: Checking for changes between HEAD^ and HEAD ==="
                   echo "Current commit: $(git rev-parse HEAD)"
                   echo "Previous commit: $(git rev-parse HEAD^)"
-
                   echo "=== Debug: All changed files ==="
                   git diff --name-only HEAD^ HEAD
 
                   HAS_CHANGES=false
 
-                  echo "=== Debug: Checking token_refresh changes ==="
-                  if git diff --name-only HEAD^ HEAD | grep -q "^cloud_functions/token_refresh/"; then
-                    echo "Found changes in token_refresh"
+                  # If shared code changes, redeploy all functions
+                  if git diff --name-only HEAD^ HEAD | grep -q "^cloud_functions/shared/"; then
+                    echo "Shared code changed, redeploying all functions"
                     echo "token_refresh=true" >> $GITHUB_OUTPUT
-                    HAS_CHANGES=true
-                  else
-                    echo "No changes in token_refresh"
-                    echo "token_refresh=false" >> $GITHUB_OUTPUT
-                  fi
-
-                  echo "=== Debug: Checking api_router changes ==="
-                  if git diff --name-only HEAD^ HEAD | grep -q "^cloud_functions/api_router/"; then
-                    echo "Found changes in api_router"
                     echo "api_router=true" >> $GITHUB_OUTPUT
-                    HAS_CHANGES=true
-                  else
-                    echo "No changes in api_router"
-                    echo "api_router=false" >> $GITHUB_OUTPUT
-                  fi
-
-                  echo "=== Debug: Checking strava_auth_initiate changes ==="
-                  if git diff --name-only HEAD^ HEAD | grep -q "^cloud_functions/strava_auth_initiate/"; then
-                    echo "Found changes in strava_auth_initiate"
                     echo "strava_auth_initiate=true" >> $GITHUB_OUTPUT
                     HAS_CHANGES=true
                   else
-                    echo "No changes in strava_auth_initiate"
-                    echo "strava_auth_initiate=false" >> $GITHUB_OUTPUT
+                    # Check each function individually
+                    if git diff --name-only HEAD^ HEAD | grep -q "^cloud_functions/token_refresh/"; then
+                      echo "token_refresh=true" >> $GITHUB_OUTPUT
+                      HAS_CHANGES=true
+                    else
+                      echo "token_refresh=false" >> $GITHUB_OUTPUT
+                    fi
+
+                    if git diff --name-only HEAD^ HEAD | grep -q "^cloud_functions/api_router/"; then
+                      echo "api_router=true" >> $GITHUB_OUTPUT
+                      HAS_CHANGES=true
+                    else
+                      echo "api_router=false" >> $GITHUB_OUTPUT
+                    fi
+
+                    if git diff --name-only HEAD^ HEAD | grep -q "^cloud_functions/strava_auth_initiate/"; then
+                      echo "strava_auth_initiate=true" >> $GITHUB_OUTPUT
+                      HAS_CHANGES=true
+                    else
+                      echo "strava_auth_initiate=false" >> $GITHUB_OUTPUT
+                    fi
                   fi
 
                   echo "has_changes=$HAS_CHANGES" >> $GITHUB_OUTPUT
@@ -267,6 +275,16 @@ jobs:
                 function: [token_refresh, api_router, strava_auth_initiate]
         steps:
             - uses: actions/checkout@v4
+
+            - name: Copy shared code into each function directory
+              run: |
+                  for fn in cloud_functions/*; do
+                    if [ -d "$fn" ] && [ "$(basename $fn)" != "shared" ]; then
+                      rm -rf "$fn/shared"
+                      mkdir -p "$fn/shared"
+                      cp -r cloud_functions/shared/. "$fn/shared/"
+                    fi
+                  done
 
             - name: Authenticate to Google Cloud
               if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true'

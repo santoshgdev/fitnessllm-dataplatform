@@ -22,16 +22,16 @@ test:
 	  -e PYTHONPATH=/app/fitnessllm-dataplatform \
 	  -v "$$PWD:/app/fitnessllm-dataplatform" \
 	  fitnessllm-dp:latest \
-	  sh -c "cd /app/fitnessllm-dataplatform && /app/.venv/bin/pytest tests --cov --cov-branch --cov-report=html"
+	  bash -c "cd /app/fitnessllm-dataplatform && /app/.venv/bin/pytest tests --cov --cov-branch --cov-report=html"
 
 coverage:
 	coverage
 
 run:
 	docker run -it \
+	  --entrypoint /bin/bash \
 	  -v "$$PWD:/app/fitnessllm-dataplatform" \
-	  fitnessllm-dp:latest \
-	  bash
+	  fitnessllm-dp:latest
 
 lint:
 	pre-commit run --all-files
@@ -39,5 +39,9 @@ lint:
 repomix:
 	repomix --include "**/*.json,**/*.sql,**/*.py,**/Dockerfile,**/*.yml,**/*.ini,**/*.md,**/*.toml"
 
-cf_token_refresh:
-	cd cloud_functions && functions-framework --target refresh_token --port 8080
+generate_symlink:
+	for fn in cloud_functions/*; do \
+		if [ -d "$$fn" ] && [ "$$(basename $$fn)" != "shared" ]; then \
+			ln -sf ../shared "$$fn/shared"; \
+		fi; \
+	done

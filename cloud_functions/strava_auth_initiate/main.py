@@ -11,8 +11,8 @@ from firebase_admin import firestore, initialize_app
 from firebase_functions import https_fn, options
 from stravalib import Client
 
-from .utils.cloud_utils import get_secret
-from .utils.logger_utils import partial_log_structured
+from .shared.cloud_utils import get_secret
+from .shared.logger_utils import partial_log_structured
 from .utils.task_utils import encrypt_token
 
 try:

@@ -146,17 +146,17 @@ def test_load_schema_from_json():
             FileNotFoundError,
         ),
         (
-            "tests/data/schemas/bad_json.json",
-            "Invalid JSON in schema file: tests/data/schemas/bad_json.json",
+            "tests/fitnessllm_dataplatform/data/schemas/bad_json.json",
+            "Invalid JSON in schema file: tests/fitnessllm_dataplatform/data/schemas/bad_json.json",
             JSONDecodeError,
         ),
         (
-            "tests/data/schemas/non_dict_json.json",
+            "tests/fitnessllm_dataplatform/data/schemas/non_dict_json.json",
             "Invalid field in schema: bad_field",
             ValueError,
         ),
         (
-            "tests/data/schemas/bad_field.json",
+            "tests/fitnessllm_dataplatform/data/schemas/bad_field.json",
             "Missing required fields {'type'} in field: {'name': 'index', 'mode': 'NULLABLE'}",
             ValueError,
         ),

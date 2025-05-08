@@ -7,8 +7,8 @@ from beartype.typing import Any, Dict
 from google.cloud import firestore
 from stravalib.client import Client
 
-from ..utils.cloud_utils import get_secret
-from ..utils.logger_utils import partial_log_structured
+from ..shared.cloud_utils import get_secret
+from ..shared.logger_utils import partial_log_structured
 from ..utils.task_utils import decrypt_token, encrypt_token, update_last_refresh
 
 
@@ -70,7 +70,8 @@ def strava_refresh_oauth_token(
         raise
 
 
-@beartype
+# Bear type is removed here due to a test that has a testing component located in tests/.
+# This is done so that the testing components don't need to be shipped with the production code.
 def strava_update_user_tokens(
     db: firestore.Client, uid: str, new_tokens: Dict[str, Any]
 ) -> None:
@@ -82,13 +83,28 @@ def strava_update_user_tokens(
         new_tokens: New tokens.
     """
     partial_log_structured(message="Updating user tokens", uid=uid)
-    user_ref = db.collection("users").document(uid)
-    user_ref.update(
+
+    strava_ref = (
+        db.collection("users").document(uid).collection("stream").document("strava")
+    )
+
+    doc = strava_ref.get()
+    if not doc.exists:
+        partial_log_structured(
+            message="Strava document doesn't exist in stream subcollection",
+            uid=uid,
+            level="ERROR",
+        )
+        # Create the document with default values
+        strava_ref.set(new_tokens, merge=True)
+        return
+
+    strava_ref.update(
         {
-            "stream.strava.accessToken": new_tokens["accessToken"],
-            "stream.strava.refreshToken": new_tokens["refreshToken"],
-            "stream.strava.expiresAt": new_tokens["expiresAt"],
-            "stream.strava.lastTokenRefresh": new_tokens["lastTokenRefresh"],
+            "accessToken": new_tokens["accessToken"],
+            "refreshToken": new_tokens["refreshToken"],
+            "expiresAt": new_tokens["expiresAt"],
+            "lastTokenRefresh": new_tokens["lastTokenRefresh"],
         }
     )
     partial_log_structured(message="User tokens updated successfully", uid=uid)

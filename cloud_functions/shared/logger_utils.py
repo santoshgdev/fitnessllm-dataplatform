@@ -57,4 +57,13 @@ def log_structured(function_name: str, message: str, **kwargs):
     logger.info(json.dumps(log_data))
 
 
-partial_log_structured = partial(log_structured, function_name="token_refresh")
+def create_structured_logger(function_name: str):
+    """Create a structured logger for a specific function.
+
+    Args:
+        function_name (str): The name of the function to log.
+
+    Returns:
+        Callable: A partial function that logs in a structured format.
+    """
+    return partial(log_structured, function_name=function_name)

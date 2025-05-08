@@ -12,14 +12,16 @@ from firebase_functions import https_fn, options
 from stravalib import Client
 
 from .shared.cloud_utils import get_secret
-from .shared.logger_utils import partial_log_structured
-from .utils.task_utils import encrypt_token
+from .shared.logger_utils import create_structured_logger
+from .shared.task_utils import encrypt_token
+
+structured_logger = create_structured_logger(__name__)
 
 try:
     initialize_app()
-    partial_log_structured(message="Firebase Admin initialized successfully")
+    structured_logger(message="Firebase Admin initialized successfully")
 except Exception as e:
-    partial_log_structured(
+    structured_logger(
         message="Error initializing Firebase Admin",
         error=str(e),
         level="ERROR",

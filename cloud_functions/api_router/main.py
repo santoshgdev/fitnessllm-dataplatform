@@ -10,14 +10,16 @@ import requests
 from firebase_functions import https_fn
 from google.cloud import functions_v2
 
-from .shared.logger_utils import partial_log_structured
+from .shared.logger_utils import create_structured_logger
 from .utils.cloud_utils import get_oauth_token
+
+structured_logger = create_structured_logger(__name__)
 
 try:
     firebase_admin.initialize_app()
-    partial_log_structured(message="Firebase Admin initialized successfully")
+    structured_logger(message="Firebase Admin initialized successfully")
 except Exception as e:
-    partial_log_structured(
+    structured_logger(
         message="Error initializing Firebase Admin",
         error=str(e),
         level="ERROR",
@@ -45,7 +47,7 @@ def invoke_cloud_function(
         function = client.get_function(name=function_name)
         url = function.service_config.uri
 
-        partial_log_structured(
+        structured_logger(
             message="Attempting to invoke cloud function",
             url=url,
             payload=payload,
@@ -56,7 +58,7 @@ def invoke_cloud_function(
         headers = {"Content-Type": "application/json"}
         if auth_header:
             headers["Authorization"] = auth_header
-        partial_log_structured(
+        structured_logger(
             message="Invoking cloud function",
             url=url,
             payload=payload,
@@ -67,13 +69,13 @@ def invoke_cloud_function(
         # For token refresh, we need to pass the data_source as a query parameter
         if "data_source" in payload:
             url = f"{url}?data_source={payload['data_source']}"
-            partial_log_structured(message="Modified URL with query params", url=url)
+            structured_logger(message="Modified URL with query params", url=url)
 
         # Make the request
         response = requests.post(url=url, json=payload, headers=headers, timeout=10)
 
         # Log the response details
-        partial_log_structured(
+        structured_logger(
             message="Received response",
             status_code=response.status_code,
             headers=dict(response.headers),
@@ -82,7 +84,7 @@ def invoke_cloud_function(
 
         # Handle non-200 responses
         if response.status_code != 200:
-            partial_log_structured(
+            structured_logger(
                 message="Non-200 response received when attempting to invoke cloud function",
                 status_code=response.status_code,
                 response_text=response.text,
@@ -114,7 +116,7 @@ def invoke_cloud_function(
                 },
             )
         except json.JSONDecodeError as e:
-            partial_log_structured(
+            structured_logger(
                 message="Failed to parse JSON response",
                 error=str(e),
                 response_text=response.text,
@@ -128,7 +130,7 @@ def invoke_cloud_function(
             )
 
     except Exception as e:
-        partial_log_structured(
+        structured_logger(
             message="Error invoking cloud function",
             error=str(e),
             level="ERROR",
@@ -161,7 +163,7 @@ def invoke_cloud_run_job(service_name: str, payload: Dict) -> https_fn.Response:
             f"namespaces/{project_id}/jobs/{environment}-fitnessllm-dp:run"
         )
 
-        partial_log_structured(
+        structured_logger(
             message="Invoking cloud run service",
             url=url,
             payload=payload,
@@ -200,7 +202,7 @@ def invoke_cloud_run_job(service_name: str, payload: Dict) -> https_fn.Response:
         response = requests.post(url, json=new_payload, headers=headers)
 
         # Log the response details
-        partial_log_structured(
+        structured_logger(
             message="Received response",
             status_code=response.status_code,
             headers=headers,
@@ -209,7 +211,7 @@ def invoke_cloud_run_job(service_name: str, payload: Dict) -> https_fn.Response:
 
         # Handle non-200 responses
         if response.status_code != 200:
-            partial_log_structured(
+            structured_logger(
                 message="Non-200 response received when attempting to invoke cloud run service",
                 status_code=response.status_code,
                 response_text=response.text,
@@ -241,7 +243,7 @@ def invoke_cloud_run_job(service_name: str, payload: Dict) -> https_fn.Response:
                 },
             )
         except json.JSONDecodeError as e:
-            partial_log_structured(
+            structured_logger(
                 message="Failed to parse JSON response",
                 error=str(e),
                 response_text=response.text,
@@ -255,7 +257,7 @@ def invoke_cloud_run_job(service_name: str, payload: Dict) -> https_fn.Response:
             )
 
     except Exception as e:
-        partial_log_structured(
+        structured_logger(
             message="Error invoking cloud run service",
             error=str(e),
             level="ERROR",
@@ -286,7 +288,7 @@ def api_router(request):
             },
         )
 
-    partial_log_structured(
+    structured_logger(
         message="Request received",
         method=request.method,
         headers=dict(request.headers),
@@ -301,9 +303,9 @@ def api_router(request):
 
     try:
         body = request.get_json(silent=True)
-        partial_log_structured(message="Request body", body=body)
+        structured_logger(message="Request body", body=body)
     except Exception as e:
-        partial_log_structured(
+        structured_logger(
             message="Error parsing request body",
             error=str(e),
             level="ERROR",
@@ -338,7 +340,7 @@ def api_router(request):
 
         # Get authorization header and log diagnostics
         auth_header = request.headers.get("Authorization")
-        partial_log_structured(
+        structured_logger(
             function_level="Parent",
             message="Authorization header diagnostics",
             target_api=target_api,
@@ -353,7 +355,7 @@ def api_router(request):
 
         # Validate authorization header
         if not auth_header:
-            partial_log_structured(
+            structured_logger(
                 function_level="Parent",
                 message="Missing Authorization header",
                 target_api=target_api,
@@ -375,7 +377,7 @@ def api_router(request):
             )
 
         if not auth_header.startswith("Bearer "):
-            partial_log_structured(
+            structured_logger(
                 function_level="Parent",
                 message="Missing Authorization header",
                 target_api=target_api,
@@ -437,7 +439,7 @@ def api_router(request):
             )
 
     except Exception as e:
-        partial_log_structured(
+        structured_logger(
             message="Error in api_router",
             error=str(e),
             level="ERROR",

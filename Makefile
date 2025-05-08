@@ -40,8 +40,11 @@ repomix:
 	repomix --include "**/*.json,**/*.sql,**/*.py,**/Dockerfile,**/*.yml,**/*.ini,**/*.md,**/*.toml"
 
 generate_symlink:
-	for fn in cloud_functions/*; do \
-		if [ -d "$$fn" ] && [ "$$(basename $$fn)" != "shared" ]; then \
-			ln -sf ../shared "$$fn/shared"; \
+	for fn in cloud_functions/api_router cloud_functions/strava_auth_initiate cloud_functions/token_refresh; do \
+		if [ -d "$$fn" ]; then \
+			rm -f "$$fn/shared" && \
+			cd "$$fn" && \
+			ln -sf "../shared" "shared" && \
+			cd - > /dev/null; \
 		fi; \
 	done

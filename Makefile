@@ -39,9 +39,10 @@ lint:
 repomix:
 	repomix --include "**/*.json,**/*.sql,**/*.py,**/Dockerfile,**/*.yml,**/*.ini,**/*.md,**/*.toml"
 
-generate_symlink:
+copy_shared:
 	for fn in cloud_functions/*; do \
 		if [ -d "$$fn" ] && [ "$$(basename $$fn)" != "shared" ]; then \
-			ln -sf ../shared "$$fn/shared"; \
+			rm -rf "$$fn/shared" && \
+			cp -r cloud_functions/shared "$$fn/shared"; \
 		fi; \
 	done

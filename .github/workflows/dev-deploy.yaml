@@ -172,13 +172,15 @@ jobs:
             - name: Check and Push Docker image to Artifact Registry
               run: |
                   IMAGE_TAG="${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }}"
-                  # Get local digest after build
-                  docker buildx inspect --bootstrap
                   docker buildx build . \
                     --cache-from type=local,src=/tmp/.buildx-cache \
                     --cache-to type=local,dest=/tmp/.buildx-cache \
                     -t $IMAGE_TAG \
                     --load
+
+                  # Wait for the image to be available
+                  docker images $IMAGE_TAG
+
                   LOCAL_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' $IMAGE_TAG | cut -d'@' -f2)
                   # Get remote digests
                   REMOTE_DIGESTS=$(gcloud artifacts docker images list ${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }} --format="get(digest)")

@@ -28,7 +28,9 @@ class BatchHandler:
         return [user.to_dict() for user in users]
 
     @beartype
-    def process_user(self, user_id: str, data_source: str = "strava") -> None:
+    def process_user(
+        self, user_id: str, data_source: str = FitnessLLMDataSource.STRAVA.value
+    ) -> None:
         """Process a single user.
 
         Args:

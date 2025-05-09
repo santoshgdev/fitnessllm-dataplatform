@@ -36,7 +36,7 @@ def encrypt_token(token: str, key: str) -> str:
 
     # Apply PKCS#7 padding to the plaintext token.
     padder = padding.PKCS7(
-        128
+        128,
     ).padder()  # The block size is 128 bits (16 bytes) for AES.
     padded_data = padder.update(token_bytes) + padder.finalize()
 

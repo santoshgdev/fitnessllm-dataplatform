@@ -13,9 +13,11 @@ clean:
 	poetry install --sync
 
 build:
+	make copy_shared
 	docker build . -t fitnessllm-dp
 
 test:
+	make copy_shared
 	docker run -it \
 	  -e POETRY_VIRTUALENVS_CREATE=false \
 	  -e POETRY_NO_INTERACTION=1 \
@@ -28,6 +30,7 @@ coverage:
 	coverage
 
 run:
+	make copy_shared
 	docker run -it \
 	  --entrypoint /bin/bash \
 	  -v "$$PWD:/app/fitnessllm-dataplatform" \

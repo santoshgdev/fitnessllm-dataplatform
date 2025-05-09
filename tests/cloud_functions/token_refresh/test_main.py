@@ -11,7 +11,7 @@ from tests.cloud_functions.testing_utils import (
 
 
 @patch(
-    "cloud_functions.token_refresh.main.partial_log_structured",
+    "cloud_functions.token_refresh.main.structured_logger",
     new=lambda *a, **kw: None,
 )
 @patch(
@@ -44,7 +44,7 @@ def test_token_refresh_success(mock_verify, mock_request, mock_decoded_token):
 
 
 @patch(
-    "cloud_functions.token_refresh.main.partial_log_structured",
+    "cloud_functions.token_refresh.main.structured_logger",
     new=lambda *a, **kw: None,
 )
 @patch(
@@ -53,7 +53,9 @@ def test_token_refresh_success(mock_verify, mock_request, mock_decoded_token):
 )
 @patch("firebase_admin.auth.verify_id_token")
 def test_token_refresh_missing_data_source(
-    mock_verify, mock_request, mock_decoded_token
+    mock_verify,
+    mock_request,
+    mock_decoded_token,
 ):
     """Test token refresh with missing data source."""
     db, user_ids = populate_inmemory_firestore_with_users_and_streams(num_users=1)
@@ -81,7 +83,7 @@ def test_token_refresh_missing_data_source(
 
 
 @patch(
-    "cloud_functions.token_refresh.main.partial_log_structured",
+    "cloud_functions.token_refresh.main.structured_logger",
     new=lambda *a, **kw: None,
 )
 @patch(
@@ -112,6 +114,6 @@ def test_token_refresh_invalid_token(mock_verify, mock_request, mock_decoded_tok
                 response = token_refresh(mock_request)
                 assert response.status_code == 401
                 assert (
-                    "Invalid Firebase ID Token; JWT Token Issu"
+                    "Invalid Firebase ID Token; JWT Token Issue"
                     in json.loads(response.response[0])["message"]
                 )

@@ -1,7 +1,7 @@
 """Utilities for testing Firestore interactions in memory."""
 import uuid
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 
@@ -183,7 +183,7 @@ def populate_inmemory_firestore_with_users_and_streams(
         user_id = str(uuid.uuid4()).replace("-", "")[:28]
         user_ids.append(user_id)
 
-        now = datetime.now().replace(tzinfo=datetime.timezone.utc)
+        now = datetime.now(timezone.utc)
 
         user_data = {
             "created_time": now,

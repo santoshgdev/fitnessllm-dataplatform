@@ -17,7 +17,9 @@ structured_logger = create_structured_logger(__name__)
 
 @beartype
 def strava_refresh_oauth_token(
-    db: firestore.Client, uid: str, refresh_token: str
+    db: firestore.Client,
+    uid: str,
+    refresh_token: str,
 ) -> None:
     """Call Strava OAuth to refresh the token.
 
@@ -52,10 +54,12 @@ def strava_refresh_oauth_token(
 
         new_tokens = {
             "accessToken": encrypt_token(
-                token_response["access_token"], encryption_key
+                token_response["access_token"],
+                encryption_key,
             ),
             "refreshToken": encrypt_token(
-                token_response["refresh_token"], encryption_key
+                token_response["refresh_token"],
+                encryption_key,
             ),
             "expiresAt": token_response["expires_at"],
             "lastTokenRefresh": update_last_refresh(),
@@ -76,7 +80,9 @@ def strava_refresh_oauth_token(
 # Bear type is removed here due to a test that has a testing component located in tests/.
 # This is done so that the testing components don't need to be shipped with the production code.
 def strava_update_user_tokens(
-    db: firestore.Client, uid: str, new_tokens: Dict[str, Any]
+    db: firestore.Client,
+    uid: str,
+    new_tokens: Dict[str, Any],
 ) -> None:
     """Update user document with new tokens.
 

@@ -112,6 +112,6 @@ def test_token_refresh_invalid_token(mock_verify, mock_request, mock_decoded_tok
                 response = token_refresh(mock_request)
                 assert response.status_code == 401
                 assert (
-                    "Invalid Firebase ID Token; JWT Token Issu"
+                    "Invalid Firebase ID Token; JWT Token Issue"
                     in json.loads(response.response[0])["message"]
                 )

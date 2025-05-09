@@ -61,6 +61,11 @@ jobs:
             - name: Set PYTHONPATH
               run: echo "PYTHONPATH=$PWD" >> $GITHUB_ENV
 
+            - name: Install pre-commit
+              run: |
+                  pip install pre-commit
+                  pre-commit install
+
             - name: Cache pre-commit
               id: cache-pre-commit
               uses: actions/cache@v4
@@ -72,12 +77,9 @@ jobs:
                   restore-keys: |
                       ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}-${{ runner.os }}-pre-commit-
 
-            - name: Install and initialize pre-commit
+            - name: initialize pre-commit
               if: steps.cache-pre-commit.outputs.cache-hit != 'true'
               run: |
-                  pip install pre-commit
-                  pre-commit install
-                  # Run once to populate the cache
                   pre-commit run --all-files || true
 
             - name: Save pre-commit cache

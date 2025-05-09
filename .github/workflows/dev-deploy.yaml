@@ -212,6 +212,28 @@ jobs:
                     --service-account=${{ secrets.GCP_DP_SA_EMAIL }} \
                     --set-env-vars "$ENV_VARS"
 
+            - name: Scheduled Batch Cloud Run Job
+              run: |
+                  CLOUD_RUN_JOB_URL="https://${{ env.REGION }}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${{ env.PROJECT_ID }}/jobs/${{ env.SERVICE_NAME }}:run"
+                  PAYLOAD='{"overrides":{"taskCount":1,"containerOverrides":[{"args":["python","batch_handler.py"]}]}}'
+                  if gcloud scheduler jobs describe batch-data-run > /dev/null 2>&1; then
+                    gcloud scheduler jobs update http batch-data-run \
+                      --schedule="0 2 * * *" \
+                      --uri="$CLOUD_RUN_JOB_URL" \
+                      --http-method=POST \
+                      --oauth-service-account-email=${{ secrets.GCP_DP_SA_EMAIL }} \
+                      --time-zone="America/Los_Angeles" \
+                      --message-body="$PAYLOAD"
+                  else
+                    gcloud scheduler jobs create http batch-data-run \
+                      --schedule="0 2 * * *" \
+                      --uri="$CLOUD_RUN_JOB_URL" \
+                      --http-method=POST \
+                      --oauth-service-account-email=${{ secrets.GCP_DP_SA_EMAIL }} \
+                      --time-zone="America/Los_Angeles" \
+                      --message-body="$PAYLOAD"
+                  fi
+
     cloud_function_detect_changes:
         needs: testing
         runs-on: ubuntu-latest

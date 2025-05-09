@@ -6,8 +6,8 @@ from beartype.typing import Any, Dict, List
 from entities.enums import FitnessLLMDataSource
 from google.cloud import firestore
 from google.cloud.firestore_v1 import DocumentReference
-from token_refresh.streams.strava import strava_refresh_oauth_token
 
+from cloud_functions.token_refresh.streams.strava import strava_refresh_oauth_token
 from fitnessllm_dataplatform.task_handler import Startup
 from fitnessllm_dataplatform.utils.logging_utils import logger
 

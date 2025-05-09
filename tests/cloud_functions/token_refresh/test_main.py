@@ -53,7 +53,8 @@ def test_token_refresh_success(mock_verify, mock_request, mock_decoded_token):
 )
 @patch("firebase_admin.auth.verify_id_token")
 def test_token_refresh_missing_data_source(
-    mock_verify, mock_request, mock_decoded_token
+def test_token_refresh_missing_data_source(
+    mock_verify, mock_request, mock_decoded_token,
 ):
     """Test token refresh with missing data source."""
     db, user_ids = populate_inmemory_firestore_with_users_and_streams(num_users=1)

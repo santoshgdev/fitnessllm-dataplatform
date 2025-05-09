@@ -15,8 +15,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && curl -sSL https://install.python-poetry.org | python3 - --version ${POETRY_VERSION}
 
-
-
 RUN mkdir /app
 WORKDIR /app
 RUN mkdir fitnessllm-dataplatform

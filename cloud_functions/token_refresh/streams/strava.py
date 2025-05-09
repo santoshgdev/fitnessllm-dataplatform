@@ -114,5 +114,6 @@ def strava_update_user_tokens(
             "expiresAt": new_tokens["expiresAt"],
             "lastTokenRefresh": new_tokens["lastTokenRefresh"],
         }
+        ,
     )
     structured_logger(message="User tokens updated successfully", uid=uid)

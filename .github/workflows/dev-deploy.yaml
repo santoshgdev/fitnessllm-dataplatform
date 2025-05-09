@@ -227,7 +227,9 @@ jobs:
               run: |
                   CLOUD_RUN_JOB_URL="https://${{ env.REGION }}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${{ env.PROJECT_ID }}/jobs/${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }}:run"
                   PAYLOAD='{"overrides":{"taskCount":1,"containerOverrides":[{"args":["python","batch_handler.py"]}]}}'
-                  if gcloud scheduler jobs describe batch-data-run > /dev/null 2>&1; then
+                  if gcloud scheduler jobs describe batch-data-run \
+                    --project="${{ env.PROJECT_ID }}" \
+                    --location="${{ env.REGION }}"; then
                     gcloud scheduler jobs update http batch-data-run \
                       --project="${{ env.PROJECT_ID }}" \
                       --location="${{ env.REGION }}" \

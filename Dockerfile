@@ -23,17 +23,17 @@ RUN mkdir /app
 WORKDIR /app
 RUN mkdir fitnessllm-dataplatform
 
-COPY fitnessllm_dataplatform fitnessllm-dataplatform/fitnessllm_dataplatform
-COPY cloud_functions fitnessllm-dataplatform/cloud_functions
-COPY tests fitnessllm-dataplatform/tests
 COPY pyproject.toml poetry.lock ./
 
-# Install dependencies
 RUN poetry config virtualenvs.in-project true \
     && poetry lock \
     && poetry install --no-root \
     && poetry export -f requirements.txt -o requirements.txt \
     && pip install --no-cache-dir -r requirements.txt
+
+COPY fitnessllm_dataplatform fitnessllm-dataplatform/fitnessllm_dataplatform
+COPY cloud_functions fitnessllm-dataplatform/cloud_functions
+COPY tests fitnessllm-dataplatform/tests
 
 WORKDIR /app/fitnessllm-dataplatform
 

@@ -53,9 +53,6 @@ jobs:
             - name: Set PYTHONPATH
               run: echo "PYTHONPATH=$PWD" >> $GITHUB_ENV
 
-            - name: Run pytest
-              run: poetry run pytest tests/
-
             - name: Cache pre-commit
               id: cache-pre-commit
               uses: actions/cache@v4

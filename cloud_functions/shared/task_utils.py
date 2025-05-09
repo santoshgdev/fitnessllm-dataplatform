@@ -23,11 +23,8 @@ def encrypt_token(token: str, key: str) -> str:
     token_bytes = token.encode("utf-8")
 
     # Convert the key to bytes if necessary.
-    if isinstance(key, str):
-        key_bytes = key.encode("utf-8")
-    else:
-        key_bytes = key
-
+    # Convert the key to bytes if necessary.
+    key_bytes = key.encode("utf-8") if isinstance(key, str) else key
     # Ensure the key is exactly 32 bytes long (AES-256 requirement).
     if len(key_bytes) < 32:
         key_bytes = key_bytes.ljust(32, b"\0")  # Pad with zeros.

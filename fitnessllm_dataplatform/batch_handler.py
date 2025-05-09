@@ -1,8 +1,12 @@
 """Batch handler for processing all users."""
+from typing import Optional
+
 from beartype import beartype
 from beartype.typing import Any, Dict, List
 from entities.enums import FitnessLLMDataSource
 from google.cloud import firestore
+from google.cloud.firestore_v1 import DocumentReference
+from token_refresh.streams.strava import strava_refresh_oauth_token
 
 from fitnessllm_dataplatform.task_handler import Startup
 from fitnessllm_dataplatform.utils.logging_utils import logger
@@ -28,6 +32,46 @@ class BatchHandler:
         return [user.to_dict() for user in users]
 
     @beartype
+    def get_specific_user(self, user_id: str) -> Optional[DocumentReference]:
+        """Get a specific user from Firestore.
+
+        Args:
+            user_id: User ID from Firestore.
+
+        Returns:
+            User document.
+        """
+        user_ref = self.db.collection("users").document(user_id)
+        if user_ref.get().exists:
+            return user_ref
+        else:
+            logger.warning(f"User {user_id} not found in Firestore.")
+            return None
+
+    @beartype
+    def refresh_tokens(self, user_id: str, data_source: str) -> None:
+        """Refresh tokens for a user.
+
+        Args:
+            user_id: User ID from Firestore.
+            data_source: Data source to refresh tokens for.
+        """
+        user_ref = self.get_specific_user(user_id)
+
+        if data_source == FitnessLLMDataSource.STRAVA.value:
+            strava_refresh_token = (
+                user_ref.collection("stream")
+                .document(data_source.lower())
+                .get()
+                .to_dict()
+                .get("refreshToken")
+            )
+            assert strava_refresh_token
+            strava_refresh_oauth_token(
+                db=self.db, uid=user_id, refresh_token=strava_refresh_token
+            )
+
+    @beartype
     def process_user(
         self, user_id: str, data_source: str = FitnessLLMDataSource.STRAVA.value
     ) -> None:
@@ -37,6 +81,7 @@ class BatchHandler:
             user_id: User ID from Firestore.
             data_source: Data source to process (default: strava).
         """
+        self.refresh_tokens(user_id, data_source)
         try:
             logger.info(f"Processing user {user_id} for data source {data_source}")
             self.startup.full_etl(uid=user_id, data_source=data_source)

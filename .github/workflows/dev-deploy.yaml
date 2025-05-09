@@ -58,16 +58,7 @@ jobs:
               run: |
                   poetry install --no-interaction
 
-            - name: Set PYTHONPATH
-              run: echo "PYTHONPATH=$PWD" >> $GITHUB_ENV
-
-            - name: Install pre-commit
-              run: |
-                  pip install pre-commit
-                  pre-commit install
-
             - name: Cache pre-commit
-              id: cache-pre-commit
               uses: actions/cache@v4
               with:
                   path: |
@@ -75,25 +66,13 @@ jobs:
                       ~/.cache/pip
                   key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}-${{ hashFiles('**/poetry.lock') }}
                   restore-keys: |
-                      ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}-${{ runner.os }}-pre-commit-
+                      ${{ runner.os }}-pre-commit-
 
-            - name: initialize pre-commit
-              if: steps.cache-pre-commit.outputs.cache-hit != 'true'
-              run: |
-                  pre-commit run --all-files || true
-
-            - name: Save pre-commit cache
-              if: steps.cache-pre-commit.outputs.cache-hit != 'true'
-              uses: actions/cache/save@v4
-              with:
-                  path: |
-                      ~/.cache/pre-commit
-                      ~/.cache/pip
-                  key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}-${{ hashFiles('**/poetry.lock') }}
+            - name: Install pre-commit
+              run: pip install pre-commit
 
             - name: Run pre-commit checks
-              run: |
-                  pre-commit run --all-files
+              run: pre-commit run --all-files
 
             - name: Copy shared code into each function directory
               run: |

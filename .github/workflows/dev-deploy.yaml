@@ -22,7 +22,7 @@ env:
     ENCRYPTION_SECRET: ${{ secrets.ENCRYPTION_SECRET }}
     STRAVA_SECRET: ${{ secrets.STRAVA_SECRET }}
     INFRASTRUCTURE_SECRET: ${{ secrets.INFRASTRUCTURE_SECRET }}
-    PYTHONPATH: ${{ github.workspace }}/cloud_functions:${{ github.workspace }}/fitnessllm_dataplatform:${{ github.workspace }}/tests
+    PYTHONPATH: ${{ github.workspace }}
 
 jobs:
     testing:
@@ -96,7 +96,7 @@ jobs:
                   done
 
             - name: Run pytest
-              run: pytest tests/
+              run: poetry run pytest tests/
 
 
     cloud_run_job_detect_changes:

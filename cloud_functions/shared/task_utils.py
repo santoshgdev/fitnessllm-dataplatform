@@ -23,11 +23,8 @@ def encrypt_token(token: str, key: str) -> str:
     token_bytes = token.encode("utf-8")
 
     # Convert the key to bytes if necessary.
-    if isinstance(key, str):
-        key_bytes = key.encode("utf-8")
-    else:
-        key_bytes = key
-
+    # Convert the key to bytes if necessary.
+    key_bytes = key.encode("utf-8") if isinstance(key, str) else key
     # Ensure the key is exactly 32 bytes long (AES-256 requirement).
     if len(key_bytes) < 32:
         key_bytes = key_bytes.ljust(32, b"\0")  # Pad with zeros.
@@ -39,7 +36,7 @@ def encrypt_token(token: str, key: str) -> str:
 
     # Apply PKCS#7 padding to the plaintext token.
     padder = padding.PKCS7(
-        128
+        128,
     ).padder()  # The block size is 128 bits (16 bytes) for AES.
     padded_data = padder.update(token_bytes) + padder.finalize()
 

@@ -222,6 +222,9 @@ jobs:
         runs-on: ubuntu-latest
         environment: dev
         steps:
+            - name: Set gcloud project
+              run: gcloud config set project "${{ env.PROJECT_ID }}"
+
             - name: Scheduled Batch Cloud Run Job
               run: |
                   CLOUD_RUN_JOB_URL="https://${{ env.REGION }}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${{ env.PROJECT_ID }}/jobs/${{ env.SERVICE_NAME }}:run"
@@ -236,6 +239,7 @@ jobs:
                       --message-body="$PAYLOAD"
                   else
                     gcloud scheduler jobs create http batch-data-run \
+                      --project="${{ env.PROJECT_ID }}" \
                       --schedule="0 2 * * *" \
                       --uri="$CLOUD_RUN_JOB_URL" \
                       --http-method=POST \

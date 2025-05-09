@@ -219,8 +219,6 @@ jobs:
 
     cloud_run_job_schedule:
         needs: cloud_run_job_deploy
-        if: needs.cloud_run_job_detect_changes.outputs.changes_detected == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
-            == 'true')
         runs-on: ubuntu-latest
         environment: dev
         steps:

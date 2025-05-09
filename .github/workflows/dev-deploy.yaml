@@ -50,6 +50,9 @@ jobs:
               run: |
                   poetry install --no-interaction
 
+            - name: Set PYTHONPATH
+              run: echo "PYTHONPATH=$PWD" >> $GITHUB_ENV
+
             - name: Run pytest
               run: poetry run pytest tests/
 
@@ -95,8 +98,8 @@ jobs:
                     fi
                   done
 
-            - name: Run pytest
-              run: poetry run pytest tests/
+            - name: Run tests
+              run: PYTHONPATH=$PWD poetry run pytest tests/
 
 
     cloud_run_job_detect_changes:

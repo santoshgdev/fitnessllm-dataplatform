@@ -29,9 +29,9 @@ sqlglot = "^26.7.0"
 faker = "^37.1.0"
 flask = "^3.1.0"
 firebase-functions = "^0.4.2"
+beartype = "^0.19.0"
 
 [poetry.group.dev.dependencies]
-beartype = "^0.19.0"
 pytest-cov = "^6.0.0"
 firebase-functions = "^0.4.2"
 faker = "^37.1.0"

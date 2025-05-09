@@ -169,21 +169,25 @@ jobs:
                   restore-keys: |
                       ${{ runner.os }}-buildx-
 
-            - name: Build Docker image
+            - name: Check and Push Docker image to Artifact Registry
               run: |
-                  # Create cache directory if it doesn't exist
-                  mkdir -p /tmp/.buildx-cache
-
-                  # Build with cache if available
+                  IMAGE_TAG="${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }}"
+                  # Get local digest after build
+                  docker buildx inspect --bootstrap
                   docker buildx build . \
                     --cache-from type=local,src=/tmp/.buildx-cache \
                     --cache-to type=local,dest=/tmp/.buildx-cache \
-                    -t ${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }} \
+                    -t $IMAGE_TAG \
                     --load
-
-            - name: Push Docker image to Artifact Registry
-              run: |
-                  docker push ${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }}
+                  LOCAL_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' $IMAGE_TAG | cut -d'@' -f2)
+                  # Get remote digests
+                  REMOTE_DIGESTS=$(gcloud artifacts docker images list ${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }} --format="get(digest)")
+                  if echo "$REMOTE_DIGESTS" | grep -q "$LOCAL_DIGEST"; then
+                    echo "Image with digest $LOCAL_DIGEST already exists in Artifact Registry. Skipping push."
+                  else
+                    echo "Pushing image..."
+                    docker push $IMAGE_TAG
+                  fi
 
             - name: Debug deployment configuration
               run: |
@@ -223,6 +227,8 @@ jobs:
                   PAYLOAD='{"overrides":{"taskCount":1,"containerOverrides":[{"args":["python","batch_handler.py"]}]}}'
                   if gcloud scheduler jobs describe batch-data-run > /dev/null 2>&1; then
                     gcloud scheduler jobs update http batch-data-run \
+                      --project="${{ env.PROJECT_ID }}" \
+                      --location="${{ env.REGION }}" \
                       --schedule="0 2 * * *" \
                       --uri="$CLOUD_RUN_JOB_URL" \
                       --http-method=POST \
@@ -232,6 +238,7 @@ jobs:
                   else
                     gcloud scheduler jobs create http batch-data-run \
                       --project="${{ env.PROJECT_ID }}" \
+                      --location="${{ env.REGION }}" \
                       --schedule="0 2 * * *" \
                       --uri="$CLOUD_RUN_JOB_URL" \
                       --http-method=POST \

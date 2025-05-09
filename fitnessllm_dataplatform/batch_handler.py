@@ -1,6 +1,7 @@
 """Batch handler for processing all users."""
 from beartype import beartype
 from beartype.typing import Any, Dict, List
+from entities.enums import FitnessLLMDataSource
 from google.cloud import firestore
 
 from fitnessllm_dataplatform.task_handler import Startup
@@ -43,7 +44,9 @@ class BatchHandler:
             raise
 
     @beartype
-    def process_all_users(self, data_source: str = "strava") -> None:
+    def process_all_users(
+        self, data_source: str = FitnessLLMDataSource.STRAVA.value
+    ) -> None:
         """Process all users in the database.
 
         Args:

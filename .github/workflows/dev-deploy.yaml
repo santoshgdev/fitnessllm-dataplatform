@@ -212,6 +212,13 @@ jobs:
                     --service-account=${{ secrets.GCP_DP_SA_EMAIL }} \
                     --set-env-vars "$ENV_VARS"
 
+    cloud_run_job_schedule:
+        needs: cloud_run_job_deploy
+        if: needs.cloud_run_job_detect_changes.outputs.changes_detected == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
+            == 'true')
+        runs-on: ubuntu-latest
+        environment: dev
+        steps:
             - name: Scheduled Batch Cloud Run Job
               run: |
                   CLOUD_RUN_JOB_URL="https://${{ env.REGION }}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${{ env.PROJECT_ID }}/jobs/${{ env.SERVICE_NAME }}:run"

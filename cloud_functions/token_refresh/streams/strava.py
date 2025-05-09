@@ -1,5 +1,4 @@
 """Strava specific utils."""
-import os
 from os import environ
 
 from beartype import beartype
@@ -33,7 +32,7 @@ def strava_refresh_oauth_token(
     """
     structured_logger(message="Starting token refresh", uid=uid)
 
-    encryption_key = get_secret(os.environ["ENCRYPTION_SECRET"])["token"]
+    encryption_key = get_secret(environ["ENCRYPTION_SECRET"])["token"]
 
     client = Client()
     strava_secret = get_secret(environ["STRAVA_SECRET"])

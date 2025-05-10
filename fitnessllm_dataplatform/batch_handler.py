@@ -60,7 +60,8 @@ class BatchHandler:
         """
         users = self.get_all_users()
         structured_logger.info(
-            message=f"Found {len(users)} users to process",
+            message="Found users to process",
+            user_count=len(users),
             data_source=data_source,
             batch=True,
             uid="all",

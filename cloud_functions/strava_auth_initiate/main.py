@@ -83,7 +83,7 @@ def strava_auth_initiate(request):
                 status=401,
                 headers=CORS_HEADERS,
                 response=json.dumps(
-                    {"error": "Unauthorized", "message": "Authorization code required"}
+                    {"error": "Unauthorized", "message": "Authorization code required"},
                 ),
             )
 

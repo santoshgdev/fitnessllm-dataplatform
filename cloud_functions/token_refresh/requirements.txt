@@ -7,6 +7,6 @@ pydantic>=2.0,<3.0
 beartype>=0.20.2,<0.21.0
 types-pytz
 cryptography
-firebase-admin
+firebase-admin>=6.8.0,<7.0.0
 firebase-functions
 git+https://github.com/santoshgdev/fitnessllm-shared.git@main

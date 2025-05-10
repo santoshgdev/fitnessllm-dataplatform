@@ -1,6 +1,6 @@
 functions-framework==3.*
 requests==2.31.0
-firebase-admin==6.2.0
+firebase-admin>=6.8.0,<7.0.0
 google-cloud-firestore==2.11.1
 google-cloud-functions==1.13.2
 google-cloud-run==0.9.1

@@ -34,6 +34,8 @@ COPY tests fitnessllm-dataplatform/tests
 
 WORKDIR /app/fitnessllm-dataplatform
 
+RUN poetry update fitnessllm-shared
+
 #ENV PORT=8080
 
 # Run the HTTP server

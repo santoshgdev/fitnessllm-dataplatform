@@ -1,7 +1,12 @@
 """Batch handler for processing all users."""
+from typing import Optional
+
 from beartype import beartype
 from beartype.typing import Any, Dict, List
+from entities.enums import FitnessLLMDataSource
+from fitnessllm_shared.streams.strava import strava_refresh_oauth_token
 from google.cloud import firestore
+from google.cloud.firestore_v1 import DocumentReference
 
 from fitnessllm_dataplatform.task_handler import Startup
 from fitnessllm_dataplatform.utils.logging_utils import logger
@@ -17,23 +22,63 @@ class BatchHandler:
 
     @beartype
     def get_all_users(self) -> List[Dict[str, Any]]:
-        """Get all users from Firestore.
+        """Retrieves all user documents from the Firestore "users" collection.
 
         Returns:
-            List of user documents.
+            A list of dictionaries representing each user's data.
         """
         users_ref = self.db.collection("users")
         users = users_ref.stream()
         return [user.to_dict() for user in users]
 
     @beartype
-    def process_user(self, user_id: str, data_source: str = "strava") -> None:
-        """Process a single user.
+    def get_specific_user(self, user_id: str) -> Optional[DocumentReference]:
+        """Retrieves a Firestore document reference for a specific user by user ID.
+
+        Returns:
+            The user's document reference if it exists; otherwise, None.
+        """
+        user_ref = self.db.collection("users").document(user_id)
+        if user_ref.get().exists:
+            return user_ref
+        else:
+            logger.warning(f"User {user_id} not found in Firestore.")
+            return None
+
+    @beartype
+    def refresh_tokens(self, user_id: str, data_source: str) -> None:
+        """Refreshes authentication tokens for a user for the specified data source.
+
+        If the data source is Strava, retrieves the user's refresh token from Firestore and updates the OAuth token.
+        """
+        user_ref = self.get_specific_user(user_id)
+
+        if data_source == FitnessLLMDataSource.STRAVA.value:
+            strava_refresh_token = (
+                user_ref.collection("stream")
+                .document(data_source.lower())
+                .get()
+                .to_dict()
+                .get("refreshToken")
+            )
+            assert strava_refresh_token
+            strava_refresh_oauth_token(
+                db=self.db, uid=user_id, refresh_token=strava_refresh_token
+            )
+
+    @beartype
+    def process_user(
+        self, user_id: str, data_source: str = FitnessLLMDataSource.STRAVA.value
+    ) -> None:
+        """Processes a single user's data for a specified data source.
+
+        Refreshes authentication tokens for the user, then performs a full ETL operation using the given data source. Logs progress and errors, and re-raises any exceptions encountered.
 
         Args:
-            user_id: User ID from Firestore.
-            data_source: Data source to process (default: strava).
+            user_id: The Firestore user ID to process.
+            data_source: The data source to process for the user (default is Strava).
         """
+        self.refresh_tokens(user_id, data_source)
         try:
             logger.info(f"Processing user {user_id} for data source {data_source}")
             self.startup.full_etl(uid=user_id, data_source=data_source)
@@ -43,11 +88,14 @@ class BatchHandler:
             raise
 
     @beartype
-    def process_all_users(self, data_source: str = "strava") -> None:
-        """Process all users in the database.
+    @beartype
+    def process_all_users(
+        self,
+        data_source: str = FitnessLLMDataSource.STRAVA.value,
+    ) -> None:
+        """Processes all users in the database for a specified data source.
 
-        Args:
-            data_source: Data source to process (default: strava).
+        Retrieves all user records and processes each one individually for the given data source. Users without a user ID are skipped. Errors encountered during processing of individual users are logged, and processing continues for remaining users.
         """
         users = self.get_all_users()
         logger.info(f"Found {len(users)} users to process")

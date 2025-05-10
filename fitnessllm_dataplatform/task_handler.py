@@ -6,8 +6,8 @@ from os import environ
 import fire
 from beartype import beartype
 from cloudpathlib import GSClient
+from fitnessllm_shared.task_utils import decrypt_token
 
-from cloud_functions.token_refresh.utils.task_utils import decrypt_token
 from fitnessllm_dataplatform.entities.enums import DynamicEnum, FitnessLLMDataSource
 from fitnessllm_dataplatform.infrastructure.FirebaseConnect import FirebaseConnect
 from fitnessllm_dataplatform.stream.strava.services.api_interface import (

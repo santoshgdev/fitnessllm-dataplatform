@@ -4,10 +4,9 @@ import traceback
 
 from firebase_admin import auth, initialize_app
 from firebase_functions import https_fn, options
+from fitnessllm_shared.logger_utils import create_structured_logger
+from fitnessllm_shared.streams.strava import strava_refresh_oauth_token
 from google.cloud import firestore
-
-from .shared.logger_utils import create_structured_logger
-from .streams.strava import strava_refresh_oauth_token
 
 structured_logger = create_structured_logger(__name__)
 

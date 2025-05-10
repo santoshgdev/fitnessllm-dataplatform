@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     dash \
     bash \
     curl \
+    git \
     && rm -rf /var/lib/apt/lists/* \
     && curl -sSL https://install.python-poetry.org | python3 - --version ${POETRY_VERSION}
 
@@ -24,7 +25,7 @@ COPY pyproject.toml poetry.lock ./
 RUN poetry config virtualenvs.in-project true \
     && poetry lock \
     && poetry install --no-root \
-    && poetry export -f requirements.txt -o requirements.txt \
+    && poetry export -f requirements.txt -o requirements.txt --without-hashes \
     && pip install --no-cache-dir -r requirements.txt
 
 COPY fitnessllm_dataplatform fitnessllm-dataplatform/fitnessllm_dataplatform

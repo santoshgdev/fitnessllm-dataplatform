@@ -9,3 +9,4 @@ types-pytz
 cryptography
 firebase-admin
 firebase-functions
+git+https://github.com/santoshgdev/fitnessllm-shared.git@main

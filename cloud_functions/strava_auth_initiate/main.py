@@ -9,11 +9,10 @@ import functions_framework
 import requests
 from firebase_admin import firestore, initialize_app
 from firebase_functions import https_fn, options
+from fitnessllm_shared.cloud_utils import get_secret
+from fitnessllm_shared.logger_utils import create_structured_logger
+from fitnessllm_shared.task_utils import encrypt_token
 from stravalib import Client
-
-from .shared.cloud_utils import get_secret
-from .shared.logger_utils import create_structured_logger
-from .shared.task_utils import encrypt_token
 
 structured_logger = create_structured_logger(__name__)
 

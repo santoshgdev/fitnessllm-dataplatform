@@ -17,6 +17,21 @@ pr_description:
         - documentation # Documentation updates
     format: markdown   # Use markdown formatting
     language: en       # English language
+    template: |
+        ## Changes
+        {changes}
+
+        ## Dependencies
+        {dependencies}
+
+        ## Security
+        {security}
+
+        ## Testing
+        {testing}
+
+        ## Documentation
+        {documentation}
 
 review:
     auto_review: true

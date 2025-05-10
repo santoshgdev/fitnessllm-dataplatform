@@ -74,9 +74,6 @@ jobs:
             - name: Run pre-commit checks
               run: pre-commit run --all-files
 
-            - name: Copy shared code into each function directory
-              uses: ./.github/actions/copy-shared
-
             - name: Run tests with coverage
               run: |
                   PYTHONPATH=$PWD poetry run pytest tests/ \
@@ -314,9 +311,6 @@ jobs:
                 function: [token_refresh, api_router, strava_auth_initiate]
         steps:
             - uses: actions/checkout@v4
-
-            - name: Copy shared code into each function directory
-              uses: ./.github/actions/copy-shared
 
             - name: Authenticate to Google Cloud
               if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true'

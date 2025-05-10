@@ -4,10 +4,10 @@ from typing import Optional
 from beartype import beartype
 from beartype.typing import Any, Dict, List
 from entities.enums import FitnessLLMDataSource
+from fitnessllm_shared.streams.strava import strava_refresh_oauth_token
 from google.cloud import firestore
 from google.cloud.firestore_v1 import DocumentReference
 
-from cloud_functions.token_refresh.streams.strava import strava_refresh_oauth_token
 from fitnessllm_dataplatform.task_handler import Startup
 from fitnessllm_dataplatform.utils.logging_utils import logger
 

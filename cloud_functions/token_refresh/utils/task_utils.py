@@ -1,8 +1,9 @@
 """Task utils."""
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
-import pytz
-
+def update_last_refresh() -> datetime:
+    return datetime.now(ZoneInfo("America/Los_Angeles"))
 
 def update_last_refresh() -> datetime:
     """Returns the current date and time in the America/Los_Angeles timezone.

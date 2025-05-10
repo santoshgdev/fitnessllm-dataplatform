@@ -29,12 +29,10 @@ except Exception as e:
     cors=options.CorsOptions(cors_origins=["*"], cors_methods=["POST", "OPTIONS"])
 )
 def token_refresh(request: https_fn.Request) -> https_fn.Response:
-    """Cloud function taking http parameters to perform update of tokens.
-
-    Args:
-        request (http request): http request.
-
-    Note: At current time, it registers the parameters uid (firebase user id) and data_source.
+    """
+    Handles HTTP requests to refresh OAuth tokens for a specified data source after verifying Firebase authentication.
+    
+    Validates the request, checks user and stream existence in Firestore, and refreshes the OAuth token (currently only for Strava). Responds with appropriate status codes and messages for authentication errors, missing parameters, unsupported data sources, or internal errors.
     """
     # Log all request details at the start
     structured_logger(

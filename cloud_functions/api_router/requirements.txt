@@ -4,6 +4,6 @@ firebase-admin>=6.8.0,<7.0.0
 google-cloud-firestore>=2.19.0
 firebase-functions>=0.1.1
 google-cloud-run==0.9.1
-firebase-functions==0.1.1
 beartype>=0.20.2,<0.21.0
+google-cloud-functions>=1.13.0
 git+https://github.com/santoshgdev/fitnessllm-shared.git@main

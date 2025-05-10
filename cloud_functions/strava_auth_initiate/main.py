@@ -35,7 +35,9 @@ except Exception as e:
     cors=options.CorsOptions(cors_origins=["*"], cors_methods=["POST", "OPTIONS"]),
 )
 @functions_framework.http
-def strava_auth_initiate(request):
+@functions_framework.http
+def strava_auth_initiate(request: https_fn.Request) -> https_fn.Response:
+    # existing implementation follows…
     """Handles Strava OAuth initiation, exchanges authorization code for tokens, encrypts and stores them in Firestore, and manages CORS and authentication for incoming requests.
 
     For POST requests, verifies the Firebase ID token, exchanges the Strava authorization code for access and refresh tokens, retrieves athlete profile data, encrypts sensitive tokens, and updates the user's Firestore document with connection details. Handles CORS preflight (OPTIONS) and returns appropriate error responses for authentication or API failures.

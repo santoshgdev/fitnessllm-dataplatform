@@ -2,6 +2,7 @@
 from datetime import datetime
 
 import pytz
+from fitnessllm_shared.entities.constants import TIMEZONE
 
 
 def update_last_refresh() -> datetime:
@@ -10,5 +11,5 @@ def update_last_refresh() -> datetime:
     Returns:
         datetime: The current localized datetime in Pacific Time.
     """
-    pacific_tz = pytz.timezone("America/Los_Angeles")
+    pacific_tz = pytz.timezone(TIMEZONE)
     return datetime.now(pacific_tz)

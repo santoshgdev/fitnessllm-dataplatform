@@ -7,6 +7,17 @@ ai:
     suggest: true
     document: true
 
+pr_description:
+    auto_generate: true
+    include:
+        - changes      # Summary of code changes
+        - dependencies # Any dependency updates
+        - security     # Security implications
+        - testing      # Testing information
+        - documentation # Documentation updates
+    format: markdown   # Use markdown formatting
+    language: en       # English language
+
 review:
     auto_review: true
     frequency: daily

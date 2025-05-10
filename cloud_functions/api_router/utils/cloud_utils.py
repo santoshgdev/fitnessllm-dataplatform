@@ -1,4 +1,5 @@
 """Cloud utils for api_router."""
+
 import google.auth
 import google.auth.transport.requests
 

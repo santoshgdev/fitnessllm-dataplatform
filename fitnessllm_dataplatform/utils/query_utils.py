@@ -1,4 +1,5 @@
 """Common query utilities."""
+
 from pathlib import Path
 
 from beartype import beartype

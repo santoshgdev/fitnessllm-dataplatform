@@ -1,4 +1,5 @@
 """Cloud utils specific for Strava API."""
+
 from enum import Enum
 
 from beartype import beartype

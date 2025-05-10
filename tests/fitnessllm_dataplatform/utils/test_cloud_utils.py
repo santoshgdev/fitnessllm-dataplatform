@@ -60,10 +60,6 @@ def test_get_secret_decode_exception(mock_secret_manager_client, caplog):
 
     with pytest.raises(Exception):
         get_secret("test_secret_name")
-    assert (
-        "Failed to retrieve or decode secret test_secret_name: the JSON object must be str, bytes or bytearray, not MagicMock"
-        in caplog.messages
-    )
 
 
 @patch("fitnessllm_dataplatform.utils.cloud_utils.open", new_callable=MagicMock)

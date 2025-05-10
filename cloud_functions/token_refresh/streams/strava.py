@@ -1,4 +1,5 @@
 """Strava specific utils."""
+
 from os import environ
 
 from beartype import beartype

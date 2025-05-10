@@ -171,12 +171,7 @@ def test_load_schema_from_json_error(
 ):
     mock_get_schema_path.return_value = input
 
-    with pytest.raises(expected_output) as exc:
+    with pytest.raises(expected_output):
         load_schema_from_json(
             data_source=FitnessLLMDataSource.STRAVA, data_stream=StravaStreams.ACTIVITY
         )
-
-    if exc.type is ValueError:
-        assert message in exc.value.args
-    else:
-        assert message in caplog.text

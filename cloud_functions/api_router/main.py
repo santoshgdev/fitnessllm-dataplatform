@@ -1,4 +1,5 @@
 """Main Entry point for API Router."""
+
 import json
 import os
 import traceback
@@ -346,9 +347,9 @@ def api_router(request):
             target_api=target_api,
             payload=payload,
             header_value=auth_header if auth_header else None,
-            starts_with_bearer=auth_header.startswith("Bearer ")
-            if auth_header
-            else False,
+            starts_with_bearer=(
+                auth_header.startswith("Bearer ") if auth_header else False
+            ),
             header_length=len(auth_header) if auth_header else 0,
             all_headers=dict(request.headers),
         )

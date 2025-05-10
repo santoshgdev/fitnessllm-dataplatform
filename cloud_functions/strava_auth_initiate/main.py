@@ -1,4 +1,5 @@
 """Main entry point for Strava Auth Initiate."""
+
 import json
 import logging
 import os

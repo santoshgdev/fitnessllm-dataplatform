@@ -1,4 +1,5 @@
 """Dataclasses for the entities in the FitnessLLM Data Platform."""
+
 from dataclasses import asdict, dataclass
 from datetime import datetime
 

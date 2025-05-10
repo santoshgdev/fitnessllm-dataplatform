@@ -82,6 +82,7 @@ jobs:
                     --cov-report=xml \
                     --cov-report=term \
                     --junitxml=junit.xml \
+                    --import-mode=importlib \
                     -o junit_family=legacy
 
             - name: Upload coverage to Codecov

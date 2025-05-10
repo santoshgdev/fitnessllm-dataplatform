@@ -12,8 +12,9 @@ from firebase_functions import https_fn, options
 from fitnessllm_shared.cloud_utils import get_secret
 from fitnessllm_shared.logger_utils import create_structured_logger
 from fitnessllm_shared.task_utils import encrypt_token
-from strava_auth_initiate.entities.constants import CORS_HEADERS
 from stravalib import Client
+
+from .entities.constants import CORS_HEADERS
 
 structured_logger = create_structured_logger(__name__)
 

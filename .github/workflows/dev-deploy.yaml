@@ -246,7 +246,7 @@ jobs:
         steps:
             - uses: actions/checkout@v4
               with:
-                  fetch-depth: 2  # We need the last 2 commits to compare HEAD and HEAD^
+                  fetch-depth: 0  # We need the last 2 commits to compare HEAD and HEAD^
 
             - name: Check for function changes
               id: check_changes

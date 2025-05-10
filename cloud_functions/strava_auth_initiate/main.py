@@ -32,7 +32,7 @@ except Exception as e:
 
 
 @https_fn.on_request(
-    cors=options.CorsOptions(cors_origins=["*"], cors_methods=["POST", "OPTIONS"])
+    cors=options.CorsOptions(cors_origins=["*"], cors_methods=["POST", "OPTIONS"]),
 )
 @functions_framework.http
 def strava_auth_initiate(request):

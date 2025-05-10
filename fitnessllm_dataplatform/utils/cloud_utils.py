@@ -34,7 +34,7 @@ def get_secret(name: str) -> dict:
     except Exception as e:
         structured_logger.error(
             message=f"Failed to retrieve or decode secret {name}",
-            exception=e,
+            exception=str(e),
             traceback=traceback.format_exc(),
         )
         raise

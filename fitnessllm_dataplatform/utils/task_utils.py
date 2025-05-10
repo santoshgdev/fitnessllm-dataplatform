@@ -7,13 +7,13 @@ from enum import Enum
 from json.decoder import JSONDecodeError
 
 from google.cloud import bigquery
-from utils.logging_utils import structured_logger
 
 from fitnessllm_dataplatform.entities.enums import (
     FitnessLLMDataSource,
     FitnessLLMDataStream,
 )
 from fitnessllm_dataplatform.stream.strava.entities.enums import StravaStreams
+from fitnessllm_dataplatform.utils.logging_utils import structured_logger
 
 
 def load_into_env_vars(options: dict):
@@ -69,9 +69,6 @@ def load_schema_from_json(
         with open(schema_path) as f:
             schema_json = json.load(f)
     except FileNotFoundError:
-        structured_logger.error(
-            f"Schema file not found: {schema_path}", data_source=data_source
-        )
         structured_logger.error(
             message="File not found",
             file=schema_path,

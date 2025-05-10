@@ -4,13 +4,16 @@ import json
 import logging
 from datetime import datetime
 from logging import Logger
-from typing import Any, Dict, Optional
+from typing import Any, Optional
+from zoneinfo import ZoneInfo
+
+from fitnessllm_shared.entities.constants import TIMEZONE
 
 
 class StructuredLogger:
     """Custom logger that adds structured logging capabilities."""
 
-    def __init__(self, name: str | None = None, level: int = logging.DEBUG):
+    def __init__(self, name: str | None = None, level: int = logging.DEBUG) -> None:
         """Initialize the structured logger.
 
         Args:
@@ -27,13 +30,13 @@ class StructuredLogger:
         data_source: Optional[str] = None,
         user_id: Optional[str] = None,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Format log entry with structured data."""
         log_data = {
             "level": level,
             "message": message,
             "service": self.name,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(ZoneInfo(TIMEZONE)).isoformat(),
         }
 
         if data_source:
@@ -51,7 +54,7 @@ class StructuredLogger:
         message: str,
         data_source: Optional[str] = None,
         user_id: Optional[str] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """Log info level message with structured data."""
         log_data = self._format_log("INFO", message, data_source, user_id, **kwargs)
@@ -62,7 +65,7 @@ class StructuredLogger:
         message: str,
         data_source: Optional[str] = None,
         user_id: Optional[str] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """Log error level message with structured data."""
         log_data = self._format_log("ERROR", message, data_source, user_id, **kwargs)
@@ -73,7 +76,7 @@ class StructuredLogger:
         message: str,
         data_source: Optional[str] = None,
         user_id: Optional[str] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """Log warning level message with structured data."""
         log_data = self._format_log("WARNING", message, data_source, user_id, **kwargs)
@@ -84,7 +87,7 @@ class StructuredLogger:
         message: str,
         data_source: Optional[str] = None,
         user_id: Optional[str] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """Log debug level message with structured data."""
         log_data = self._format_log("DEBUG", message, data_source, user_id, **kwargs)
@@ -116,7 +119,7 @@ def setup_logger(name: str | None = None, level: int = logging.DEBUG) -> Logger:
     console_handler.setLevel(level)
 
     formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
     console_handler.setFormatter(formatter)
 

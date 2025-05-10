@@ -1,5 +1,5 @@
 functions-framework==3.*
-google-cloud-firestore==2.*
+google-cloud-firestore>=2.19.0
 google-cloud-pubsub==2.*
 stravalib>=2.3,<3.0
 google-cloud-secret-manager==2.*
@@ -8,5 +8,5 @@ beartype>=0.20.2,<0.21.0
 types-pytz
 cryptography
 firebase-admin>=6.8.0,<7.0.0
-firebase-functions
+firebase-functions>=0.1.1
 git+https://github.com/santoshgdev/fitnessllm-shared.git@main

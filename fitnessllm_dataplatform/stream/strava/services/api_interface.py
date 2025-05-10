@@ -1,4 +1,5 @@
 """API Interface for Strava."""
+
 import json
 from enum import EnumType
 from functools import partial

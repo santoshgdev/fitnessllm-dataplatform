@@ -1,4 +1,5 @@
 """Request utilities."""
+
 import requests
 
 

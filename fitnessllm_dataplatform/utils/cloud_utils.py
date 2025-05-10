@@ -1,4 +1,5 @@
 """Utils to interact with cloud resources."""
+
 import json
 import traceback
 from os import environ

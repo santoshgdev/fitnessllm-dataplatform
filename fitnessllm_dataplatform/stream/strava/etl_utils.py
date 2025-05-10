@@ -1,4 +1,5 @@
 """Utility functions for ETL operations on Strava data."""
+
 from beartype import beartype
 from beartype.typing import Callable
 from pandas import DataFrame

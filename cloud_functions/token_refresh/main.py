@@ -1,4 +1,5 @@
 """Main Entry point for Token Refresh."""
+
 import json
 import traceback
 

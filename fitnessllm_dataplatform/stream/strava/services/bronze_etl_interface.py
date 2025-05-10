@@ -1,4 +1,5 @@
 """ETL Interface for Strava data."""
+
 import itertools
 import json
 import tempfile
@@ -156,9 +157,11 @@ class BronzeStravaETLInterface(ETLInterface):
                 )
             ):
                 result = Parallel(
-                    n_jobs=int(environ.get("WORKER", 1))
-                    if environ.get("WORKER")
-                    else mp.cpu_count(),
+                    n_jobs=(
+                        int(environ.get("WORKER", 1))
+                        if environ.get("WORKER")
+                        else mp.cpu_count()
+                    ),
                     backend="threading",
                 )(
                     delayed(self.load_json_into_dataframe)(
@@ -218,7 +221,7 @@ class BronzeStravaETLInterface(ETLInterface):
             Metrics,
             athlete_id=self.athlete_id,
             activity_id=file.stem.split("=")[1],
-            data_source=self.data_source.value,
+            data_source=self.data_source,
             data_stream=data_stream,
         )
         # TODO: Turn this into a dictionary with functions

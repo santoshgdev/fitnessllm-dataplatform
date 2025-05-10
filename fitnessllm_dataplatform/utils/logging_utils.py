@@ -1,4 +1,5 @@
 """Logging utilities."""
+
 import json
 import logging
 from datetime import datetime
@@ -25,7 +26,7 @@ class StructuredLogger:
         message: str,
         data_source: Optional[str] = None,
         user_id: Optional[str] = None,
-        **kwargs
+        **kwargs,
     ) -> Dict[str, Any]:
         """Format log entry with structured data."""
         log_data = {
@@ -50,7 +51,7 @@ class StructuredLogger:
         message: str,
         data_source: Optional[str] = None,
         user_id: Optional[str] = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         """Log info level message with structured data."""
         log_data = self._format_log("INFO", message, data_source, user_id, **kwargs)
@@ -61,7 +62,7 @@ class StructuredLogger:
         message: str,
         data_source: Optional[str] = None,
         user_id: Optional[str] = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         """Log error level message with structured data."""
         log_data = self._format_log("ERROR", message, data_source, user_id, **kwargs)
@@ -72,7 +73,7 @@ class StructuredLogger:
         message: str,
         data_source: Optional[str] = None,
         user_id: Optional[str] = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         """Log warning level message with structured data."""
         log_data = self._format_log("WARNING", message, data_source, user_id, **kwargs)
@@ -83,7 +84,7 @@ class StructuredLogger:
         message: str,
         data_source: Optional[str] = None,
         user_id: Optional[str] = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         """Log debug level message with structured data."""
         log_data = self._format_log("DEBUG", message, data_source, user_id, **kwargs)

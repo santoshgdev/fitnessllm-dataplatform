@@ -1,4 +1,5 @@
 """Utilities for testing Firestore interactions in memory."""
+
 import uuid
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone

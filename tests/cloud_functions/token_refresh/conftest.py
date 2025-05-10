@@ -1,4 +1,5 @@
 """Conftest for token refresh tests."""
+
 import pytest
 
 

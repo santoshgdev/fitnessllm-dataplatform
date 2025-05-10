@@ -1,4 +1,5 @@
 """Conftest for cloud_functions."""
+
 import random
 import uuid
 from datetime import datetime, timedelta, timezone

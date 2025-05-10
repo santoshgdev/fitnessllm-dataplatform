@@ -1,4 +1,5 @@
 """Redis Connection Module."""
+
 import json
 
 import redis

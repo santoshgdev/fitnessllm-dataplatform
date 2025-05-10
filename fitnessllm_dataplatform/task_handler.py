@@ -1,4 +1,5 @@
 """Main entry point for the data platform."""
+
 import traceback
 from functools import partial
 from os import environ

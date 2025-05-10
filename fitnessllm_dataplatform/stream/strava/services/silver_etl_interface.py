@@ -1,4 +1,5 @@
 """Module for Strava Silver ETL interface."""
+
 import os
 import pathlib
 

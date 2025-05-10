@@ -42,10 +42,5 @@ lint:
 repomix:
 	repomix --include "**/*.json,**/*.sql,**/*.py,**/Dockerfile,**/*.yml,**/*.ini,**/*.md,**/*.toml"
 
-copy_shared:
-	for fn in cloud_functions/*; do \
-		if [ -d "$$fn" ] && [ "$$(basename $$fn)" != "shared" ]; then \
-			rm -rf "$$fn/shared" && \
-			cp -r cloud_functions/shared "$$fn/shared"; \
-		fi; \
-	done
+update_shared:
+	poetry update fitnessllm_shared

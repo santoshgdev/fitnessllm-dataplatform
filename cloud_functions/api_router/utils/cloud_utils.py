@@ -8,6 +8,9 @@ def get_oauth_token() -> str:
 
     This is needed to authenticate to various GCP services. Opposed to Firebase ID token, which is just used to verify
     whether the user is in firebase auth.
+
+    Returns:
+        str: Oauth2 token.
     """
     credentials, _ = google.auth.default(
         scopes=["https://www.googleapis.com/auth/cloud-platform"],

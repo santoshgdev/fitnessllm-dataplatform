@@ -328,7 +328,7 @@ jobs:
                   gcloud functions deploy ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') \
                     --gen2 \
                     --region=${{ env.REGION }} \
-                    --runtime=python310 \
+                    --runtime=python312 \
                     --source=cloud_functions/${{ matrix.function }} \
                     --trigger-http \
                     --entry-point=${{ matrix.function }} \

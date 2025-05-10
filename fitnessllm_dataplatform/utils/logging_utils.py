@@ -1,6 +1,93 @@
 """Logging utilities."""
+import json
 import logging
+from datetime import datetime
 from logging import Logger
+from typing import Any, Dict, Optional
+
+
+class StructuredLogger:
+    """Custom logger that adds structured logging capabilities."""
+
+    def __init__(self, name: str | None = None, level: int = logging.DEBUG):
+        """Initialize the structured logger.
+
+        Args:
+            name: Name of the logger
+            level: Logging level
+        """
+        self.logger = setup_logger(name, level)
+        self.name = name or "root"
+
+    def _format_log(
+        self,
+        level: str,
+        message: str,
+        data_source: Optional[str] = None,
+        user_id: Optional[str] = None,
+        **kwargs
+    ) -> Dict[str, Any]:
+        """Format log entry with structured data."""
+        log_data = {
+            "level": level,
+            "message": message,
+            "service": self.name,
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+
+        if data_source:
+            log_data["data_source"] = data_source
+        if user_id:
+            log_data["user_id"] = user_id
+
+        # Add any additional fields
+        log_data.update(kwargs)
+
+        return log_data
+
+    def info(
+        self,
+        message: str,
+        data_source: Optional[str] = None,
+        user_id: Optional[str] = None,
+        **kwargs
+    ) -> None:
+        """Log info level message with structured data."""
+        log_data = self._format_log("INFO", message, data_source, user_id, **kwargs)
+        self.logger.info(json.dumps(log_data))
+
+    def error(
+        self,
+        message: str,
+        data_source: Optional[str] = None,
+        user_id: Optional[str] = None,
+        **kwargs
+    ) -> None:
+        """Log error level message with structured data."""
+        log_data = self._format_log("ERROR", message, data_source, user_id, **kwargs)
+        self.logger.error(json.dumps(log_data))
+
+    def warning(
+        self,
+        message: str,
+        data_source: Optional[str] = None,
+        user_id: Optional[str] = None,
+        **kwargs
+    ) -> None:
+        """Log warning level message with structured data."""
+        log_data = self._format_log("WARNING", message, data_source, user_id, **kwargs)
+        self.logger.warning(json.dumps(log_data))
+
+    def debug(
+        self,
+        message: str,
+        data_source: Optional[str] = None,
+        user_id: Optional[str] = None,
+        **kwargs
+    ) -> None:
+        """Log debug level message with structured data."""
+        log_data = self._format_log("DEBUG", message, data_source, user_id, **kwargs)
+        self.logger.debug(json.dumps(log_data))
 
 
 def setup_logger(name: str | None = None, level: int = logging.DEBUG) -> Logger:
@@ -8,7 +95,7 @@ def setup_logger(name: str | None = None, level: int = logging.DEBUG) -> Logger:
 
     Args:
         name (str): Name of the logger.
-        level (int): Logging level git a(e.g., logging.DEBUG, logging.INFO).
+        level (int): Logging level (e.g., logging.DEBUG, logging.INFO).
 
     Returns:
         logging.Logger: Configured logger instance.
@@ -37,4 +124,8 @@ def setup_logger(name: str | None = None, level: int = logging.DEBUG) -> Logger:
     return logger
 
 
+# Create default logger instance
 logger = setup_logger()
+
+# Create default structured logger instance
+structured_logger = StructuredLogger()

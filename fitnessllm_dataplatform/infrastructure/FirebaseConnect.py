@@ -2,7 +2,7 @@
 import firebase_admin
 from firebase_admin import firestore
 
-from fitnessllm_dataplatform.utils.logging_utils import logger
+from fitnessllm_dataplatform.utils.logging_utils import structured_logger
 
 
 class FirebaseConnect:
@@ -17,7 +17,7 @@ class FirebaseConnect:
     def open_connection(self):
         """Open Firebase connection."""
         self.interface = firestore.client()
-        logger.debug("Opened Firebase connection.")
+        structured_logger.debug("Opened Firebase connection.", uid=self.uid)
 
     def close_connection(self):
         """Close Firebase connection."""

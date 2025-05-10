@@ -2,6 +2,7 @@
 import itertools
 import json
 import tempfile
+import traceback
 from datetime import datetime
 from enum import EnumType
 from functools import partial
@@ -31,7 +32,7 @@ from fitnessllm_dataplatform.stream.strava.entities.queries import (
     create_activities_query,
 )
 from fitnessllm_dataplatform.stream.strava.etl_utils import execute_etl_func
-from fitnessllm_dataplatform.utils.logging_utils import logger
+from fitnessllm_dataplatform.utils.logging_utils import structured_logger
 from fitnessllm_dataplatform.utils.task_utils import load_schema_from_json
 
 
@@ -40,12 +41,14 @@ class BronzeStravaETLInterface(ETLInterface):
 
     def __init__(
         self,
+        uid: str,
         infrastructure_names: EnumType,
         athlete_id: str,
         data_streams: list[str] | None = None,
     ):
         """Initializes Strava ETL Interface."""
         super().__init__()
+        self.uid = uid
         self.data_source = FitnessLLMDataSource.STRAVA
         self.athlete_id = athlete_id
         self.data_streams = data_streams
@@ -65,8 +68,12 @@ class BronzeStravaETLInterface(ETLInterface):
                 for element in self.partial_strava_storage(strava_model=None).iterdir()
             ]
         except KeyError as exc:
-            logger.error(
-                f"User defined data_streams for Strava not found: {self.data_streams}: {exc}"
+            structured_logger.error(
+                message="User defined data_streams not found",
+                uid=self.uid,
+                data_source=self.data_source.value.lower(),
+                exception=exc,
+                traceback=traceback.format_exc(),
             )
             raise exc
 
@@ -76,7 +83,11 @@ class BronzeStravaETLInterface(ETLInterface):
             ]
 
         for stream in streams:
-            logger.info(f"Loading {stream} for {self.athlete_id}")
+            structured_logger.info(
+                message=f"Loading {stream} for {self.athlete_id}",
+                uid=self.uid,
+                data_source=self.data_source.value.lower(),
+            )
             dataframes, metrics = self.convert_stream_json_to_dataframe(stream=stream)
             if dataframes and metrics:
                 self.upsert_to_bigquery(
@@ -85,7 +96,11 @@ class BronzeStravaETLInterface(ETLInterface):
                     metrics=metrics,
                 )
             else:
-                logger.info(f"No new data for {stream} for {self.athlete_id}")
+                structured_logger.warning(
+                    message="No new data",
+                    uid=self.uid,
+                    data_source=self.data_source.value.lower(),
+                )
 
     @beartype
     def convert_stream_json_to_dataframe(self, stream: StravaStreams):
@@ -103,7 +118,11 @@ class BronzeStravaETLInterface(ETLInterface):
             .to_dataframe()["activity_id"]
             .values
         )
-        logger.info(f"Extracted {len(activity_ids)} activity ids for {stream}")
+        structured_logger.info(
+            message=f"Extracted {len(activity_ids)} activity ids for {stream}",
+            uid=self.uid,
+            data_source=self.data_source.value.lower(),
+        )
 
         module_strava_json_list = (
             list(
@@ -116,7 +135,11 @@ class BronzeStravaETLInterface(ETLInterface):
             else list(self.partial_strava_storage(strava_model=stream).iterdir())
         )
         if sample:
-            logger.info(f"Sampling has been turned on: {sample}")
+            structured_logger.debug(
+                message=f"Sampling has been turned on {sample}",
+                uid=self.uid,
+                data_source=self.data_source.value.lower(),
+            )
 
         filtered_module_strava_json_list = [
             file
@@ -182,7 +205,11 @@ class BronzeStravaETLInterface(ETLInterface):
         self, file: GSPath, data_stream: FitnessLLMDataStream
     ) -> dict[str, DataFrame | Metrics]:
         """Loads JSON into DataFrame."""
-        logger.debug("Starting to process %s", file)
+        structured_logger.debug(
+            message=f"Starting to process {file}",
+            uid=self.uid,
+            data_source=self.data_source.value.lower(),
+        )
         data_dict = json.loads(file.read_text())
         if isinstance(data_dict, str):
             data_dict = json.loads(data_dict)
@@ -252,8 +279,12 @@ class BronzeStravaETLInterface(ETLInterface):
                 return
             raise Exception("Job did not complete successfully")
         except Exception as e:
-            logger.error(
-                f"Error while inserting for {stream.value} for {self.athlete_id}: {e}"
+            structured_logger.error(
+                message=f"Error while inserting {stream.value} into BigQuery for {self.athlete_id}",
+                uid=self.uid,
+                data_source=self.data_source.value.lower(),
+                exception=e,
+                traceback=traceback.format_exc(),
             )
             self.insert_metrics(
                 metrics_list=metrics,
@@ -292,7 +323,17 @@ class BronzeStravaETLInterface(ETLInterface):
                 )
                 result = job.result()
             if result.state != "DONE":
-                logger.error("Unable to insert metrics into BigQuery.")
+                structured_logger.error(
+                    "Unable to insert metrics into BigQuery.",
+                    uid=self.uid,
+                    data_source=self.data_source.value.lower(),
+                )
         except Exception as e:
-            logger.error("Unable to write metrics to BigQuery.")
+            structured_logger.error(
+                message="Unable to write metrics to BigQuery",
+                uid=self.uid,
+                data_source=self.data_source.value.lower(),
+                exception=e,
+                traceback=traceback.format_exc(),
+            )
             raise e

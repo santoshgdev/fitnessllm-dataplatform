@@ -4,7 +4,7 @@ from beartype.typing import Any, Dict, List
 from google.cloud import firestore
 
 from fitnessllm_dataplatform.task_handler import Startup
-from fitnessllm_dataplatform.utils.logging_utils import logger
+from fitnessllm_dataplatform.utils.logging_utils import structured_logger
 
 
 class BatchHandler:
@@ -22,6 +22,7 @@ class BatchHandler:
         Returns:
             List of user documents.
         """
+        structured_logger.info(message="Getting all users", batch=True, uid="all")
         users_ref = self.db.collection("users")
         users = users_ref.stream()
         return [user.to_dict() for user in users]
@@ -35,11 +36,19 @@ class BatchHandler:
             data_source: Data source to process (default: strava).
         """
         try:
-            logger.info(f"Processing user {user_id} for data source {data_source}")
+            structured_logger.info(
+                message="Processing user", uid=user_id, data_source=data_source
+            )
             self.startup.full_etl(uid=user_id, data_source=data_source)
-            logger.info(f"Successfully processed user {user_id}")
+            structured_logger.info(
+                message="Successfully processed user",
+                uid=user_id,
+                data_source=data_source,
+            )
         except Exception as e:
-            logger.error(f"Error processing user {user_id}: {str(e)}")
+            structured_logger.error(
+                message="Failed to process user", uid=user_id, exception=e
+            )
             raise
 
     @beartype
@@ -50,24 +59,43 @@ class BatchHandler:
             data_source: Data source to process (default: strava).
         """
         users = self.get_all_users()
-        logger.info(f"Found {len(users)} users to process")
+        structured_logger.info(
+            message=f"Found {len(users)} users to process",
+            data_source=data_source,
+            batch=True,
+            uid="all",
+        )
         # TODO: Need to add that if nothing is given to datasource, that for each user we run for all their datasources.
         for user in users:
             user_id = user.get("uid")
             if not user_id:
-                logger.warning(f"Skipping user without uid: {user}")
+                structured_logger.warning(
+                    message=f"Skipping user without uid: {user}",
+                    uid=user_id,
+                    exception=user,
+                )
                 continue
 
             try:
                 self.process_user(user_id, data_source)
             except Exception as e:
-                logger.error(f"Failed to process user {user_id}: {str(e)}")
+                structured_logger.error(
+                    message="Failed to process user",
+                    uid=user_id,
+                    exception=e,
+                    data_source=data_source,
+                )
                 # Continue with next user even if one fails
                 continue
-
-        logger.info("Finished processing all users")
+        structured_logger.info(
+            message="Finished processing all users",
+            data_source=data_source,
+            batch=True,
+            uid="all",
+        )
 
 
 if __name__ == "__main__":
+    structured_logger.info("Starting batch handler")
     handler = BatchHandler()
     handler.process_all_users()

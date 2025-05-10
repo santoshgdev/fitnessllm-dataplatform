@@ -1,4 +1,5 @@
 """Batch handler for processing all users."""
+
 from beartype import beartype
 from beartype.typing import Any, Dict, List
 from google.cloud import firestore
@@ -17,12 +18,11 @@ class BatchHandler:
 
     @beartype
     def get_all_users(self) -> List[Dict[str, Any]]:
-        """Get all users from Firestore.
+        """Retrieves all user documents from the Firestore "users" collection.
 
         Returns:
-            List of user documents.
+            A list of dictionaries representing each user's data.
         """
-        structured_logger.info(message="Getting all users", batch=True, uid="all")
         users_ref = self.db.collection("users")
         users = users_ref.stream()
         return [user.to_dict() for user in users]

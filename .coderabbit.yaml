@@ -1,0 +1,75 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/coderabbit.json
+version: 1
+
+ai:
+    review: true
+    suggest: true
+    document: true
+
+pr_description:
+    auto_generate: true
+    include:
+        - changes      # Summary of code changes
+        - dependencies # Any dependency updates
+        - security     # Security implications
+        - testing      # Testing information
+        - documentation # Documentation updates
+    format: markdown   # Use markdown formatting
+    language: en       # English language
+    template: |
+        ## Changes
+        {changes}
+
+        ## Dependencies
+        {dependencies}
+
+        ## Security
+        {security}
+
+        ## Testing
+        {testing}
+
+        ## Documentation
+        {documentation}
+
+review:
+    auto_review: true
+    frequency: daily
+    paths:
+        - '**/*'
+    exclude:
+        - '**/node_modules/**'
+        - '**/dist/**'
+        - '**/build/**'
+        - '**/.git/**'
+        - '**/__pycache__/**'
+        - '**/*.pyc'
+
+dependencies:
+    auto_update: true
+    frequency: weekly
+    paths:
+        - '**/requirements.txt'
+        - '**/package.json'
+        - '**/go.mod'
+    exclude:
+        - '**/node_modules/**'
+        - '**/dist/**'
+        - '**/build/**'
+        - '**/.git/**'
+        - '**/__pycache__/**'
+        - '**/*.pyc'
+
+security:
+    scan: true
+    frequency: daily
+    paths:
+        - '**/*'
+    exclude:
+        - '**/node_modules/**'
+        - '**/dist/**'
+        - '**/build/**'
+        - '**/.git/**'
+        - '**/__pycache__/**'
+        - '**/*.pyc'

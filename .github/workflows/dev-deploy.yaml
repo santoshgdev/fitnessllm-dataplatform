@@ -74,9 +74,6 @@ jobs:
             - name: Run pre-commit checks
               run: pre-commit run --all-files
 
-            - name: Copy shared code into each function directory
-              uses: ./.github/actions/copy-shared
-
             - name: Run tests with coverage
               run: |
                   PYTHONPATH=$PWD poetry run pytest tests/ \
@@ -119,7 +116,12 @@ jobs:
                   echo "Latest commit in push: ${{ github.sha }}"
 
                   echo "=== Debug: All changed files ==="
-                  git diff --name-only ${{ github.event.before }} ${{ github.sha }}
+                  if [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ]; then
+                    echo "First commit or new branch, showing all files:"
+                    git ls-files
+                  else
+                    git diff --name-only ${{ github.event.before }} ${{ github.sha }}
+                  fi
 
                   if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -q -E '^(fitnessllm_dataplatform/|Dockerfile|pyproject.toml|poetry.lock|.github/)'; then
                     echo "changes_detected=true" >> $GITHUB_OUTPUT
@@ -164,21 +166,14 @@ jobs:
                   restore-keys: |
                       ${{ runner.os }}-buildx-
 
-            - name: Build Docker image
+            - name: Build and Push Docker image to Artifact Registry
               run: |
-                  # Create cache directory if it doesn't exist
-                  mkdir -p /tmp/.buildx-cache
-
-                  # Build with cache if available
+                  IMAGE_TAG="${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }}"
                   docker buildx build . \
                     --cache-from type=local,src=/tmp/.buildx-cache \
                     --cache-to type=local,dest=/tmp/.buildx-cache \
-                    -t ${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }} \
-                    --load
-
-            - name: Push Docker image to Artifact Registry
-              run: |
-                  docker push ${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }}
+                    -t $IMAGE_TAG \
+                    --push
 
             - name: Debug deployment configuration
               run: |
@@ -212,6 +207,34 @@ jobs:
                     --service-account=${{ secrets.GCP_DP_SA_EMAIL }} \
                     --set-env-vars "$ENV_VARS"
 
+            - name: Scheduled Batch Cloud Run Job
+              run: |
+                  CLOUD_RUN_JOB_URL="https://${{ env.REGION }}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${{ env.PROJECT_ID }}/jobs/${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }}:run"
+                  PAYLOAD='{"overrides":{"taskCount":1,"containerOverrides":[{"args":["python","fitnessllm_dataplatform/batch_handler.py"]}]}}'
+                  if gcloud scheduler jobs describe batch-data-run \
+                    --project="${{ env.PROJECT_ID }}" \
+                    --location="${{ env.REGION }}"; then
+                    gcloud scheduler jobs update http batch-data-run \
+                      --project="${{ env.PROJECT_ID }}" \
+                      --location="${{ env.REGION }}" \
+                      --schedule="0 2 * * *" \
+                      --uri="$CLOUD_RUN_JOB_URL" \
+                      --http-method=POST \
+                      --oauth-service-account-email=${{ secrets.GCP_DP_SA_EMAIL }} \
+                      --time-zone="America/Los_Angeles" \
+                      --message-body="$PAYLOAD"
+                  else
+                    gcloud scheduler jobs create http batch-data-run \
+                      --project="${{ env.PROJECT_ID }}" \
+                      --location="${{ env.REGION }}" \
+                      --schedule="0 2 * * *" \
+                      --uri="$CLOUD_RUN_JOB_URL" \
+                      --http-method=POST \
+                      --oauth-service-account-email=${{ secrets.GCP_DP_SA_EMAIL }} \
+                      --time-zone="America/Los_Angeles" \
+                      --message-body="$PAYLOAD"
+                  fi
+
     cloud_function_detect_changes:
         needs: testing
         runs-on: ubuntu-latest
@@ -223,7 +246,7 @@ jobs:
         steps:
             - uses: actions/checkout@v4
               with:
-                  fetch-depth: 2  # We need the last 2 commits to compare HEAD and HEAD^
+                  fetch-depth: 0  # We need the last 2 commits to compare HEAD and HEAD^
 
             - name: Check for function changes
               id: check_changes
@@ -280,7 +303,8 @@ jobs:
 
     cloud_function_deploy:
         needs: cloud_function_detect_changes
-        if: needs.cloud_function_detect_changes.outputs.has_changes == 'true'
+        if: needs.cloud_function_detect_changes.outputs.has_changes == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
+            == 'true')
         runs-on: ubuntu-latest
         environment: dev
         strategy:
@@ -289,26 +313,26 @@ jobs:
         steps:
             - uses: actions/checkout@v4
 
-            - name: Copy shared code into each function directory
-              uses: ./.github/actions/copy-shared
-
             - name: Authenticate to Google Cloud
-              if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true'
+              if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
+                  == 'true')
               uses: google-github-actions/auth@v2
               with:
                   credentials_json: ${{ secrets.GCP_SA_KEY }}
 
             - name: Set up gcloud CLI
-              if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true'
+              if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
+                  == 'true')
               uses: google-github-actions/setup-gcloud@v2
 
             - name: Deploy Function
-              if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true'
+              if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
+                  == 'true')
               run: |
                   gcloud functions deploy ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') \
                     --gen2 \
                     --region=${{ env.REGION }} \
-                    --runtime=python310 \
+                    --runtime=python312 \
                     --source=cloud_functions/${{ matrix.function }} \
                     --trigger-http \
                     --entry-point=${{ matrix.function }} \
@@ -321,7 +345,8 @@ jobs:
                   gcloud run services update ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') --region=${{ env.REGION }} --add-custom-audiences=${{ env.PROJECT_ID }}
 
             - name: Clean up old revisions
-              if: success() && needs.cloud_function_detect_changes.outputs[matrix.function] == 'true'
+              if: success() && needs.cloud_function_detect_changes.outputs[matrix.function] == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
+                  == 'true')
               run: |
                   # First, get the latest revision
                   LATEST_REVISION=$(gcloud run revisions list --service ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') --region us-west1 --format="value(name)" --sort-by=~creationTimestamp --limit=1)

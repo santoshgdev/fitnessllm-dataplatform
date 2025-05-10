@@ -13,18 +13,16 @@ clean:
 	poetry install --sync
 
 build:
-	make copy_shared
 	docker build . -t fitnessllm-dp
 
 test:
-	make copy_shared
 	docker run -it \
 	  -e POETRY_VIRTUALENVS_CREATE=false \
 	  -e POETRY_NO_INTERACTION=1 \
 	  -e PYTHONPATH=/app/fitnessllm-dataplatform \
 	  -v "$$PWD:/app/fitnessllm-dataplatform" \
 	  fitnessllm-dp:latest \
-	  bash -c "cd /app/fitnessllm-dataplatform && /app/.venv/bin/pytest tests --cov --cov-branch --cov-report=html"
+	  bash -c "cd /app/fitnessllm-dataplatform && /app/.venv/bin/pytest tests --cov --cov-branch --cov-report=html --import-mode=importlib"
 
 coverage:
 	coverage
@@ -42,10 +40,5 @@ lint:
 repomix:
 	repomix --include "**/*.json,**/*.sql,**/*.py,**/Dockerfile,**/*.yml,**/*.ini,**/*.md,**/*.toml"
 
-copy_shared:
-	for fn in cloud_functions/*; do \
-		if [ -d "$$fn" ] && [ "$$(basename $$fn)" != "shared" ]; then \
-			rm -rf "$$fn/shared" && \
-			cp -r cloud_functions/shared "$$fn/shared"; \
-		fi; \
-	done
+update_shared:
+	poetry update fitnessllm_shared

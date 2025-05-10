@@ -3,13 +3,15 @@ from os import environ
 
 from beartype import beartype
 from beartype.typing import Any, Dict
+from fitnessllm_shared.cloud_utils import get_secret
+from fitnessllm_shared.logger_utils import create_structured_logger
+from fitnessllm_shared.task_utils import (
+    decrypt_token,
+    encrypt_token,
+    update_last_refresh,
+)
 from google.cloud import firestore
 from stravalib.client import Client
-
-from ..shared.cloud_utils import get_secret
-from ..shared.logger_utils import create_structured_logger
-from ..shared.task_utils import encrypt_token
-from ..utils.task_utils import decrypt_token, update_last_refresh
 
 structured_logger = create_structured_logger(__name__)
 

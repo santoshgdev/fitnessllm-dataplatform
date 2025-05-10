@@ -4,10 +4,12 @@ import google.auth.transport.requests
 
 
 def get_oauth_token() -> str:
-    """Retrieve Oauth2 token.
+    """Obtains an OAuth2 token for authenticating with Google Cloud Platform services.
 
-    This is needed to authenticate to various GCP services. Opposed to Firebase ID token, which is just used to verify
-    whether the user is in firebase auth.
+    Unlike a Firebase ID token, which verifies user identity in Firebase Auth, this token grants access to GCP resources.
+
+    Returns:
+        An OAuth2 token as a string.
     """
     credentials, _ = google.auth.default(
         scopes=["https://www.googleapis.com/auth/cloud-platform"],

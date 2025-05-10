@@ -9,11 +9,12 @@ import functions_framework
 import requests
 from firebase_admin import firestore, initialize_app
 from firebase_functions import https_fn, options
+from fitnessllm_shared.cloud_utils import get_secret
+from fitnessllm_shared.logger_utils import create_structured_logger
+from fitnessllm_shared.task_utils import encrypt_token
 from stravalib import Client
 
-from .shared.cloud_utils import get_secret
-from .shared.logger_utils import create_structured_logger
-from .shared.task_utils import encrypt_token
+from .entities.constants import CORS_HEADERS
 
 structured_logger = create_structured_logger(__name__)
 
@@ -31,20 +32,19 @@ except Exception as e:
 
 
 @https_fn.on_request(
-    cors=options.CorsOptions(cors_origins=["*"], cors_methods=["POST", "OPTIONS"])
+    cors=options.CorsOptions(cors_origins=["*"], cors_methods=["POST", "OPTIONS"]),
 )
 @functions_framework.http
-def strava_auth_initiate(request):
-    """Handle CORS preflight and main request."""
-    # Set CORS headers
-    headers = {
-        "Access-Control-Allow-Origin": "https://dev.fitnessllm.app",
-        "Access-Control-Allow-Methods": "POST",
-        "Access-Control-Allow-Headers": "Authorization, Content-Type",
-    }
+@functions_framework.http
+def strava_auth_initiate(request: https_fn.Request) -> https_fn.Response:
+    """Handles Strava OAuth initiation, exchanges authorization code for tokens, encrypts and stores them in Firestore, and manages CORS and authentication for incoming requests.
 
+    For POST requests, verifies the Firebase ID token, exchanges the Strava authorization code for access and refresh tokens, retrieves athlete profile data, encrypts sensitive tokens, and updates the user's Firestore document with connection details. Handles CORS preflight (OPTIONS) and returns appropriate error responses for authentication or API failures.
+    """
+    # Set CORS headers
+    ...
     if request.method == "OPTIONS":
-        return https_fn.Response(status=200, headers=headers)
+        return https_fn.Response(status=200, headers=CORS_HEADERS)
 
     try:
         # Get Firebase ID token from Authorization header
@@ -52,7 +52,7 @@ def strava_auth_initiate(request):
         if not auth_header or not auth_header.startswith("Bearer "):
             return https_fn.Response(
                 status=401,
-                headers=headers,
+                headers=CORS_HEADERS,
                 response=json.dumps(
                     {
                         "error": "Unauthorized",
@@ -66,7 +66,7 @@ def strava_auth_initiate(request):
         if not id_token:
             return https_fn.Response(
                 status=401,
-                headers=headers,
+                headers=CORS_HEADERS,
                 response=json.dumps(
                     {
                         "error": "Unauthorized",
@@ -83,17 +83,28 @@ def strava_auth_initiate(request):
         if not authorization_code:
             return https_fn.Response(
                 status=401,
-                headers=headers,
+                headers=CORS_HEADERS,
                 response=json.dumps(
-                    {"error": "Unauthorized", "message": "Authorization code required"}
+                    {"error": "Unauthorized", "message": "Authorization code required"},
                 ),
             )
 
         # Retrieve secret
-        strava_keys = get_secret(os.environ["STRAVA_SECRET"])
-
-        encryption_key = get_secret(os.environ["ENCRYPTION_SECRET"])["token"]
-
+        try:
+            strava_keys = get_secret(os.environ["STRAVA_SECRET"])
+            encryption_key = get_secret(os.environ["ENCRYPTION_SECRET"])["token"]
+        except Exception as e:
+            logging.error(f"Error retrieving secrets: {e}")
+            return https_fn.Response(
+                json.dumps(
+                    {
+                        "error": "Server Error",
+                        "message": "Failed to access required configuration",
+                    }
+                ),
+                500,
+                CORS_HEADERS,
+            )
         # Exchange code with Strava
         client = Client()
         token_response = client.exchange_code_for_token(
@@ -153,15 +164,20 @@ def strava_auth_initiate(request):
         strava_ref.set(strava_data, merge=True)
         return https_fn.Response(
             status=200,
-            headers=headers,
+            headers=CORS_HEADERS,
             response=json.dumps(
-                {"message": "Strava connection successful", "athlete": athlete_id}
+                {"message": "Strava connection successful", "athlete": athlete_id},
             ),
         )
 
     except Exception as e:
-        logging.exception("Error in Strava auth")
+        structured_logger(
+            message="Error in Strava auth",
+            error=str(e),
+            level="ERROR",
+            traceback=traceback.format_exc(),
+        )
         error_message = str(e)
         if isinstance(e, requests.HTTPError):
             error_message = f"Strava API error: {e.response.text}"
-        return https_fn.Response(error_message, 401, headers)
+        return https_fn.Response(error_message, 401, CORS_HEADERS)

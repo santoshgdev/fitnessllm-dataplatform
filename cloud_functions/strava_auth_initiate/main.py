@@ -153,7 +153,7 @@ def strava_auth_initiate(request):
             status=200,
             headers=CORS_HEADERS,
             response=json.dumps(
-                {"message": "Strava connection successful", "athlete": athlete_id}
+                {"message": "Strava connection successful", "athlete": athlete_id},
             ),
         )
 

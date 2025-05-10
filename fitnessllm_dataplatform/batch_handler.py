@@ -92,8 +92,9 @@ class BatchHandler:
             raise
 
     @beartype
+    @beartype
     def process_all_users(
-        self, data_source: str = FitnessLLMDataSource.STRAVA.value
+        self, data_source: str = FitnessLLMDataSource.STRAVA.value,
     ) -> None:
         """
         Processes all users in the database for a specified data source.

@@ -159,7 +159,7 @@ def strava_auth_initiate(request: https_fn.Request) -> https_fn.Response:
         )
 
     except Exception as e:
-        logging.exception("Error in Strava auth")
+        structured_logger(message="Error in Strava auth", error=str(e), level="ERROR", traceback=traceback.format_exc())
         error_message = str(e)
         if isinstance(e, requests.HTTPError):
             error_message = f"Strava API error: {e.response.text}"

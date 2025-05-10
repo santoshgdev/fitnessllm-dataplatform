@@ -89,10 +89,19 @@ def strava_auth_initiate(request: https_fn.Request) -> https_fn.Response:
             )
 
         # Retrieve secret
-        strava_keys = get_secret(os.environ["STRAVA_SECRET"])
-
-        encryption_key = get_secret(os.environ["ENCRYPTION_SECRET"])["token"]
-
+        try:
+            strava_keys = get_secret(os.environ["STRAVA_SECRET"])
+            encryption_key = get_secret(os.environ["ENCRYPTION_SECRET"])["token"]
+        except Exception as e:
+            logging.error(f"Error retrieving secrets: {e}")
+            return https_fn.Response(
+                json.dumps({
+                    "error": "Server Error",
+                    "message": "Failed to access required configuration"
+                }),
+                500,
+                CORS_HEADERS,
+            )
         # Exchange code with Strava
         client = Client()
         token_response = client.exchange_code_for_token(

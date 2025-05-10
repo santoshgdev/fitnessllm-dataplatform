@@ -22,9 +22,8 @@ class BatchHandler:
 
     @beartype
     def get_all_users(self) -> List[Dict[str, Any]]:
-        """
-        Retrieves all user documents from the Firestore "users" collection.
-        
+        """Retrieves all user documents from the Firestore "users" collection.
+
         Returns:
             A list of dictionaries representing each user's data.
         """
@@ -34,9 +33,8 @@ class BatchHandler:
 
     @beartype
     def get_specific_user(self, user_id: str) -> Optional[DocumentReference]:
-        """
-        Retrieves a Firestore document reference for a specific user by user ID.
-        
+        """Retrieves a Firestore document reference for a specific user by user ID.
+
         Returns:
             The user's document reference if it exists; otherwise, None.
         """
@@ -49,9 +47,8 @@ class BatchHandler:
 
     @beartype
     def refresh_tokens(self, user_id: str, data_source: str) -> None:
-        """
-        Refreshes authentication tokens for a user for the specified data source.
-        
+        """Refreshes authentication tokens for a user for the specified data source.
+
         If the data source is Strava, retrieves the user's refresh token from Firestore and updates the OAuth token.
         """
         user_ref = self.get_specific_user(user_id)
@@ -73,11 +70,10 @@ class BatchHandler:
     def process_user(
         self, user_id: str, data_source: str = FitnessLLMDataSource.STRAVA.value
     ) -> None:
-        """
-        Processes a single user's data for a specified data source.
-        
+        """Processes a single user's data for a specified data source.
+
         Refreshes authentication tokens for the user, then performs a full ETL operation using the given data source. Logs progress and errors, and re-raises any exceptions encountered.
-        
+
         Args:
             user_id: The Firestore user ID to process.
             data_source: The data source to process for the user (default is Strava).
@@ -94,11 +90,11 @@ class BatchHandler:
     @beartype
     @beartype
     def process_all_users(
-        self, data_source: str = FitnessLLMDataSource.STRAVA.value,
+        self,
+        data_source: str = FitnessLLMDataSource.STRAVA.value,
     ) -> None:
-        """
-        Processes all users in the database for a specified data source.
-        
+        """Processes all users in the database for a specified data source.
+
         Retrieves all user records and processes each one individually for the given data source. Users without a user ID are skipped. Errors encountered during processing of individual users are logged, and processing continues for remaining users.
         """
         users = self.get_all_users()

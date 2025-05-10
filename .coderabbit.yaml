@@ -1,0 +1,144 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/coderabbit.json
+version: 1
+
+# Configure the AI behavior
+ai:
+  # Enable AI-powered code review
+    review: true
+  # Enable AI-powered code suggestions
+    suggest: true
+  # Enable AI-powered documentation
+    document: true
+
+# Configure the review process
+review:
+  # Automatically review PRs
+    auto_review: true
+  # Review frequency (daily)
+    frequency: daily
+  # Review all files
+    paths:
+        - '**/*'
+  # Exclude certain paths
+    exclude:
+        - '**/node_modules/**'
+        - '**/dist/**'
+        - '**/build/**'
+        - '**/.git/**'
+        - '**/__pycache__/**'
+        - '**/*.pyc'
+
+# Configure the suggestion process
+suggest:
+  # Enable automatic suggestions
+    auto_suggest: true
+  # Suggest frequency (daily)
+    frequency: daily
+  # Suggest for all files
+    paths:
+        - '**/*'
+  # Exclude certain paths
+    exclude:
+        - '**/node_modules/**'
+        - '**/dist/**'
+        - '**/build/**'
+        - '**/.git/**'
+        - '**/__pycache__/**'
+        - '**/*.pyc'
+
+# Configure the documentation process
+document:
+  # Enable automatic documentation
+    auto_document: true
+  # Document frequency (daily)
+    frequency: daily
+  # Document for all files
+    paths:
+        - '**/*'
+  # Exclude certain paths
+    exclude:
+        - '**/node_modules/**'
+        - '**/dist/**'
+        - '**/build/**'
+        - '**/.git/**'
+        - '**/__pycache__/**'
+        - '**/*.pyc'
+
+# Configure the commit message format
+commit:
+  # Enable conventional commit format
+    conventional: true
+  # Enable emoji in commit messages
+    emoji: true
+
+# Configure the PR template
+pr:
+  # Enable PR template
+    template: true
+  # PR template path
+    template_path: .github/pull_request_template.md
+
+# Configure the issue template
+issue:
+  # Enable issue template
+    template: true
+  # Issue template path
+    template_path: .github/issue_template.md
+
+# Configure the label system
+labels:
+  # Enable automatic labeling
+    auto_label: true
+  # Label PRs based on changes
+    pr_labels:
+        - enhancement
+        - bug
+        - documentation
+        - dependencies
+        - security
+  # Label issues based on content
+    issue_labels:
+        - enhancement
+        - bug
+        - documentation
+        - question
+        - security
+
+# Configure the security scanning
+security:
+  # Enable security scanning
+    scan: true
+  # Scan frequency (daily)
+    frequency: daily
+  # Scan all files
+    paths:
+        - '**/*'
+  # Exclude certain paths
+    exclude:
+        - '**/node_modules/**'
+        - '**/dist/**'
+        - '**/build/**'
+        - '**/.git/**'
+        - '**/__pycache__/**'
+        - '**/*.pyc'
+
+# Configure the dependency updates
+dependencies:
+  # Enable automatic dependency updates
+    auto_update: true
+  # Update frequency (weekly)
+    frequency: weekly
+  # Update all dependency files
+    paths:
+        - '**/requirements.txt'
+        - '**/package.json'
+        - '**/go.mod'
+  # Exclude certain paths
+    exclude:
+        - '**/node_modules/**'
+        - '**/dist/**'
+        - '**/build/**'
+        - '**/.git/**'
+        - '**/__pycache__/**'
+        - '**/*.pyc'

@@ -95,10 +95,12 @@ def strava_auth_initiate(request: https_fn.Request) -> https_fn.Response:
         except Exception as e:
             logging.error(f"Error retrieving secrets: {e}")
             return https_fn.Response(
-                json.dumps({
-                    "error": "Server Error",
-                    "message": "Failed to access required configuration"
-                }),
+                json.dumps(
+                    {
+                        "error": "Server Error",
+                        "message": "Failed to access required configuration",
+                    }
+                ),
                 500,
                 CORS_HEADERS,
             )
@@ -168,7 +170,12 @@ def strava_auth_initiate(request: https_fn.Request) -> https_fn.Response:
         )
 
     except Exception as e:
-        structured_logger(message="Error in Strava auth", error=str(e), level="ERROR", traceback=traceback.format_exc())
+        structured_logger(
+            message="Error in Strava auth",
+            error=str(e),
+            level="ERROR",
+            traceback=traceback.format_exc(),
+        )
         error_message = str(e)
         if isinstance(e, requests.HTTPError):
             error_message = f"Strava API error: {e.response.text}"

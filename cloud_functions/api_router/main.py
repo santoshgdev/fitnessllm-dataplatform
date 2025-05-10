@@ -8,9 +8,10 @@ import firebase_admin
 import functions_framework
 import requests
 from firebase_functions import https_fn
-from fitnessllm_shared.cloud_utils import get_oauth_token
 from fitnessllm_shared.logger_utils import create_structured_logger
 from google.cloud import functions_v2
+
+from .utils.cloud_utils import get_oauth_token
 
 structured_logger = create_structured_logger(__name__)
 

@@ -326,13 +326,6 @@ jobs:
                   == 'true')
               uses: google-github-actions/setup-gcloud@v2
 
-            - name: Clear pip cache
-              if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
-                  == 'true')
-              run: |
-                  pip cache purge
-                  pip cache info
-
             - name: Deploy Function
               if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
                   == 'true')
@@ -349,7 +342,8 @@ jobs:
                     --memory=256MB \
                     --allow-unauthenticated \
                     --set-env-vars=PROJECT_ID=${{ env.PROJECT_ID }},ENVIRONMENT=${{ env.ENVIRONMENT }},ENCRYPTION_SECRET=${{ env.ENCRYPTION_SECRET }},STRAVA_SECRET=${{ env.STRAVA_SECRET }},REGION=${{ env.REGION }},INFRASTRUCTURE_SECRET=${{ env.INFRASTRUCTURE_SECRET }} \
-                    --service-account=${{ secrets.GCP_DP_SA_EMAIL }}
+                    --service-account=${{ secrets.GCP_DP_SA_EMAIL }} \
+                    --set-build-env-vars=PIP_NO_CACHE_DIR=1
                   gcloud run services update ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') --region=${{ env.REGION }} --add-custom-audiences=${{ env.PROJECT_ID }}
 
             - name: Clean up old revisions

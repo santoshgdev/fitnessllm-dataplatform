@@ -1,5 +1,6 @@
 """Batch handler for processing all users."""
 
+from os import environ
 from typing import Optional
 
 from beartype import beartype
@@ -132,5 +133,13 @@ class BatchHandler:
 
 if __name__ == "__main__":
     structured_logger.info("Starting batch handler", service="batch_handler")
+    structured_logger.info(
+        "Cloud run job name",
+        CLOUD_RUN_JOB=environ["CLOUD_RUN_JOB"],
+        CLOUD_RUN_EXECUTION_ID=environ["CLOUD_RUN_EXECUTION"],
+        CLOUD_RUN_TASK_INDEX=environ["CLOUD_RUN_TASK_INDEX"],
+        CLOUD_RUN_TASK_ATTEMPT=environ["CLOUD_RUN_TASK_ATTEMPT"],
+        CLOUD_RUN_TASK_COUNT=environ["CLOUD_RUN_TASK_COUNT"],
+    )
     handler = BatchHandler()
     handler.process_all_users()

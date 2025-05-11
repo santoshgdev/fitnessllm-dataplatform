@@ -332,6 +332,10 @@ jobs:
               if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
                   == 'true')
               uses: google-github-actions/setup-gcloud@v2
+              with:
+                  version: latest
+                  project_id: ${{ secrets.GCP_PROJECT_ID }}
+                  install_components: alpha,beta
 
             - name: Configure Docker for Artifact Registry
               if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
@@ -371,7 +375,7 @@ jobs:
                   gcloud functions deploy ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') \
                     --gen2 \
                     --region=${{ env.REGION }} \
-                    --source=${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ matrix.function }}:${{ env.ENVIRONMENT }} \
+                    --docker-image=${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ matrix.function }}:${{ env.ENVIRONMENT }} \
                     --trigger-http \
                     --max-instances=10 \
                     --min-instances=0 \

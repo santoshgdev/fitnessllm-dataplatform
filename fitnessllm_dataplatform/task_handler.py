@@ -8,6 +8,7 @@ from typing import Optional
 import fire
 from beartype import beartype
 from cloudpathlib import GSClient
+from fitnessllm_shared.logger_utils import structured_logger
 from fitnessllm_shared.task_utils import decrypt_token
 
 from fitnessllm_dataplatform.entities.enums import DynamicEnum, FitnessLLMDataSource
@@ -22,7 +23,6 @@ from fitnessllm_dataplatform.stream.strava.services.silver_etl_interface import 
     SilverStravaETLInterface,
 )
 from fitnessllm_dataplatform.utils.cloud_utils import get_secret
-from fitnessllm_dataplatform.utils.logging_utils import structured_logger
 
 
 class Startup:

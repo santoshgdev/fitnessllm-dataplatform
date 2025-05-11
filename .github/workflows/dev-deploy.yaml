@@ -326,6 +326,13 @@ jobs:
                   == 'true')
               uses: google-github-actions/setup-gcloud@v2
 
+            - name: Clear pip cache
+              if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
+                  == 'true')
+              run: |
+                  pip cache purge
+                  pip cache info
+
             - name: Deploy Function
               if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
                   == 'true')

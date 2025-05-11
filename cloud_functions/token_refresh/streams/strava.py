@@ -5,16 +5,15 @@ from os import environ
 from beartype import beartype
 from beartype.typing import Any, Dict
 from fitnessllm_shared.cloud_utils import get_secret
-from fitnessllm_shared.logger_utils import create_structured_logger
+from fitnessllm_shared.logger_utils import structured_logger
 from fitnessllm_shared.task_utils import (
     decrypt_token,
     encrypt_token,
     update_last_refresh,
 )
 from google.cloud import firestore
+from pip._vendor.rich import traceback
 from stravalib.client import Client
-
-structured_logger = create_structured_logger(__name__)
 
 
 @beartype
@@ -43,7 +42,9 @@ def strava_refresh_oauth_token(
     client_secret = strava_secret.get("client_secret")
 
     if not client_id or not client_secret:
-        structured_logger(message="Strava credentials not found", level="ERROR")
+        structured_logger.error(
+            message="Strava credentials not found", service="token_refresh"
+        )
         raise ValueError("Strava credentials not found in Secret Manager")
 
     try:
@@ -52,7 +53,9 @@ def strava_refresh_oauth_token(
             client_secret=client_secret,
             refresh_token=decrypt_token(refresh_token, encryption_key),
         )
-        structured_logger(message="Token refresh successful", uid=uid)
+        structured_logger.info(
+            message="Token refresh successful", uid=uid, service="token_refresh"
+        )
 
         new_tokens = {
             "accessToken": encrypt_token(
@@ -68,13 +71,16 @@ def strava_refresh_oauth_token(
         }
 
         strava_update_user_tokens(db=db, uid=uid, new_tokens=new_tokens)
-        structured_logger(message="Tokens updated in Firestore", uid=uid)
+        structured_logger.info(
+            message="Tokens updated in Firestore", uid=uid, service="token_refresh"
+        )
     except Exception as e:
-        structured_logger(
+        structured_logger.error(
             message="Error refreshing token",
             uid=uid,
             error=str(e),
-            level="ERROR",
+            service="token_refresh",
+            traceback=traceback.format_exc(),
         )
         raise
 
@@ -93,7 +99,9 @@ def strava_update_user_tokens(
         uid: Firestore user id.
         new_tokens: New tokens.
     """
-    structured_logger(message="Updating user tokens", uid=uid)
+    structured_logger.info(
+        message="Updating user tokens", uid=uid, service="token_refresh"
+    )
 
     strava_ref = (
         db.collection("users").document(uid).collection("stream").document("strava")
@@ -101,10 +109,10 @@ def strava_update_user_tokens(
 
     doc = strava_ref.get()
     if not doc.exists:
-        structured_logger(
+        structured_logger.error(
             message="Strava document doesn't exist in stream subcollection",
             uid=uid,
-            level="ERROR",
+            service="token_refresh",
         )
         # Create the document with default values
         strava_ref.set(new_tokens, merge=True)
@@ -118,4 +126,6 @@ def strava_update_user_tokens(
             "lastTokenRefresh": new_tokens["lastTokenRefresh"],
         },
     )
-    structured_logger(message="User tokens updated successfully", uid=uid)
+    structured_logger.info(
+        message="User tokens updated successfully", uid=uid, service="token_refresh"
+    )

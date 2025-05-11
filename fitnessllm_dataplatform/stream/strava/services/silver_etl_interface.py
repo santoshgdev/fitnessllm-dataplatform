@@ -3,8 +3,8 @@
 import os
 import pathlib
 
+from fitnessllm_shared.logging_utils import structured_logger
 from tqdm import tqdm
-from utils.logging_utils import structured_logger
 
 from fitnessllm_dataplatform.entities.enums import FitnessLLMDataSource
 from fitnessllm_dataplatform.services.etl_interface import ETLInterface

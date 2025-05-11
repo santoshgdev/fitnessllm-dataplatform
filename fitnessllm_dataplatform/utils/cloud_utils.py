@@ -5,9 +5,8 @@ import traceback
 from os import environ
 
 from cloudpathlib import CloudPath
+from fitnessllm_shared.logging_utils import structured_logger
 from google.cloud import secretmanager
-
-from fitnessllm_dataplatform.utils.logging_utils import logger, structured_logger
 
 
 def create_resource_path(project_id: str, service: str, name: str) -> str:
@@ -54,7 +53,10 @@ def write_json_to_storage(path: CloudPath, data: dict | list) -> None:
         with path.open("w") as f:
             json.dump(data, f)
     except Exception as e:
-        logger.error(f"Failed to write data to storage: {e}")
+        structured_logger.error(
+            message="Failed to write data to storage",
+            exception=str(e),
+        )
         raise e
 
 

@@ -4,10 +4,10 @@ from beartype import beartype
 from beartype.typing import Any, Dict, List
 from entities.enums import FitnessLLMDataSource
 from entities.mapping import REFRESH_FUNCTION_MAPPING
+from fitnessllm_shared.logging_utils import structured_logger
 from google.cloud import firestore
 
 from fitnessllm_dataplatform.task_handler import Startup
-from fitnessllm_dataplatform.utils.logging_utils import structured_logger
 
 
 class BatchHandler:

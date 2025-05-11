@@ -6,6 +6,7 @@ from datetime import datetime
 from enum import Enum
 from json.decoder import JSONDecodeError
 
+from fitnessllm_shared.logging_utils import structured_logger
 from google.cloud import bigquery
 
 from fitnessllm_dataplatform.entities.enums import (
@@ -13,7 +14,6 @@ from fitnessllm_dataplatform.entities.enums import (
     FitnessLLMDataStream,
 )
 from fitnessllm_dataplatform.stream.strava.entities.enums import StravaStreams
-from fitnessllm_dataplatform.utils.logging_utils import structured_logger
 
 
 def load_into_env_vars(options: dict):

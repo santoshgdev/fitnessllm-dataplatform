@@ -6,6 +6,7 @@ from functools import partial
 from os import environ
 
 from beartype import beartype
+from fitnessllm_shared.logging_utils import structured_logger
 from google.cloud import bigquery
 from stravalib import Client
 from stravalib.model import Stream, SummaryActivity
@@ -22,7 +23,6 @@ from fitnessllm_dataplatform.stream.strava.entities.queries import (
     create_get_latest_activity_date_query,
 )
 from fitnessllm_dataplatform.utils.cloud_utils import get_secret, write_json_to_storage
-from fitnessllm_dataplatform.utils.logging_utils import logger, structured_logger
 from fitnessllm_dataplatform.utils.task_utils import get_enum_values_from_list
 
 
@@ -81,7 +81,9 @@ class StravaAPIInterface(APIInterface):
             uid=self.uid,
             data_source=self.data_source.value.lower(),
         )
-        logger.info("Writing strava secret token to environment")
+        structured_logger.info(
+            message="Writing strava secret token to environment", service="ingest"
+        )
         environ["STRAVA_CLIENT_ID"] = str(client_id)
         environ["STRAVA_CLIENT_SECRET"] = client_secret
 
@@ -94,7 +96,12 @@ class StravaAPIInterface(APIInterface):
                 uid=self.uid,
                 data_source=self.data_source.value,
             )
-            logger.warning("Strava access token not found in redis")
+            structured_logger.warning(
+                message="No strava access token provided",
+                uid=self.uid,
+                data_source=self.data_source,
+                service="ingest",
+            )
             return None
         self.strava_client = Client(access_token=access_token)
         structured_logger.info(

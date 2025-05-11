@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 from beartype import beartype
 from cloudpathlib import GSPath
+from fitnessllm_shared.logging_utils import structured_logger
 from google.cloud import bigquery
 from joblib import Parallel, delayed
 from joblib._multiprocessing_helpers import mp
@@ -33,7 +34,6 @@ from fitnessllm_dataplatform.stream.strava.entities.queries import (
     create_activities_query,
 )
 from fitnessllm_dataplatform.stream.strava.etl_utils import execute_etl_func
-from fitnessllm_dataplatform.utils.logging_utils import structured_logger
 from fitnessllm_dataplatform.utils.task_utils import load_schema_from_json
 
 

@@ -2,8 +2,7 @@
 
 import firebase_admin
 from firebase_admin import firestore
-
-from fitnessllm_dataplatform.utils.logging_utils import structured_logger
+from fitnessllm_shared.logging_utils import structured_logger
 
 
 class FirebaseConnect:

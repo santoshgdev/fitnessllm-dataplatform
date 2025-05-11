@@ -4,7 +4,7 @@ FROM ${BASE_IMAGE}
 
 ARG CACHEBUST=1
 RUN echo $CACHEBUST
-RUN poetry update fitnessllm-shared
+RUN poetry add git+https://github.com/santoshgdev/fitnessllm-shared.git@main
 
 #ENV PORT=8080
 

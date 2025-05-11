@@ -16,7 +16,7 @@ from .utils.cloud_utils import get_oauth_token
 
 try:
     firebase_admin.initialize_app()
-    structured_logger(
+    structured_logger.info(
         message="Firebase Admin initialized successfully", service="api_router"
     )
 except Exception as e:
@@ -314,11 +314,11 @@ def api_router(request):
         body = request.get_json(silent=True)
         structured_logger.info(message="Request body", body=body, service="api_router")
     except Exception as e:
-        structured_logger(
+        structured_logger.error(
             message="Error parsing request body",
             error=str(e),
-            level="ERROR",
             traceback=traceback.format_exc(),
+            service="api_router",
         )
 
     try:

@@ -32,7 +32,9 @@ def strava_refresh_oauth_token(
     Raises:
         ValueError: If refresh token is invalid.
     """
-    structured_logger(message="Starting token refresh", uid=uid)
+    structured_logger.info(
+        message="Starting token refresh", uid=uid, service="token_refresh"
+    )
 
     encryption_key = get_secret(environ["ENCRYPTION_SECRET"])["token"]
 

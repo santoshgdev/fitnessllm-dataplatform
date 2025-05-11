@@ -75,6 +75,7 @@ class BronzeStravaETLInterface(ETLInterface):
                 data_source=self.data_source.value,
                 exception=exc,
                 traceback=traceback.format_exc(),
+                service="bronze_etl",
             )
             raise exc
 
@@ -88,6 +89,7 @@ class BronzeStravaETLInterface(ETLInterface):
                 message=f"Loading {stream} for {self.athlete_id}",
                 uid=self.uid,
                 data_source=self.data_source.value.lower(),
+                service="bronze_etl",
             )
             dataframes, metrics = self.convert_stream_json_to_dataframe(stream=stream)
             if dataframes and metrics:
@@ -101,6 +103,7 @@ class BronzeStravaETLInterface(ETLInterface):
                     message="No new data",
                     uid=self.uid,
                     data_source=self.data_source.value,
+                    service="bronze_etl",
                 )
 
     @beartype
@@ -123,6 +126,7 @@ class BronzeStravaETLInterface(ETLInterface):
             message=f"Extracted {len(activity_ids)} activity ids for {stream}",
             uid=self.uid,
             data_source=self.data_source.value.lower(),
+            service="bronze_etl",
         )
 
         module_strava_json_list = (
@@ -140,6 +144,7 @@ class BronzeStravaETLInterface(ETLInterface):
                 message=f"Sampling has been turned on {sample}",
                 uid=self.uid,
                 data_source=self.data_source.value,
+                service="bronze_etl",
             )
 
         filtered_module_strava_json_list = [
@@ -288,6 +293,7 @@ class BronzeStravaETLInterface(ETLInterface):
                 data_source=self.data_source.value,
                 exception=str(e),
                 traceback=traceback.format_exc(),
+                service="bronze_etl",
             )
             self.insert_metrics(
                 metrics_list=metrics,
@@ -330,6 +336,7 @@ class BronzeStravaETLInterface(ETLInterface):
                     "Unable to insert metrics into BigQuery.",
                     uid=self.uid,
                     data_source=self.data_source.value,
+                    service="bronze_etl",
                 )
         except Exception as e:
             structured_logger.error(
@@ -338,5 +345,6 @@ class BronzeStravaETLInterface(ETLInterface):
                 data_source=self.data_source.value,
                 exception=str(e),
                 traceback=traceback.format_exc(),
+                service="bronze_etl",
             )
             raise e

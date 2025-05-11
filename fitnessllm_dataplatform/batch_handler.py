@@ -60,7 +60,10 @@ class BatchHandler:
         """
         try:
             structured_logger.info(
-                message="Processing user", uid=user_id, data_source=data_source.value
+                message="Processing user",
+                uid=user_id,
+                data_source=data_source.value,
+                service="batch_handler",
             )
             refresh_function = REFRESH_FUNCTION_MAPPING[data_source.value]
             strava_data = self.get_user_stream_data(
@@ -73,6 +76,7 @@ class BatchHandler:
                 message="Successfully processed user",
                 uid=user_id,
                 data_source=data_source.value,
+                service="batch_handler",
             )
         except Exception as e:
             structured_logger.error(
@@ -80,6 +84,7 @@ class BatchHandler:
                 uid=user_id,
                 exception=str(e),
                 data_source=data_source.value,
+                service="batch_handler",
             )
             raise
 
@@ -99,6 +104,7 @@ class BatchHandler:
             data_source=data_source.value,
             batch=True,
             uid="all",
+            service="batch_handler",
         )
         # TODO: Need to add that if nothing is given to datasource, that for each user we run for all their datasources.
         for user in users:
@@ -108,6 +114,7 @@ class BatchHandler:
                     message=f"Skipping user without uid: {user}",
                     uid=user_id,
                     exception=user,
+                    service="batch_handler",
                 )
                 continue
 
@@ -117,10 +124,11 @@ class BatchHandler:
             data_source=data_source.value,
             batch=True,
             uid="all",
+            service="batch_handler",
         )
 
 
 if __name__ == "__main__":
-    structured_logger.info("Starting batch handler")
+    structured_logger.info("Starting batch handler", service="batch_handler")
     handler = BatchHandler()
     handler.process_all_users()

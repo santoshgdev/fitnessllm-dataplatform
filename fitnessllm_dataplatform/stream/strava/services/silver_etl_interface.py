@@ -45,12 +45,14 @@ class SilverStravaETLInterface(ETLInterface):
                     message=f"Query {delete_query} failed with error {delete_job.error}",
                     uid=self.athlete_id,
                     data_source=self.data_source.value,
+                    service="silver_etl",
                 )
                 continue
             structured_logger.debug(
                 message=f"Query {delete_query} successfully deleted {delete_job.num_dml_affected_rows}",
                 uid=self.uid,
                 data_source=self.data_source.value.lower(),
+                service="silver_etl",
             )
             insert_query = get_insert_query(
                 target_table=target_destination,
@@ -65,6 +67,7 @@ class SilverStravaETLInterface(ETLInterface):
                     query=insert_query,
                     uid=self.uid,
                     data_source=self.data_source.value,
+                    service="silver_etl",
                 )
                 continue
             structured_logger.debug(
@@ -72,4 +75,5 @@ class SilverStravaETLInterface(ETLInterface):
                 uid=self.uid,
                 data_source=self.data_source.value,
                 query=insert_query,
+                service="silver_etl",
             )

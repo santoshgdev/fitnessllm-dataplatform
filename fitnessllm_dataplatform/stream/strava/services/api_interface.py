@@ -58,6 +58,7 @@ class StravaAPIInterface(APIInterface):
                 message="Strava client ID or secret token missing",
                 uid=self.uid,
                 data_source=self.data_source.value,
+                service="ingest",
             )
             raise Exception(
                 "Client ID or Secret Token missing"
@@ -140,12 +141,18 @@ class StravaAPIInterface(APIInterface):
             message="Getting activity summary",
             uid=self.uid,
             data_source=self.data_source.value.lower(),
+            service="ingest",
         )
         activity_dump = activity.model_dump()
         path = self.partial_get_strava_storage(
             strava_model=StravaStreams.ACTIVITY, activity_id=str(activity_dump["id"])
         )
-        wrapped_write_json_to_storage(path, json.loads(activity.model_dump_json()))
+        wrapped_write_json_to_storage(
+            uid=self.uid,
+            data_source=self.data_source.value,
+            path=path,
+            data=json.loads(activity.model_dump_json()),
+        )
         return str(activity_dump["id"])
 
     @beartype
@@ -169,6 +176,7 @@ class StravaAPIInterface(APIInterface):
             message="Getting athlete activity streams",
             uid=self.uid,
             data_source=self.data_source.value,
+            service="ingest",
         )
         activity_id = self.get_activity_summary(activity)
 
@@ -211,6 +219,7 @@ class StravaAPIInterface(APIInterface):
             message="Getting all activities",
             uid=self.uid,
             data_source=self.data_source.value.lower(),
+            service="ingest",
         )
         latest_activity_date = (
             self.bq_client.query(

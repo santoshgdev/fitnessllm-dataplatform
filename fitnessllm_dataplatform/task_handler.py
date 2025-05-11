@@ -30,7 +30,9 @@ class Startup:
 
     def _startUp(self, uid: str, firebase: Optional[FirebaseConnect] = None) -> None:
         """Resources agnostic of service."""
-        structured_logger.info(message="Starting up data platform", uid=uid)
+        structured_logger.info(
+            message="Starting up data platform", uid=uid, service="task_handler"
+        )
         self.initialized = True
         GSClient().set_as_default_client()
         self.InfrastructureNames = DynamicEnum.from_dict(
@@ -64,7 +66,10 @@ class Startup:
 
         if data_source not in [member.value for member in FitnessLLMDataSource]:
             structured_logger.error(
-                message="Unsupported data source", data_source=data_source, uid=uid
+                message="Unsupported data source",
+                data_source=data_source,
+                uid=uid,
+                service="task_handler/ingest",
             )
             raise ValueError(f"Unsupported data source: {data_source}")
 
@@ -82,6 +87,7 @@ class Startup:
                     uid=uid,
                     data_source=data_source,
                     traceback=traceback.format_exc(),
+                    service="task_handler/ingest",
                 )
                 raise ValueError(f"User {uid} has no {data_source} data")
 
@@ -102,6 +108,7 @@ class Startup:
                     data_source=data_source,
                     exception=str(e),
                     traceback=traceback.format_exc(),
+                    service="task_handler/ingest",
                 )
                 raise RuntimeError(f"Failed to get data from Strava API: {e}") from e
 
@@ -133,7 +140,10 @@ class Startup:
 
             if strava_user_data is None:
                 structured_logger.error(
-                    message="User has no data", uid=uid, data_source=data_source
+                    message="User has no data",
+                    uid=uid,
+                    data_source=data_source,
+                    service="task_handler",
                 )
                 raise ValueError(f"User {uid} has no {data_source} data")
             if (
@@ -144,6 +154,7 @@ class Startup:
                     message="User has incomplete data: missing athleteId",
                     uid=uid,
                     data_source=data_source,
+                    service="task_handler",
                 )
                 raise ValueError(
                     f"User {uid} has incomplete {data_source} data: missing athlete ID"
@@ -158,7 +169,10 @@ class Startup:
             strava_etl_interface.load_json_into_bq()
         else:
             structured_logger.error(
-                "Unsupported data source", uid=uid, data_source=data_source
+                "Unsupported data source",
+                uid=uid,
+                data_source=data_source,
+                service="task_handler",
             )
             raise ValueError(f"Unsupported data source: {data_source}")
 
@@ -187,7 +201,10 @@ class Startup:
 
             if strava_user_data is None:
                 structured_logger.error(
-                    message="User has no data", uid=uid, data_source=data_source
+                    message="User has no data",
+                    uid=uid,
+                    data_source=data_source,
+                    service="task_handler",
                 )
                 raise ValueError(f"User {uid} has no {data_source} data")
             if (
@@ -198,6 +215,7 @@ class Startup:
                     message="User has incomplete data: missing athleteId",
                     uid=uid,
                     data_source=data_source,
+                    service="task_handler",
                 )
                 raise ValueError(
                     f"User {uid} has incomplete {data_source} data: missing athlete ID"
@@ -210,7 +228,10 @@ class Startup:
             strava_etl_interface.task_handler()
         else:
             structured_logger.error(
-                "Unsupported data source", uid=uid, data_source=data_source
+                "Unsupported data source",
+                uid=uid,
+                data_source=data_source,
+                service="task_handler",
             )
             raise ValueError(f"Unsupported data source: {data_source}")
 
@@ -238,7 +259,10 @@ class Startup:
         self.silver_etl(uid=uid, data_source=data_source)
 
         structured_logger.info(
-            "Full ETL process completed successfully", uid=uid, data_source=data_source
+            "Full ETL process completed successfully",
+            uid=uid,
+            data_source=data_source,
+            service="task_handler",
         )
 
 

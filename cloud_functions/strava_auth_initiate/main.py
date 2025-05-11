@@ -19,7 +19,10 @@ from .entities.constants import CORS_HEADERS
 
 try:
     initialize_app()
-    structured_logger(message="Firebase Admin initialized successfully")
+    structured_logger.info(
+        message="Firebase Admin initialized successfully",
+        service="strava_auth_initiate",
+    )
 except Exception as e:
     structured_logger.error(
         message="Error initializing Firebase Admin",

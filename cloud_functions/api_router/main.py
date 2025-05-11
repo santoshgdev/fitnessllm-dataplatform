@@ -16,7 +16,9 @@ from .utils.cloud_utils import get_oauth_token
 
 try:
     firebase_admin.initialize_app()
-    structured_logger(message="Firebase Admin initialized successfully")
+    structured_logger(
+        message="Firebase Admin initialized successfully", service="api_router"
+    )
 except Exception as e:
     structured_logger.error(
         message="Error initializing Firebase Admin",

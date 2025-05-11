@@ -1,5 +1,7 @@
 """Batch handler for processing all users."""
 
+from typing import Optional
+
 from beartype import beartype
 from beartype.typing import Any, Dict, List
 from entities.enums import FitnessLLMDataSource
@@ -32,7 +34,7 @@ class BatchHandler:
     @beartype
     def get_user_stream_data(
         self, uid: str, data_source: FitnessLLMDataSource
-    ) -> dict[str, Any] | None:
+    ) -> Optional[dict[str, Any]]:
         """Retrieves all user documents from the Firestore "users" collection.
 
         Returns:

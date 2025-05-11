@@ -9,22 +9,20 @@ import firebase_admin
 import functions_framework
 import requests
 from firebase_functions import https_fn
-from fitnessllm_shared.logger_utils import create_structured_logger
+from fitnessllm_shared.logger_utils import structured_logger
 from google.cloud import functions_v2
 
 from .utils.cloud_utils import get_oauth_token
-
-structured_logger = create_structured_logger(__name__)
 
 try:
     firebase_admin.initialize_app()
     structured_logger(message="Firebase Admin initialized successfully")
 except Exception as e:
-    structured_logger(
+    structured_logger.error(
         message="Error initializing Firebase Admin",
         error=str(e),
-        level="ERROR",
         traceback=traceback.format_exc(),
+        service="api_router",
     )
     raise
 
@@ -48,48 +46,53 @@ def invoke_cloud_function(
         function = client.get_function(name=function_name)
         url = function.service_config.uri
 
-        structured_logger(
+        structured_logger.info(
             message="Attempting to invoke cloud function",
             url=url,
             payload=payload,
             auth_header=auth_header,
+            service="api_router",
         )
 
         # Prepare headers with auth if provided
         headers = {"Content-Type": "application/json"}
         if auth_header:
             headers["Authorization"] = auth_header
-        structured_logger(
+        structured_logger.info(
             message="Invoking cloud function",
             url=url,
             payload=payload,
             auth_header_present="Authorization" in headers,
             headers=headers,
+            service="api_router",
         )
 
         # For token refresh, we need to pass the data_source as a query parameter
         if "data_source" in payload:
             url = f"{url}?data_source={payload['data_source']}"
-            structured_logger(message="Modified URL with query params", url=url)
+            structured_logger.info(
+                message="Modified URL with query params", url=url, service="api_router"
+            )
 
         # Make the request
         response = requests.post(url=url, json=payload, headers=headers, timeout=10)
 
         # Log the response details
-        structured_logger(
+        structured_logger.info(
             message="Received response",
             status_code=response.status_code,
             headers=dict(response.headers),
             content=response.text,
+            service="api_router",
         )
 
         # Handle non-200 responses
         if response.status_code != 200:
-            structured_logger(
+            structured_logger.error(
                 message="Non-200 response received when attempting to invoke cloud function",
                 status_code=response.status_code,
                 response_text=response.text,
-                level="ERROR",
+                service="api_router",
             )
             return https_fn.Response(
                 status=response.status_code,
@@ -117,12 +120,12 @@ def invoke_cloud_function(
                 },
             )
         except json.JSONDecodeError as e:
-            structured_logger(
+            structured_logger.error(
                 message="Failed to parse JSON response",
                 error=str(e),
                 response_text=response.text,
-                level="ERROR",
                 traceback=traceback.format_exc(),
+                service="api_router",
             )
             return https_fn.Response(
                 status=500,
@@ -131,11 +134,11 @@ def invoke_cloud_function(
             )
 
     except Exception as e:
-        structured_logger(
+        structured_logger.error(
             message="Error invoking cloud function",
             error=str(e),
-            level="ERROR",
             traceback=traceback.format_exc(),
+            service="api_router",
         )
         return https_fn.Response(
             status=500,
@@ -164,11 +167,12 @@ def invoke_cloud_run_job(service_name: str, payload: Dict) -> https_fn.Response:
             f"namespaces/{project_id}/jobs/{environment}-fitnessllm-dp:run"
         )
 
-        structured_logger(
+        structured_logger.info(
             message="Invoking cloud run service",
             url=url,
             payload=payload,
             target_service=service_name.split("/")[-1],
+            service="api_router",
         )
 
         # Prepare headers
@@ -203,20 +207,21 @@ def invoke_cloud_run_job(service_name: str, payload: Dict) -> https_fn.Response:
         response = requests.post(url, json=new_payload, headers=headers)
 
         # Log the response details
-        structured_logger(
+        structured_logger.info(
             message="Received response",
             status_code=response.status_code,
             headers=headers,
             content=response.text,
+            service="api_router",
         )
 
         # Handle non-200 responses
         if response.status_code != 200:
-            structured_logger(
+            structured_logger.error(
                 message="Non-200 response received when attempting to invoke cloud run service",
                 status_code=response.status_code,
                 response_text=response.text,
-                level="ERROR",
+                service="api_router",
             )
             return https_fn.Response(
                 status=response.status_code,
@@ -244,12 +249,12 @@ def invoke_cloud_run_job(service_name: str, payload: Dict) -> https_fn.Response:
                 },
             )
         except json.JSONDecodeError as e:
-            structured_logger(
+            structured_logger.error(
                 message="Failed to parse JSON response",
                 error=str(e),
                 response_text=response.text,
-                level="ERROR",
                 traceback=traceback.format_exc(),
+                service="api_router",
             )
             return https_fn.Response(
                 status=500,
@@ -258,11 +263,11 @@ def invoke_cloud_run_job(service_name: str, payload: Dict) -> https_fn.Response:
             )
 
     except Exception as e:
-        structured_logger(
+        structured_logger.error(
             message="Error invoking cloud run service",
             error=str(e),
-            level="ERROR",
             traceback=traceback.format_exc(),
+            service="api_router",
         )
         return https_fn.Response(
             status=500,
@@ -289,12 +294,13 @@ def api_router(request):
             },
         )
 
-    structured_logger(
+    structured_logger.info(
         message="Request received",
         method=request.method,
         headers=dict(request.headers),
         url=request.url,
         args=dict(request.args),
+        service="api_router",
     )
 
     auth_header = request.headers.get("Authorization")
@@ -304,7 +310,7 @@ def api_router(request):
 
     try:
         body = request.get_json(silent=True)
-        structured_logger(message="Request body", body=body)
+        structured_logger.info(message="Request body", body=body, service="api_router")
     except Exception as e:
         structured_logger(
             message="Error parsing request body",
@@ -341,7 +347,7 @@ def api_router(request):
 
         # Get authorization header and log diagnostics
         auth_header = request.headers.get("Authorization")
-        structured_logger(
+        structured_logger.info(
             function_level="Parent",
             message="Authorization header diagnostics",
             target_api=target_api,
@@ -352,15 +358,17 @@ def api_router(request):
             ),
             header_length=len(auth_header) if auth_header else 0,
             all_headers=dict(request.headers),
+            service="api_router",
         )
 
         # Validate authorization header
         if not auth_header:
-            structured_logger(
+            structured_logger.error(
                 function_level="Parent",
                 message="Missing Authorization header",
                 target_api=target_api,
                 headers=dict(request.headers),
+                service="api_router",
             )
             return https_fn.Response(
                 status=902,
@@ -378,11 +386,12 @@ def api_router(request):
             )
 
         if not auth_header.startswith("Bearer "):
-            structured_logger(
+            structured_logger.error(
                 function_level="Parent",
                 message="Missing Authorization header",
                 target_api=target_api,
                 auth_header=auth_header,
+                service="api_router",
             )
             return https_fn.Response(
                 status=903,
@@ -440,11 +449,12 @@ def api_router(request):
             )
 
     except Exception as e:
-        structured_logger(
+        structured_logger.error(
             message="Error in api_router",
             error=str(e),
             level="ERROR",
             traceback=traceback.format_exc(),
+            service="api_router",
         )
         return https_fn.Response(
             status=906,

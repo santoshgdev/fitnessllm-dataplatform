@@ -11,23 +11,21 @@ import requests
 from firebase_admin import firestore, initialize_app
 from firebase_functions import https_fn, options
 from fitnessllm_shared.cloud_utils import get_secret
-from fitnessllm_shared.logger_utils import create_structured_logger
+from fitnessllm_shared.logger_utils import structured_logger
 from fitnessllm_shared.task_utils import encrypt_token
 from stravalib import Client
 
 from .entities.constants import CORS_HEADERS
 
-structured_logger = create_structured_logger(__name__)
-
 try:
     initialize_app()
     structured_logger(message="Firebase Admin initialized successfully")
 except Exception as e:
-    structured_logger(
+    structured_logger.error(
         message="Error initializing Firebase Admin",
         error=str(e),
-        level="ERROR",
         traceback=traceback.format_exc(),
+        service="strava_auth_initiate",
     )
     raise
 
@@ -172,11 +170,11 @@ def strava_auth_initiate(request: https_fn.Request) -> https_fn.Response:
         )
 
     except Exception as e:
-        structured_logger(
+        structured_logger.error(
             message="Error in Strava auth",
             error=str(e),
-            level="ERROR",
             traceback=traceback.format_exc(),
+            service="strava_auth_initiate",
         )
         error_message = str(e)
         if isinstance(e, requests.HTTPError):

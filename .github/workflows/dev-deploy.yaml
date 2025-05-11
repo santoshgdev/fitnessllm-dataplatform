@@ -183,7 +183,7 @@ jobs:
               run: |
                   IMAGE_TAG="${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }}"
                   docker buildx build -f Dockerfile.app . \
-                    --build-arg BASE_IMAGE=$BASE_IMAGE_TAG_REMOTE \
+                    --build-arg BASE_IMAGE=base:latest \
                     --build-arg CACHEBUST=$(date +%s) \
                     -t $IMAGE_TAG \
                     --push

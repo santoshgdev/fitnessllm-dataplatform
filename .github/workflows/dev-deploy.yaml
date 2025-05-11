@@ -336,18 +336,18 @@ jobs:
             - name: Deploy Functions
               run: |
                   for function in api_router token_refresh strava_auth_initiate; do
-                    gcloud functions deploy ${{ env.ENVIRONMENT}}-$(echo $function | tr '_' '-') \
-                      --gen2 \
-                      --region=${{ env.REGION }} \
-                      --runtime=python312 \
-                      --source=${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/fitnessllm-functions/fitnessllm-functions:latest \
-                      --trigger-http \
-                      --entry-point=$function \
-                      --max-instances=10 \
-                      --min-instances=0 \
-                      --memory=256MB \
-                      --allow-unauthenticated \
-                      --set-env-vars=PROJECT_ID=${{ env.PROJECT_ID }},ENVIRONMENT=${{ env.ENVIRONMENT }},ENCRYPTION_SECRET=${{ env.ENCRYPTION_SECRET }},STRAVA_SECRET=${{ env.STRAVA_SECRET }},REGION=${{ env.REGION }},INFRASTRUCTURE_SECRET=${{ env.INFRASTRUCTURE_SECRET }} \
-                      --service-account=${{ secrets.GCP_DP_SA_EMAIL }}
+                      gcloud functions deploy ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') \
+                        --gen2 \
+                        --region=${{ env.REGION }} \
+                        --runtime=python312 \
+                        --source=cloud_functions/${{ matrix.function }} \
+                        --trigger-http \
+                        --entry-point=${{ matrix.function }} \
+                        --max-instances=10 \
+                        --min-instances=0 \
+                        --memory=256MB \
+                        --allow-unauthenticated \
+                        --set-env-vars=PROJECT_ID=${{ env.PROJECT_ID }},ENVIRONMENT=${{ env.ENVIRONMENT }},ENCRYPTION_SECRET=${{ env.ENCRYPTION_SECRET }},STRAVA_SECRET=${{ env.STRAVA_SECRET }},REGION=${{ env.REGION }},INFRASTRUCTURE_SECRET=${{ env.INFRASTRUCTURE_SECRET }} \
+                        --service-account=${{ secrets.GCP_DP_SA_EMAIL }}
                     gcloud run services update ${{ env.ENVIRONMENT}}-$(echo $function | tr '_' '-') --region=${{ env.REGION }} --add-custom-audiences=${{ env.PROJECT_ID }}
                   done

@@ -200,7 +200,7 @@ jobs:
                     STRAVA_SECRET=${{ secrets.STRAVA_SECRET }},\
                     REGION=${{ env.REGION }},\
                     INFRASTRUCTURE_SECRET=${{ env.INFRASTRUCTURE_SECRET }},\
-                    STAGE=${{ env.ENRONMENT }},\
+                    STAGE=${{ env.ENVIRONMENT }},\
                     PYTHONPATH=/app/fitnessllm-dataplatform"
                   gcloud run jobs deploy ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }} \
                     --image ${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }} \

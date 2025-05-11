@@ -2,7 +2,9 @@
 
 from beartype import beartype
 from beartype.typing import Any, Dict, List
+from entities.enums import FitnessLLMDataSource
 from google.cloud import firestore
+from strava_auth_initiate.entities.mapping import REFRESH_FUNCTION_MAPPING
 
 from fitnessllm_dataplatform.task_handler import Startup
 from fitnessllm_dataplatform.utils.logging_utils import structured_logger
@@ -28,7 +30,28 @@ class BatchHandler:
         return [user.to_dict() for user in users]
 
     @beartype
-    def process_user(self, user_id: str, data_source: str = "strava") -> None:
+    def get_user_stream_data(
+        self, uid: str, data_source: FitnessLLMDataSource
+    ) -> dict[str, Any] | None:
+        """Retrieves all user documents from the Firestore "users" collection.
+
+        Returns:
+            A list of dictionaries representing each user's data.
+        """
+        user_stream = (
+            self.db.collection("users")
+            .document(uid)
+            .collection("stream")
+            .document(data_source.value.lower())
+        )
+        return user_stream.get().to_dict()
+
+    @beartype
+    def process_user(
+        self,
+        user_id: str,
+        data_source: FitnessLLMDataSource = FitnessLLMDataSource.STRAVA,
+    ) -> None:
         """Process a single user.
 
         Args:
@@ -37,22 +60,33 @@ class BatchHandler:
         """
         try:
             structured_logger.info(
-                message="Processing user", uid=user_id, data_source=data_source
+                message="Processing user", uid=user_id, data_source=data_source.value
             )
-            self.startup.full_etl(uid=user_id, data_source=data_source)
+            refresh_function = REFRESH_FUNCTION_MAPPING[data_source.value]
+            strava_data = self.get_user_stream_data(
+                uid=user_id, data_source=data_source
+            )
+            refresh_function(self.db, user_id, strava_data["refreshToken"])
+
+            self.startup.full_etl(uid=user_id, data_source=data_source.value)
             structured_logger.info(
                 message="Successfully processed user",
                 uid=user_id,
-                data_source=data_source,
+                data_source=data_source.value,
             )
         except Exception as e:
             structured_logger.error(
-                message="Failed to process user", uid=user_id, exception=e
+                message="Failed to process user",
+                uid=user_id,
+                exception=str(e),
+                data_source=data_source.value,
             )
             raise
 
     @beartype
-    def process_all_users(self, data_source: str = "strava") -> None:
+    def process_all_users(
+        self, data_source: FitnessLLMDataSource = FitnessLLMDataSource.STRAVA
+    ) -> None:
         """Process all users in the database.
 
         Args:
@@ -62,7 +96,7 @@ class BatchHandler:
         structured_logger.info(
             message="Found users to process",
             user_count=len(users),
-            data_source=data_source,
+            data_source=data_source.value,
             batch=True,
             uid="all",
         )
@@ -77,20 +111,10 @@ class BatchHandler:
                 )
                 continue
 
-            try:
-                self.process_user(user_id, data_source)
-            except Exception as e:
-                structured_logger.error(
-                    message="Failed to process user",
-                    uid=user_id,
-                    exception=e,
-                    data_source=data_source,
-                )
-                # Continue with next user even if one fails
-                continue
+            self.process_user(user_id, data_source)
         structured_logger.info(
             message="Finished processing all users",
-            data_source=data_source,
+            data_source=data_source.value,
             batch=True,
             uid="all",
         )

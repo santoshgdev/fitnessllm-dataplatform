@@ -57,7 +57,7 @@ class StravaAPIInterface(APIInterface):
             structured_logger.error(
                 message="Strava client ID or secret token missing",
                 uid=self.uid,
-                data_source=self.data_source.value.lower(),
+                data_source=self.data_source.value,
             )
             raise Exception(
                 "Client ID or Secret Token missing"
@@ -91,7 +91,7 @@ class StravaAPIInterface(APIInterface):
             structured_logger.warning(
                 message="No strava access token provided",
                 uid=self.uid,
-                data_source=self.data_source.value.lower(),
+                data_source=self.data_source.value,
             )
             logger.warning("Strava access token not found in redis")
             return None
@@ -113,7 +113,7 @@ class StravaAPIInterface(APIInterface):
         structured_logger.info(
             message="Getting athlete summary",
             uid=self.uid,
-            data_source=self.data_source.value.lower(),
+            data_source=self.data_source.value,
         )
         athlete = self.strava_client.get_athlete()
 
@@ -168,7 +168,7 @@ class StravaAPIInterface(APIInterface):
         structured_logger.info(
             message="Getting athlete activity streams",
             uid=self.uid,
-            data_source=self.data_source.value.lower(),
+            data_source=self.data_source.value,
         )
         activity_id = self.get_activity_summary(activity)
 

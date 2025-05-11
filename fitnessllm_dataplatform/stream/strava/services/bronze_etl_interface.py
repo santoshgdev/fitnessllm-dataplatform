@@ -72,7 +72,7 @@ class BronzeStravaETLInterface(ETLInterface):
             structured_logger.error(
                 message="User defined data_streams not found",
                 uid=self.uid,
-                data_source=self.data_source.value.lower(),
+                data_source=self.data_source.value,
                 exception=exc,
                 traceback=traceback.format_exc(),
             )
@@ -100,7 +100,7 @@ class BronzeStravaETLInterface(ETLInterface):
                 structured_logger.warning(
                     message="No new data",
                     uid=self.uid,
-                    data_source=self.data_source.value.lower(),
+                    data_source=self.data_source.value,
                 )
 
     @beartype
@@ -139,7 +139,7 @@ class BronzeStravaETLInterface(ETLInterface):
             structured_logger.debug(
                 message=f"Sampling has been turned on {sample}",
                 uid=self.uid,
-                data_source=self.data_source.value.lower(),
+                data_source=self.data_source.value,
             )
 
         filtered_module_strava_json_list = [
@@ -285,8 +285,8 @@ class BronzeStravaETLInterface(ETLInterface):
             structured_logger.error(
                 message=f"Error while inserting {stream.value} into BigQuery for {self.athlete_id}",
                 uid=self.uid,
-                data_source=self.data_source.value.lower(),
-                exception=e,
+                data_source=self.data_source.value,
+                exception=str(e),
                 traceback=traceback.format_exc(),
             )
             self.insert_metrics(
@@ -329,14 +329,14 @@ class BronzeStravaETLInterface(ETLInterface):
                 structured_logger.error(
                     "Unable to insert metrics into BigQuery.",
                     uid=self.uid,
-                    data_source=self.data_source.value.lower(),
+                    data_source=self.data_source.value,
                 )
         except Exception as e:
             structured_logger.error(
                 message="Unable to write metrics to BigQuery",
                 uid=self.uid,
-                data_source=self.data_source.value.lower(),
-                exception=e,
+                data_source=self.data_source.value,
+                exception=str(e),
                 traceback=traceback.format_exc(),
             )
             raise e

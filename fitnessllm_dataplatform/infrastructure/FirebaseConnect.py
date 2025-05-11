@@ -11,9 +11,9 @@ class FirebaseConnect:
 
     def __init__(self, uid):
         """Init function."""
+        self.uid = uid
         self.app = firebase_admin.initialize_app()
         self.open_connection()
-        self.uid = uid
 
     def open_connection(self):
         """Open Firebase connection."""

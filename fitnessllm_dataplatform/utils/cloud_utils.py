@@ -93,7 +93,7 @@ def wrapped_write_json_to_storage(
             message="Failed to write activity summary to storage",
             uid=uid,
             data_source=data_source,
-            exception=e,
+            exception=str(e),
             traceback=traceback.format_exc(),
         )
         raise

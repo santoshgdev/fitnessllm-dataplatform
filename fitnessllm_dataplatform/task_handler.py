@@ -3,6 +3,7 @@
 import traceback
 from functools import partial
 from os import environ
+from typing import Optional
 
 import fire
 from beartype import beartype
@@ -27,7 +28,7 @@ from fitnessllm_dataplatform.utils.logging_utils import structured_logger
 class Startup:
     """Main entry point for the data platform."""
 
-    def _startUp(self, uid: str) -> None:
+    def _startUp(self, uid: str, firebase: Optional[FirebaseConnect] = None) -> None:
         """Resources agnostic of service."""
         structured_logger.info(message="Starting up data platform", uid=uid)
         self.initialized = True
@@ -35,7 +36,7 @@ class Startup:
         self.InfrastructureNames = DynamicEnum.from_dict(
             get_secret(environ["INFRASTRUCTURE_SECRET"])[environ["STAGE"]],
         )
-        self.firebase = FirebaseConnect(uid)
+        self.firebase = firebase or FirebaseConnect(uid=uid)
         self.decryptor = partial(
             decrypt_token,
             key=get_secret(environ["ENCRYPTION_SECRET"])["token"],
@@ -99,7 +100,7 @@ class Startup:
                     message="Failed to get data from API",
                     uid=uid,
                     data_source=data_source,
-                    exception=e,
+                    exception=str(e),
                     traceback=traceback.format_exc(),
                 )
                 raise RuntimeError(f"Failed to get data from Strava API: {e}") from e

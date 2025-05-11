@@ -72,16 +72,16 @@ def load_schema_from_json(
         structured_logger.error(
             message="File not found",
             file=schema_path,
-            data_source=data_source.value.lower(),
-            data_stream=data_stream.value.lower(),
+            data_source=data_source.value,
+            data_stream=data_stream.value,
         )
         raise
     except JSONDecodeError:
         structured_logger.error(
             message="Invalid JSON in schema file",
             file=schema_path,
-            data_source=data_source.value.lower(),
-            data_stream=data_stream.value.lower(),
+            data_source=data_source.value,
+            data_stream=data_stream.value,
         )
         raise
 

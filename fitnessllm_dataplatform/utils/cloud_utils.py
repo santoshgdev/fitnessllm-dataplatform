@@ -5,7 +5,7 @@ import traceback
 from os import environ
 
 from cloudpathlib import CloudPath
-from fitnessllm_shared.logging_utils import structured_logger
+from fitnessllm_shared.logger_utils import structured_logger
 from google.cloud import secretmanager
 
 

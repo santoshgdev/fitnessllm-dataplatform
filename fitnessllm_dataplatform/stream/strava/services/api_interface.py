@@ -6,7 +6,7 @@ from functools import partial
 from os import environ
 
 from beartype import beartype
-from fitnessllm_shared.logging_utils import structured_logger
+from fitnessllm_shared.logger_utils import structured_logger
 from google.cloud import bigquery
 from stravalib import Client
 from stravalib.model import Stream, SummaryActivity

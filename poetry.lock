@@ -683,7 +683,7 @@ stravalib = ">=2.3,<3.0"
 type = "git"
 url = "https://github.com/santoshgdev/fitnessllm-shared.git"
 reference = "main"
-resolved_reference = "be6903a7cc34b87dda03e41618810af1ae3bf4f4"
+resolved_reference = "8a7d959d93a0a4c049848e969a7093866407580d"
 
 [[package]]
 name = "flask"

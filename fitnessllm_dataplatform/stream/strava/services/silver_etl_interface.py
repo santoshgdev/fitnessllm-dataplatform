@@ -3,7 +3,7 @@
 import os
 import pathlib
 
-from fitnessllm_shared.logging_utils import structured_logger
+from fitnessllm_shared.logger_utils import structured_logger
 from tqdm import tqdm
 
 from fitnessllm_dataplatform.entities.enums import FitnessLLMDataSource

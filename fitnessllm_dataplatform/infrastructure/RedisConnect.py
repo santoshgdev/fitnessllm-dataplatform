@@ -4,7 +4,7 @@ import json
 
 import redis
 from beartype import beartype
-from fitnessllm_shared.logging_utils import structured_logger
+from fitnessllm_shared.logger_utils import structured_logger
 
 from fitnessllm_dataplatform.utils.cloud_utils import get_secret
 

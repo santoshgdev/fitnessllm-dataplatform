@@ -6,7 +6,7 @@ from datetime import datetime
 from enum import Enum
 from json.decoder import JSONDecodeError
 
-from fitnessllm_shared.logging_utils import structured_logger
+from fitnessllm_shared.logger_utils import structured_logger
 from google.cloud import bigquery
 
 from fitnessllm_dataplatform.entities.enums import (

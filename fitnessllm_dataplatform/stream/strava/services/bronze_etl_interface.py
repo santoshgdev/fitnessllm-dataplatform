@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 from beartype import beartype
 from cloudpathlib import GSPath
-from fitnessllm_shared.logging_utils import structured_logger
+from fitnessllm_shared.logger_utils import structured_logger
 from google.cloud import bigquery
 from joblib import Parallel, delayed
 from joblib._multiprocessing_helpers import mp

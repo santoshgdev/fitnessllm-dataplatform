@@ -99,6 +99,13 @@ class BronzeStravaETLInterface(ETLInterface):
                     metrics=metrics,
                 )
             else:
+                print(
+                    "Logger handlers:", structured_logger.logger.handlers
+                )  # TODO: Delete this
+                print(
+                    "GCP Authenticated:",
+                    getattr(structured_logger, "authenticated", None),
+                )  # TODO: Delete this
                 structured_logger.warning(
                     message="No new data",
                     uid=self.uid,

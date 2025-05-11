@@ -337,6 +337,12 @@ jobs:
                   project_id: ${{ secrets.GCP_PROJECT_ID }}
                   install_components: alpha,beta
 
+            - name: ‘Verify gcloud alpha & beta’
+              run: |
+                  gcloud version
+                  gcloud alpha --help
+                  gcloud beta --help
+
             - name: Configure Docker for Artifact Registry
               if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
                   == 'true')
@@ -372,7 +378,7 @@ jobs:
               if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
                   == 'true')
               run: |
-                  gcloud functions deploy ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') \
+                  gcloud alpha functions deploy ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') \
                     --gen2 \
                     --region=${{ env.REGION }} \
                     --docker-image=${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ matrix.function }}:${{ env.ENVIRONMENT }} \

@@ -389,9 +389,7 @@ jobs:
                     --allow-unauthenticated \
                     --set-env-vars=PROJECT_ID=${{ env.PROJECT_ID }},ENVIRONMENT=${{ env.ENVIRONMENT }},ENCRYPTION_SECRET=${{ env.ENCRYPTION_SECRET }},STRAVA_SECRET=${{ env.STRAVA_SECRET }},REGION=${{ env.REGION }},INFRASTRUCTURE_SECRET=${{ env.INFRASTRUCTURE_SECRET }} \
                     --service-account=${{ secrets.GCP_DP_SA_EMAIL }}
-                  gcloud functions services update ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') \
-                    --region=${{ env.REGION }} \
-                    --add-custom-audiences=${{ env.PROJECT_ID }}
+                  gcloud run services update ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') --region=${{ env.REGION }} --add-custom-audiences=${{ env.PROJECT_ID }}
 
             - name: Clean up old revisions
               if: success() && needs.cloud_function_detect_changes.outputs[matrix.function] == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy

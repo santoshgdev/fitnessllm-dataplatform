@@ -1,42 +1,28 @@
-FROM python:3.12.2-slim
+FROM python:3.12-slim
 
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    POETRY_VERSION=2.0.1 \
-    POETRY_HOME="/var/poetry" \
-    POETRY_NO_INTERACTION=1
-
-ENV PATH="$POETRY_HOME/bin:$PATH"
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    dash \
-    bash \
-    curl \
-    git \
-    && rm -rf /var/lib/apt/lists/* \
-    && curl -sSL https://install.python-poetry.org | python3 - --version ${POETRY_VERSION}
-
-RUN mkdir /app
 WORKDIR /app
-RUN mkdir fitnessllm-dataplatform
 
-COPY pyproject.toml poetry.lock ./
+# Copy the entire codebase
+COPY . .
 
-RUN poetry config virtualenvs.in-project true \
-    && poetry lock \
-    && poetry install --no-root \
-    && poetry export -f requirements.txt -o requirements.txt --without-hashes \
-    && pip install --no-cache-dir -r requirements.txt
+# Install dependencies
+RUN pip install --no-cache-dir -r requirements.txt
 
-COPY fitnessllm_dataplatform fitnessllm-dataplatform/fitnessllm_dataplatform
-COPY cloud_functions fitnessllm-dataplatform/cloud_functions
-COPY tests fitnessllm-dataplatform/tests
+# Install cloud function dependencies
+RUN pip install --no-cache-dir functions-framework==3.* \
+    requests==2.31.0 \
+    firebase-admin>=6.8.0,<7.0.0 \
+    google-cloud-firestore>=2.19.0 \
+    firebase-functions>=0.1.1 \
+    google-cloud-run==0.9.1 \
+    beartype>=0.20.2,<0.21.0 \
+    google-cloud-functions>=1.13.0
 
-WORKDIR /app/fitnessllm-dataplatform
+# Install shared library directly from GitHub
+RUN pip install --no-cache-dir git+https://github.com/santoshgdev/fitnessllm-shared.git@main#egg=fitnessllm_shared&subdirectory=fitnessllm_shared
 
-RUN poetry update fitnessllm-shared
+# Set environment variables
+ENV PYTHONPATH=/app
 
-#ENV PORT=8080
-
-# Run the HTTP server
-#ENTRYPOINT ["poetry", "run", "python", "-m", "fitnessllm_dataplatform.task_handler"]
+# The entry point will be specified when running the container
+CMD ["functions-framework", "--target=api_router"]

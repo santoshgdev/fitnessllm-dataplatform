@@ -192,7 +192,7 @@ jobs:
                     --set-env-vars PROJECT_ID=${{ secrets.PROJECT_ID }},ENVIRONMENT=${{ env.ENVIRONMENT }},ENCRYPTION_SECRET=$${{ env.ENCRYPTION_SECRET }},STRAVA_SECRET=${{ env.STRAVA_SECRET }},REGION=${{ env.REGION }},INFRASTRUCTURE_SECRET=${{ env.INFRASTRUCTURE_SECRET }},STAGE=dev"
 
             - name: Deploy to Cloud Run Jobs
-              run: |
+              run: |-
                   ENV_VARS="\
                     PROJECT_ID=${{ secrets.PROJECT_ID }},\
                     ENVIRONMENT=${{ env.ENVIRONMENT }},\
@@ -200,7 +200,7 @@ jobs:
                     STRAVA_SECRET=${{ secrets.STRAVA_SECRET }},\
                     REGION=${{ env.REGION }},\
                     INFRASTRUCTURE_SECRET=${{ env.INFRASTRUCTURE_SECRET }},\
-                    STAGE=${{ env.ENVIRONMENT }},\
+                    STAGE=${{ env.ENRONMENT }},\
                     PYTHONPATH=/app/fitnessllm-dataplatform"
                   gcloud run jobs deploy ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }} \
                     --image ${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }} \
@@ -315,51 +315,40 @@ jobs:
             == 'true')
         runs-on: ubuntu-latest
         environment: dev
-        strategy:
-            matrix:
-                function: [token_refresh, api_router, strava_auth_initiate]
         steps:
             - uses: actions/checkout@v4
 
             - name: Authenticate to Google Cloud
-              if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
-                  == 'true')
               uses: google-github-actions/auth@v2
               with:
                   credentials_json: ${{ secrets.GCP_SA_KEY }}
 
             - name: Set up gcloud CLI
-              if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
-                  == 'true')
               uses: google-github-actions/setup-gcloud@v2
 
-            - name: Deploy Function from Container
-              if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
-                  == 'true')
-              run: |
-                  gcloud functions deploy ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') \
-                    --gen2 \
-                    --region=${{ env.REGION }} \
-                    --source=cloud_functions/${{ matrix.function }} \
-                    --trigger-http \
-                    --max-instances=10 \
-                    --min-instances=0 \
-                    --memory=256MB \
-                    --allow-unauthenticated \
-                    --set-env-vars=PROJECT_ID=${{ env.PROJECT_ID }},ENVIRONMENT=${{ env.ENVIRONMENT }},ENCRYPTION_SECRET=${{ env.ENCRYPTION_SECRET }},STRAVA_SECRET=${{ env.STRAVA_SECRET }},REGION=${{ env.REGION }},INFRASTRUCTURE_SECRET=${{ env.INFRASTRUCTURE_SECRET }} \
-                    --service-account=${{ secrets.GCP_DP_SA_EMAIL }}
-                  gcloud run services update ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') --region=${{ env.REGION }} --add-custom-audiences=${{ env.PROJECT_ID }}
+            - name: Configure Docker for Artifact Registry
+              run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
 
-            - name: Clean up old revisions
-              if: success() && needs.cloud_function_detect_changes.outputs[matrix.function] == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
-                  == 'true')
+            - name: Build and Push Container
               run: |
-                  # First, get the latest revision
-                  LATEST_REVISION=$(gcloud run revisions list --service ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') --region us-west1 --format="value(name)" --sort-by=~creationTimestamp --limit=1)
+                  docker build -t ${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/fitnessllm-functions/fitnessllm-functions:latest .
+                  docker push ${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/fitnessllm-functions/fitnessllm-functions:latest
 
-                  # Then delete all revisions except the latest one using a for loop
-                  for revision in $(gcloud run revisions list --service ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') --region us-west1 --format="value(name)"); do
-                    if [ "$revision" != "$LATEST_REVISION" ]; then
-                      gcloud run revisions delete $revision --region us-west1 --quiet
-                    fi
+            - name: Deploy Functions
+              run: |
+                  for function in api_router token_refresh strava_auth_initiate; do
+                    gcloud functions deploy ${{ env.ENVIRONMENT}}-$(echo $function | tr '_' '-') \
+                      --gen2 \
+                      --region=${{ env.REGION }} \
+                      --runtime=python312 \
+                      --source=${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/fitnessllm-functions/fitnessllm-functions:latest \
+                      --trigger-http \
+                      --entry-point=$function \
+                      --max-instances=10 \
+                      --min-instances=0 \
+                      --memory=256MB \
+                      --allow-unauthenticated \
+                      --set-env-vars=PROJECT_ID=${{ env.PROJECT_ID }},ENVIRONMENT=${{ env.ENVIRONMENT }},ENCRYPTION_SECRET=${{ env.ENCRYPTION_SECRET }},STRAVA_SECRET=${{ env.STRAVA_SECRET }},REGION=${{ env.REGION }},INFRASTRUCTURE_SECRET=${{ env.INFRASTRUCTURE_SECRET }} \
+                      --service-account=${{ secrets.GCP_DP_SA_EMAIL }}
+                    gcloud run services update ${{ env.ENVIRONMENT}}-$(echo $function | tr '_' '-') --region=${{ env.REGION }} --add-custom-audiences=${{ env.PROJECT_ID }}
                   done

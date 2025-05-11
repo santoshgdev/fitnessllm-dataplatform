@@ -10,7 +10,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 EXPOSE 8080
 
-CMD ["functions-framework", \
-    "--target", "main.token_refresh", \
-    "--signature-type", "http", \
-    "--port", "8080"]
+CMD ["functions-framework",
+    "--target", "main.token_refresh",
+    "--signature-type", "http",
+     "--host", "0.0.0.0",
+     "--port", "8080"]

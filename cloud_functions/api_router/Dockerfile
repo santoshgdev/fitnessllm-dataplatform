@@ -18,7 +18,8 @@ COPY . .
 EXPOSE 8080
 
 # Launch the HTTP function
-CMD ["functions-framework", \
-     "--target", "main.api_router", \
-     "--signature-type", "http", \
+CMD ["functions-framework",
+     "--target", "main.api_router",
+     "--signature-type", "http",
+     "--host", "0.0.0.0",
      "--port", "8080"]

@@ -315,15 +315,22 @@ jobs:
             == 'true')
         runs-on: ubuntu-latest
         environment: dev
+        strategy:
+            matrix:
+                function: [token_refresh, api_router, strava_auth_initiate]
         steps:
             - uses: actions/checkout@v4
 
             - name: Authenticate to Google Cloud
+              if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
+                  == 'true')
               uses: google-github-actions/auth@v2
               with:
                   credentials_json: ${{ secrets.GCP_SA_KEY }}
 
             - name: Set up gcloud CLI
+              if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
+                  == 'true')
               uses: google-github-actions/setup-gcloud@v2
 
             - name: Deploy Functions

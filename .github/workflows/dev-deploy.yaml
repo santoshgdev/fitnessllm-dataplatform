@@ -167,12 +167,24 @@ jobs:
                   restore-keys: |
                       ${{ runner.os }}-buildx-
 
-            - name: Build and Push Docker image to Artifact Registry
+            - name: Build and Push Base Docker image to Artifact Registry
+              if: ${{ github.event_name == 'push' && (contains(github.event.head_commit.modified, 'pyproject.toml') || contains(github.event.head_commit.modified,
+                  'poetry.lock') || contains(github.event.head_commit.modified, 'Dockerfile.base')) }}
               run: |
-                  IMAGE_TAG="${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }}"
-                  docker buildx build . \
+                  BASE_IMAGE_TAG_REMOTE="${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/base:latest"
+                  BASE_IMAGE_TAG_LOCAL="base:latest"
+                  docker buildx build -f Dockerfile.base . \
                     --cache-from type=local,src=/tmp/.buildx-cache \
                     --cache-to type=local,dest=/tmp/.buildx-cache \
+                    -t $BASE_IMAGE_TAG_REMOTE \
+                    -t $BASE_IMAGE_TAG_LOCAL \
+                    --push
+
+            - name: Build and Push App Docker image to Artifact Registry
+              run: |
+                  IMAGE_TAG="${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }}"
+                  docker buildx build -f Dockerfile.app . \
+                    --build-arg BASE_IMAGE=base:latest \
                     --build-arg CACHEBUST=$(date +%s) \
                     -t $IMAGE_TAG \
                     --push

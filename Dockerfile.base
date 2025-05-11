@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && curl -sSL https://install.python-poetry.org | python3 - --version ${POETRY_VERSION}
 
+
 RUN mkdir /app
 WORKDIR /app
 RUN mkdir fitnessllm-dataplatform
@@ -33,10 +34,3 @@ COPY cloud_functions fitnessllm-dataplatform/cloud_functions
 COPY tests fitnessllm-dataplatform/tests
 
 WORKDIR /app/fitnessllm-dataplatform
-
-RUN poetry update fitnessllm-shared
-
-#ENV PORT=8080
-
-# Run the HTTP server
-#ENTRYPOINT ["poetry", "run", "python", "-m", "fitnessllm_dataplatform.task_handler"]

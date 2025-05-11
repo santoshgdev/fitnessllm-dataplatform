@@ -17,11 +17,11 @@ try:
         message="Firebase Admin initialized successfully", service="token_refresh"
     )
 except Exception as e:
-    structured_logger(
+    structured_logger.error(
         message="Error initializing Firebase Admin",
         error=str(e),
-        level="ERROR",
         traceback=traceback.format_exc(),
+        service="token_refresh",
     )
     raise
 

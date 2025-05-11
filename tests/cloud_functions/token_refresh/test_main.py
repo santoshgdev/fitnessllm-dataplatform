@@ -11,7 +11,7 @@ from tests.cloud_functions.testing_utils import (
 
 
 @patch(
-    "cloud_functions.token_refresh.main.structured_logger",
+    "fitnessllm_shared.logger_utils.structured_logger",
     new=lambda *a, **kw: None,
 )
 @patch(
@@ -44,7 +44,7 @@ def test_token_refresh_success(mock_verify, mock_request, mock_decoded_token):
 
 
 @patch(
-    "cloud_functions.token_refresh.main.structured_logger",
+    "fitnessllm_shared.logger_utils.structured_logger",
     new=lambda *a, **kw: None,
 )
 @patch(
@@ -83,7 +83,7 @@ def test_token_refresh_missing_data_source(
 
 
 @patch(
-    "cloud_functions.token_refresh.main.structured_logger",
+    "fitnessllm_shared.logger_utils.structured_logger",
     new=lambda *a, **kw: None,
 )
 @patch(

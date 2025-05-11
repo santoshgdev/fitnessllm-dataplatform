@@ -332,47 +332,6 @@ jobs:
               if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
                   == 'true')
               uses: google-github-actions/setup-gcloud@v2
-#              with:
-#                  version: latest
-#                  project_id: ${{ secrets.GCP_PROJECT_ID }}
-#                  install_components: alpha,beta
-
-#            - name: ‘Verify gcloud alpha & beta’
-#              run: |
-#                  gcloud version
-#                  gcloud alpha --help
-#                  gcloud beta --help
-#
-#            - name: Configure Docker for Artifact Registry
-#              if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
-#                  == 'true')
-#              run: gcloud auth configure-docker us-west1-docker.pkg.dev --quiet
-
-#            - name: Set up Docker Buildx
-#              if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
-#                  == 'true')
-#              uses: docker/setup-buildx-action@v3
-#
-#            - name: Cache Docker layers
-#              if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
-#                  == 'true')
-#              uses: actions/cache@v4
-#              with:
-#                  path: /tmp/.buildx-cache
-#                  key: ${{ runner.os }}-buildx-${{ matrix.function }}-${{ github.sha }}
-#                  restore-keys: |
-#                      ${{ runner.os }}-buildx-${{ matrix.function }}-
-
-#            - name: Build and Push Docker image to Artifact Registry
-#              if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
-#                  == 'true')
-#              run: |
-#                  IMAGE_TAG="${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ matrix.function }}:${{ env.ENVIRONMENT }}"
-#                  docker buildx build cloud_functions/${{ matrix.function }} \
-#                    --cache-from type=local,src=/tmp/.buildx-cache \
-#                    --cache-to type=local,dest=/tmp/.buildx-cache \
-#                    -t $IMAGE_TAG \
-#                    --push
 
             - name: Deploy Function from Container
               if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy

@@ -381,7 +381,7 @@ jobs:
                   gcloud functions deploy ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') \
                     --gen2 \
                     --region=${{ env.REGION }} \
-                    --source=${{ matrix.function }} \
+                    --source=cloud_functions/${{ matrix.function }} \
                     --trigger-http \
                     --max-instances=10 \
                     --min-instances=0 \

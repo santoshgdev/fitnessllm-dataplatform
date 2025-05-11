@@ -364,7 +364,7 @@ jobs:
                   gcloud functions deploy ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') \
                     --gen2 \
                     --region=${{ env.REGION }} \
-                    --container-image=${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ matrix.function }}:${{ env.ENVIRONMENT }} \
+                    --source=${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ matrix.function }}:${{ env.ENVIRONMENT }} \
                     --trigger-http \
                     --max-instances=10 \
                     --min-instances=0 \

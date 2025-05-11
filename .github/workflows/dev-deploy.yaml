@@ -176,6 +176,7 @@ jobs:
                   docker buildx build -f Dockerfile.base . \
                     --cache-from type=local,src=/tmp/.buildx-cache \
                     --cache-to type=local,dest=/tmp/.buildx-cache \
+                    --build-arg BASE_IMAGE=base:latest \
                     -t $BASE_IMAGE_TAG_REMOTE \
                     -t $BASE_IMAGE_TAG_LOCAL \
                     --push

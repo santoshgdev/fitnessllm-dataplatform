@@ -133,6 +133,7 @@ class BatchHandler:
 
 if __name__ == "__main__":
     structured_logger.info("Starting batch handler", service="batch_handler")
+    # TODO: Possibly reduce the number of environment variables.
     structured_logger.info(
         "Cloud run job name",
         CLOUD_RUN_JOB=environ["CLOUD_RUN_JOB"],

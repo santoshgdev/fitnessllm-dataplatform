@@ -7,4 +7,4 @@ cryptography>=41.0.0
 google-cloud-secret-manager>=2.16.0
 stravalib>=2.3,<3.0
 pydantic>=2.0,<3.0
-git+https://github.com/santoshgdev/fitnessllm-shared.git@main#egg=fitnessllm_shared
+git+https://github.com/santoshgdev/fitnessllm-shared.git@main#egg=fitnessllm_shared&subdirectory=fitnessllm_shared

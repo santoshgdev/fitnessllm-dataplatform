@@ -88,7 +88,7 @@ class BronzeStravaETLInterface(ETLInterface):
             structured_logger.info(
                 message=f"Loading {stream} for {self.athlete_id}",
                 uid=self.uid,
-                data_source=self.data_source.value.lower(),
+                data_source=self.data_source.value,
                 service="bronze_etl",
             )
             dataframes, metrics = self.convert_stream_json_to_dataframe(stream=stream)
@@ -125,7 +125,7 @@ class BronzeStravaETLInterface(ETLInterface):
         structured_logger.info(
             message=f"Extracted {len(activity_ids)} activity ids for {stream}",
             uid=self.uid,
-            data_source=self.data_source.value.lower(),
+            data_source=self.data_source.value,
             service="bronze_etl",
         )
 
@@ -216,7 +216,7 @@ class BronzeStravaETLInterface(ETLInterface):
         structured_logger.debug(
             message=f"Starting to process {file}",
             uid=self.uid,
-            data_source=self.data_source.value.lower(),
+            data_source=self.data_source.value,
         )
         data_dict = json.loads(file.read_text())
         if isinstance(data_dict, str):

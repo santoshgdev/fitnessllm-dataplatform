@@ -79,7 +79,7 @@ class StravaAPIInterface(APIInterface):
         structured_logger.info(
             message="Writing strava secret token to environment",
             uid=self.uid,
-            data_source=self.data_source.value.lower(),
+            data_source=self.data_source.value,
         )
         structured_logger.info(
             message="Writing strava secret token to environment", service="ingest"
@@ -107,7 +107,7 @@ class StravaAPIInterface(APIInterface):
         structured_logger.info(
             message="Set strava access token",
             uid=self.uid,
-            data_source=self.data_source.value.lower(),
+            data_source=self.data_source.value,
         )
         return None
 
@@ -147,7 +147,7 @@ class StravaAPIInterface(APIInterface):
         structured_logger.info(
             message="Getting activity summary",
             uid=self.uid,
-            data_source=self.data_source.value.lower(),
+            data_source=self.data_source.value,
             service="ingest",
         )
         activity_dump = activity.model_dump()
@@ -225,7 +225,7 @@ class StravaAPIInterface(APIInterface):
         structured_logger.info(
             message="Getting all activities",
             uid=self.uid,
-            data_source=self.data_source.value.lower(),
+            data_source=self.data_source.value,
             service="ingest",
         )
         latest_activity_date = (

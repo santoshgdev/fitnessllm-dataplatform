@@ -186,15 +186,23 @@ class BatchHandler:
 
 
 if __name__ == "__main__":
-    structured_logger.info("Starting batch handler", service="batch_handler")
-    # TODO: Possibly reduce the number of environment variables.
-    structured_logger.info(
-        "Cloud run job name",
-        CLOUD_RUN_JOB=environ["CLOUD_RUN_JOB"],
-        CLOUD_RUN_EXECUTION_ID=environ["CLOUD_RUN_EXECUTION"],
-        CLOUD_RUN_TASK_INDEX=environ["CLOUD_RUN_TASK_INDEX"],
-        CLOUD_RUN_TASK_ATTEMPT=environ["CLOUD_RUN_TASK_ATTEMPT"],
-        CLOUD_RUN_TASK_COUNT=environ["CLOUD_RUN_TASK_COUNT"],
-    )
-    handler = BatchHandler()
-    handler.process_all_users()
+    try:
+        structured_logger.info("Starting batch handler", service="batch_handler")
+        # TODO: Possibly reduce the number of environment variables.
+        structured_logger.info(
+            "Cloud run job name",
+            CLOUD_RUN_JOB=environ["CLOUD_RUN_JOB"],
+            CLOUD_RUN_EXECUTION_ID=environ["CLOUD_RUN_EXECUTION"],
+            CLOUD_RUN_TASK_INDEX=environ["CLOUD_RUN_TASK_INDEX"],
+            CLOUD_RUN_TASK_ATTEMPT=environ["CLOUD_RUN_TASK_ATTEMPT"],
+            CLOUD_RUN_TASK_COUNT=environ["CLOUD_RUN_TASK_COUNT"],
+        )
+        handler = BatchHandler()
+        handler.process_all_users()
+    finally:
+        # Log completion before closing handlers
+        structured_logger.info("Batch handler completed", service="batch_handler")
+        # Ensure all logs are flushed and handlers are closed
+        for handler in structured_logger.handlers:
+            handler.flush()
+            handler.close()

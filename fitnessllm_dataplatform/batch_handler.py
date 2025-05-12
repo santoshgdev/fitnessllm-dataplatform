@@ -137,8 +137,6 @@ class BatchHandler:
                 service="batch_handler",
             )
 
-        raise
-
     @beartype
     def process_all_users(
         self, data_source: FitnessLLMDataSource = FitnessLLMDataSource.STRAVA

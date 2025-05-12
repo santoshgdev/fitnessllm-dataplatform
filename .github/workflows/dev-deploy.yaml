@@ -190,6 +190,32 @@ jobs:
                     -t $IMAGE_TAG \
                     --push
 
+            - name: Clean up old image digests
+              run: |
+                  echo "Cleaning up old image digests..."
+
+                  # Clean up app image - keep only the latest version
+                  gcloud artifacts docker images list \
+                    "${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}" \
+                    --include-tags --sort-by=~CREATE_TIME --format="get(digest)" | \
+                    tail -n +2 | \
+                    while read digest; do
+                      gcloud artifacts docker images delete \
+                        "${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}@$digest" \
+                        --quiet || true
+                    done
+
+                  # Clean up base image - keep only the latest version
+                  gcloud artifacts docker images list \
+                    "${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/base" \
+                    --include-tags --sort-by=~CREATE_TIME --format="get(digest)" | \
+                    tail -n +2 | \
+                    while read digest; do
+                      gcloud artifacts docker images delete \
+                        "${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/base@$digest" \
+                        --quiet || true
+                    done
+
             - name: Debug deployment configuration
               run: |
                   echo "=== Debug: Deployment Configuration ==="
@@ -200,7 +226,7 @@ jobs:
                   echo "Region: ${{ env.REGION }}"
                   echo "Full deployment command (with masked secrets):"
                   echo "gcloud run jobs deploy ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }} \
-                    --image ${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }} \
+                    --image $IMAGE_TAG \
                     --region ${{ env.REGION }} \
                     --service-account=[MASKED] \
                     --set-env-vars PROJECT_ID=${{ secrets.PROJECT_ID }},ENVIRONMENT=${{ env.ENVIRONMENT }},ENCRYPTION_SECRET=$${{ env.ENCRYPTION_SECRET }},STRAVA_SECRET=${{ env.STRAVA_SECRET }},REGION=${{ env.REGION }},INFRASTRUCTURE_SECRET=${{ env.INFRASTRUCTURE_SECRET }},STAGE=dev"

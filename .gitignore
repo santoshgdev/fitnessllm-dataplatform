@@ -172,3 +172,5 @@ cython_debug/
 
 # Ignore copied shared folders in cloud functions
 cloud_functions/*/shared/
+
+.secret

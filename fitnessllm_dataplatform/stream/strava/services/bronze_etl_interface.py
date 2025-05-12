@@ -8,6 +8,7 @@ from datetime import datetime
 from enum import EnumType
 from functools import partial
 from os import environ
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -40,12 +41,14 @@ from fitnessllm_dataplatform.utils.task_utils import load_schema_from_json
 class BronzeStravaETLInterface(ETLInterface):
     """ETL Interface for Strava data."""
 
+    SERVICE_NAME = "silver_etl"
+
     def __init__(
         self,
         uid: str,
         infrastructure_names: EnumType,
         athlete_id: str,
-        data_streams: list[str] | None = None,
+        data_streams: Optional[list[str]] = None,
     ):
         """Initializes Strava ETL Interface."""
         super().__init__()
@@ -75,7 +78,7 @@ class BronzeStravaETLInterface(ETLInterface):
                 data_source=self.data_source.value,
                 exception=exc,
                 traceback=traceback.format_exc(),
-                service="bronze_etl",
+                service=self.SERVICE_NAME,
             )
             raise exc
 
@@ -86,10 +89,12 @@ class BronzeStravaETLInterface(ETLInterface):
 
         for stream in streams:
             structured_logger.info(
-                message=f"Loading {stream} for {self.athlete_id}",
+                message="Loading stream for athlete_id",
+                athlete_id=self.athlete_id,
+                stream=stream.value,
                 uid=self.uid,
                 data_source=self.data_source.value,
-                service="bronze_etl",
+                service=self.SERVICE_NAME,
             )
             dataframes, metrics = self.convert_stream_json_to_dataframe(stream=stream)
             if dataframes and metrics:
@@ -103,7 +108,7 @@ class BronzeStravaETLInterface(ETLInterface):
                     message="No new data",
                     uid=self.uid,
                     data_source=self.data_source.value,
-                    service="bronze_etl",
+                    service=self.SERVICE_NAME,
                 )
 
     @beartype
@@ -126,7 +131,7 @@ class BronzeStravaETLInterface(ETLInterface):
             message=f"Extracted {len(activity_ids)} activity ids for {stream}",
             uid=self.uid,
             data_source=self.data_source.value,
-            service="bronze_etl",
+            service=self.SERVICE_NAME,
         )
 
         module_strava_json_list = (
@@ -144,7 +149,7 @@ class BronzeStravaETLInterface(ETLInterface):
                 message=f"Sampling has been turned on {sample}",
                 uid=self.uid,
                 data_source=self.data_source.value,
-                service="bronze_etl",
+                service=self.SERVICE_NAME,
             )
 
         filtered_module_strava_json_list = [
@@ -293,7 +298,7 @@ class BronzeStravaETLInterface(ETLInterface):
                 data_source=self.data_source.value,
                 exception=str(e),
                 traceback=traceback.format_exc(),
-                service="bronze_etl",
+                service=self.SERVICE_NAME,
             )
             self.insert_metrics(
                 metrics_list=metrics,
@@ -334,9 +339,10 @@ class BronzeStravaETLInterface(ETLInterface):
             if result.state != "DONE":
                 structured_logger.error(
                     "Unable to insert metrics into BigQuery.",
+                    athlete_id=self.athlete_id,
                     uid=self.uid,
                     data_source=self.data_source.value,
-                    service="bronze_etl",
+                    service=self.SERVICE_NAME,
                 )
         except Exception as e:
             structured_logger.error(
@@ -345,6 +351,6 @@ class BronzeStravaETLInterface(ETLInterface):
                 data_source=self.data_source.value,
                 exception=str(e),
                 traceback=traceback.format_exc(),
-                service="bronze_etl",
+                service=self.SERVICE_NAME,
             )
             raise e

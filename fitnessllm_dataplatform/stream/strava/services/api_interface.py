@@ -29,6 +29,7 @@ from fitnessllm_dataplatform.utils.task_utils import get_enum_values_from_list
 class StravaAPIInterface(APIInterface):
     """API Interface for Strava."""
 
+    SERVICE_NAME = "ingest"
     redis: RedisConnect
     client: Client
     partial_get_strava_storage: partial
@@ -58,7 +59,7 @@ class StravaAPIInterface(APIInterface):
                 message="Strava client ID or secret token missing",
                 uid=self.uid,
                 data_source=self.data_source.value,
-                service="ingest",
+                service=self.SERVICE_NAME,
             )
             raise Exception(
                 "Client ID or Secret Token missing"
@@ -82,7 +83,8 @@ class StravaAPIInterface(APIInterface):
             data_source=self.data_source.value,
         )
         structured_logger.info(
-            message="Writing strava secret token to environment", service="ingest"
+            message="Writing strava secret token to environment",
+            service=self.SERVICE_NAME,
         )
         environ["STRAVA_CLIENT_ID"] = str(client_id)
         environ["STRAVA_CLIENT_SECRET"] = client_secret
@@ -100,7 +102,7 @@ class StravaAPIInterface(APIInterface):
                 message="No strava access token provided",
                 uid=self.uid,
                 data_source=self.data_source,
-                service="ingest",
+                service=self.SERVICE_NAME,
             )
             return None
         self.strava_client = Client(access_token=access_token)
@@ -148,7 +150,7 @@ class StravaAPIInterface(APIInterface):
             message="Getting activity summary",
             uid=self.uid,
             data_source=self.data_source.value,
-            service="ingest",
+            service=self.SERVICE_NAME,
         )
         activity_dump = activity.model_dump()
         path = self.partial_get_strava_storage(
@@ -183,7 +185,7 @@ class StravaAPIInterface(APIInterface):
             message="Getting athlete activity streams",
             uid=self.uid,
             data_source=self.data_source.value,
-            service="ingest",
+            service=self.SERVICE_NAME,
         )
         activity_id = self.get_activity_summary(activity)
 
@@ -226,7 +228,7 @@ class StravaAPIInterface(APIInterface):
             message="Getting all activities",
             uid=self.uid,
             data_source=self.data_source.value,
-            service="ingest",
+            service=self.SERVICE_NAME,
         )
         latest_activity_date = (
             self.bq_client.query(

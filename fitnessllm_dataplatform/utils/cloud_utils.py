@@ -61,24 +61,25 @@ def write_json_to_storage(path: CloudPath, data: dict | list) -> None:
 
 
 def wrapped_write_json_to_storage(
-    path: CloudPath, data: dict | list, uid: str, data_source: str
+    path: CloudPath,
+    data: dict | list,
+    uid: str,
+    data_source: str,
 ) -> None:
-    """Retrieve and process all activities for the authenticated athlete.
+    """Write JSON data to storage with structured error logging.
 
-    This method fetches all activities for the athlete from the Strava API,
-    starting from the latest activity date stored in the database. For each
-    activity, it retrieves and saves the associated activity streams.
+    This function wraps the write_json_to_storage function with structured logging
+    for better error tracking and debugging.
 
     Args:
-        None
-
-    Returns:
-        None: This method does not return any value. It processes and saves
-        the activities and their streams to cloud storage.
+        path (CloudPath): CloudPath object.
+        data (dict | list): Data to be written.
+        uid (str): User ID for logging.
+        data_source (str): Data source for logging.
 
     Raises:
-        Any exceptions raised by the Strava API client, BigQuery client, or
-        storage utilities will propagate.
+        JSONDecodeError: If there's an issue with JSON encoding.
+        Exception: If writing to storage fails.
     """
     try:
         write_json_to_storage(path, data)

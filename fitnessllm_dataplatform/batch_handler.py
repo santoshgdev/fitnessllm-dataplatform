@@ -36,10 +36,10 @@ class BatchHandler:
     def get_user_stream_data(
         self, uid: str, data_source: FitnessLLMDataSource
     ) -> Optional[dict[str, Any]]:
-        """Retrieves all user documents from the Firestore "users" collection.
+        """Retrieves stream data for a specific user and data source.
 
         Returns:
-            A list of dictionaries representing each user's data.
+            A dictionary containing the user's stream data, or None if not found.
         """
         user_stream = (
             self.db.collection("users")
@@ -114,9 +114,8 @@ class BatchHandler:
             user_id = user.get("uid")
             if not user_id:
                 structured_logger.warning(
-                    message=f"Skipping user without uid: {user}",
+                    message="Skipping user without uid",
                     uid=user_id,
-                    exception=user,
                     service="batch_handler",
                 )
                 continue

@@ -124,7 +124,7 @@ jobs:
                     git diff --name-only ${{ github.event.before }} ${{ github.sha }}
                   fi
 
-                  if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -q -E '^(fitnessllm_dataplatform/|Dockerfile|pyproject.toml|poetry.lock|.github/workflows/dev-deploy.yaml)'; then
+                  if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -q -E '^(fitnessllm_dataplatform/|Dockerfile|pyproject.toml|poetry.lock|\.github/workflows/dev-deploy.yaml)'; then
                     echo "changes_detected=true" >> $GITHUB_OUTPUT
                   else
                     echo "changes_detected=false" >> $GITHUB_OUTPUT
@@ -253,21 +253,12 @@ jobs:
 
             - name: Clean up untagged images
               run: |
-                  # Set image paths
-                  if [ -z "${{ github.event.inputs.image_path }}" ]; then
-                    # Default paths for push events
-                    APP_IMAGE_PATH="us-west1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/fitnessllm-dp/fitnessllm-dp"
-                    BASE_IMAGE_PATH="us-west1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/fitnessllm-dp/base"
-                  else
-                    # Use provided image path for manual cleanup
-                    APP_IMAGE_PATH="${{ github.event.inputs.image_path }}"
-                    BASE_IMAGE_PATH=""
-                  fi
+                  APP_IMAGE_PATH="us-west1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/fitnessllm-dp/fitnessllm-dp"
+                  BASE_IMAGE_PATH="us-west1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/fitnessllm-dp/base"
 
                   # Clean up untagged app images using JSON output and jq
                   echo "DEBUG: Listing all app images as JSON..."
                   APP_IMAGES_JSON=$(gcloud artifacts docker images list "$APP_IMAGE_PATH" --include-tags --format="json")
-                  echo "$APP_IMAGES_JSON"
                   echo "$APP_IMAGES_JSON" | jq -r '.[] | select((.tags == null or (.tags | length) == 0) and .version != null) | .version' | while read version; do
                     if [[ -n "$version" && "$version" != "null" ]]; then
                       echo "Deleting untagged app digest: $version"
@@ -279,7 +270,6 @@ jobs:
                   if [[ -n "$BASE_IMAGE_PATH" ]]; then
                     echo "DEBUG: Listing all base images as JSON..."
                     BASE_IMAGES_JSON=$(gcloud artifacts docker images list "$BASE_IMAGE_PATH" --include-tags --format="json")
-                    echo "BASE_IMAGES_JSON"
                     echo "$BASE_IMAGES_JSON" | jq -r '.[] | select((.tags == null or (.tags | length) == 0) and .version != null) | .version' | while read version; do
                       if [[ -n "$version" && "$version" != "null" ]]; then
                         echo "Deleting untagged base digest: $version"

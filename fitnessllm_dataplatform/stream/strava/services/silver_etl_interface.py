@@ -12,19 +12,43 @@ from fitnessllm_dataplatform.utils.query_utils import get_delete_query, get_inse
 
 
 class SilverStravaETLInterface(ETLInterface):
-    """Silver ETL interface for Strava data."""
+    """Silver ETL interface for Strava data.
+
+    This class provides methods to handle the extraction, transformation,
+    and loading (ETL) of Strava data into the Silver layer of the data platform.
+
+    Attributes:
+        SERVICE_NAME (str): The name of the service, used for logging and identification.
+    """
 
     SERVICE_NAME = "silver_etl"
 
     def __init__(self, uid: str, athlete_id: str):
-        """Initializes Strava ETL Interface."""
+        """Initializes the Silver Strava ETL Interface.
+
+        This constructor sets up the necessary attributes for the ETL process,
+        including a unique identifier and the athlete ID.
+
+        Args:
+            uid (str): A unique identifier for the ETL process.
+            athlete_id (str): The ID of the athlete whose data is being processed.
+        """
         super().__init__()
         self.uid = uid
         self.data_source = FitnessLLMDataSource.STRAVA
         self.athlete_id = athlete_id
 
     def task_handler(self):
-        """Task handler for Strava ETL."""
+        """Handles the execution of ETL tasks for Strava data.
+
+        This method processes SQL queries located in the specified directory,
+        executes delete and insert operations on the target tables in the Silver
+        layer, and logs the results of each operation. It ensures that data is
+        properly transformed and loaded into the Silver layer.
+
+        Raises:
+            Exception: If any query execution fails or encounters an error.
+        """
         path = "fitnessllm_dataplatform/stream/strava/schemas/silver/sql"
         list_of_queries = os.listdir(path)
 
@@ -44,14 +68,18 @@ class SilverStravaETLInterface(ETLInterface):
             delete_job.result()
             if delete_job.state != "DONE" and delete_job.error is not None:
                 structured_logger.error(
-                    message=f"Query {delete_query} failed with error {delete_job.error}",
+                    message="Query failed with error",
+                    query=delete_query,
+                    error=delete_job.error,
                     uid=self.athlete_id,
                     data_source=self.data_source.value,
                     service=self.SERVICE_NAME,
                 )
                 continue
             structured_logger.debug(
-                message=f"Query {delete_query} successfully deleted {delete_job.num_dml_affected_rows}",
+                message="Query successfully deleted rows",
+                query=delete_query,
+                num_deleted=delete_job.num_dml_affected_rows,
                 uid=self.uid,
                 data_source=self.data_source.value.lower(),
                 service=self.SERVICE_NAME,
@@ -73,7 +101,8 @@ class SilverStravaETLInterface(ETLInterface):
                 )
                 continue
             structured_logger.debug(
-                message=f"Query successfully inserted {insert_job.num_dml_affected_rows} rows",
+                message="Query successfully inserted rows",
+                num_inserted=insert_job.num_dml_affected_rows,
                 uid=self.uid,
                 data_source=self.data_source.value,
                 query=insert_query,

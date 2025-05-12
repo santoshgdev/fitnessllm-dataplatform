@@ -27,7 +27,16 @@ from fitnessllm_dataplatform.utils.task_utils import get_enum_values_from_list
 
 
 class StravaAPIInterface(APIInterface):
-    """API Interface for Strava."""
+    """Handles the execution of ETL tasks for Strava data.
+
+    This method processes SQL queries located in the specified directory,
+    executes delete and insert operations on the target tables in the Silver
+    layer, and logs the results of each operation. It ensures that data is
+    properly transformed and loaded into the Silver layer.
+
+    Raises:
+        Exception: If any query execution fails or encounters an error.
+    """
 
     SERVICE_NAME = "ingest"
     redis: RedisConnect
@@ -42,7 +51,18 @@ class StravaAPIInterface(APIInterface):
         access_token: str,
         firebase: FirebaseConnect,
     ):
-        """Initializes Strava API Interface."""
+        """Initializes the Strava API Interface.
+
+        This constructor sets up the necessary attributes for interacting with the
+        Strava API, including a unique identifier, infrastructure configuration,
+        access token, and Firebase connection.
+
+        Args:
+            uid (str): A unique identifier for the API interface instance.
+            infrastructure_names (EnumType): Infrastructure configuration details.
+            access_token (str): The access token for authenticating with the Strava API.
+            firebase (FirebaseConnect): Firebase connection instance for data storage and retrieval.
+        """
         super().__init__()
         self.uid = uid
         self.strava_client = None
@@ -76,7 +96,19 @@ class StravaAPIInterface(APIInterface):
 
     @beartype
     def write_strava_var_to_env(self, client_id: int, client_secret: str) -> None:
-        """Writes strava secret token to environment."""
+        """Writes Strava client ID and secret token to the environment variables.
+
+        This method sets the `STRAVA_CLIENT_ID` and `STRAVA_CLIENT_SECRET` environment
+        variables using the provided client ID and secret token. It also logs the operation
+        for tracking purposes.
+
+        Args:
+            client_id (int): The client ID for the Strava API.
+            client_secret (str): The client secret token for the Strava API.
+
+        Returns:
+            None
+        """
         structured_logger.info(
             message="Writing strava secret token to environment",
             uid=self.uid,
@@ -91,7 +123,17 @@ class StravaAPIInterface(APIInterface):
 
     @beartype
     def set_strava_client(self, access_token: str) -> None:
-        """Instantiate strava client."""
+        """Sets up the Strava client with the provided access token.
+
+        This method initializes the Strava client using the given access token.
+        If no access token is provided, it logs a warning and does not set up the client.
+
+        Args:
+            access_token (str): The access token for authenticating with the Strava API.
+
+        Returns:
+            None
+        """
         if not access_token:
             structured_logger.warning(
                 message="No strava access token provided",
@@ -115,10 +157,17 @@ class StravaAPIInterface(APIInterface):
 
     @beartype
     def get_athlete_summary(self) -> str:
-        """Get athlete summary.
+        """Retrieves and saves the athlete summary.
 
-        The current athlete summary is retrieved based on the applied authorization token. The summary is saved to
-        storage and the id is returned.
+        This method fetches the current athlete summary using the Strava API based on the
+        provided authorization token. The summary is saved to cloud storage, and the athlete's
+        ID is returned.
+
+        Returns:
+            str: The ID of the athlete.
+
+        Raises:
+            Any exceptions raised by the Strava API client or storage utilities will propagate.
         """
         structured_logger.info(
             message="Getting athlete summary",
@@ -142,9 +191,19 @@ class StravaAPIInterface(APIInterface):
 
     @beartype
     def get_activity_summary(self, activity: SummaryActivity) -> str:
-        """Get activity summary.
+        """Retrieves and saves the summary of a specific activity.
 
-        For a particular athlete's activity, the summary is retrieved and saved to storage. The id is returned.
+        This method processes the given activity by extracting its summary and saving it
+        to cloud storage. The activity's ID is then returned for further reference.
+
+        Args:
+            activity (SummaryActivity): The activity object whose summary is to be retrieved.
+
+        Returns:
+            str: The ID of the processed activity.
+
+        Raises:
+            Any exceptions raised during the storage operation will propagate.
         """
         structured_logger.info(
             message="Getting activity summary",

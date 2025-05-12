@@ -1,31 +1,13 @@
 """Conftest for cloud_functions."""
+
 import random
 import uuid
 from datetime import datetime, timedelta, timezone
 
 import pytest
 from faker import Faker
-from firebase_admin import delete_app, get_app
-
-from fitnessllm_dataplatform.utils.logging_utils import logger
 
 fake = Faker()
-
-
-@pytest.fixture(autouse=True)
-def cleanup_firebase():
-    """Clean up Firebase app after each test."""
-    try:
-        logger.info("Cleaning up Firebase app, pre test")
-        delete_app(get_app())
-    except ValueError:
-        pass
-    yield
-    try:
-        logger.info("Cleaning up Firebase app, post test")
-        delete_app(get_app())
-    except ValueError:
-        pass
 
 
 def generate_fake_strava_doc():

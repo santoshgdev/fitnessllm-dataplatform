@@ -1,26 +1,54 @@
 """Module for Strava Silver ETL interface."""
+
 import os
 import pathlib
 
+from fitnessllm_shared.logger_utils import structured_logger
 from tqdm import tqdm
 
 from fitnessllm_dataplatform.entities.enums import FitnessLLMDataSource
 from fitnessllm_dataplatform.services.etl_interface import ETLInterface
-from fitnessllm_dataplatform.utils.logging_utils import logger
 from fitnessllm_dataplatform.utils.query_utils import get_delete_query, get_insert_query
 
 
 class SilverStravaETLInterface(ETLInterface):
-    """Silver ETL interface for Strava data."""
+    """Silver ETL interface for Strava data.
 
-    def __init__(self, athlete_id: str):
-        """Initializes Strava ETL Interface."""
+    This class provides methods to handle the extraction, transformation,
+    and loading (ETL) of Strava data into the Silver layer of the data platform.
+
+    Attributes:
+        SERVICE_NAME (str): The name of the service, used for logging and identification.
+    """
+
+    SERVICE_NAME = "silver_etl"
+
+    def __init__(self, uid: str, athlete_id: str):
+        """Initializes the Silver Strava ETL Interface.
+
+        This constructor sets up the necessary attributes for the ETL process,
+        including a unique identifier and the athlete ID.
+
+        Args:
+            uid (str): A unique identifier for the ETL process.
+            athlete_id (str): The ID of the athlete whose data is being processed.
+        """
         super().__init__()
+        self.uid = uid
         self.data_source = FitnessLLMDataSource.STRAVA
         self.athlete_id = athlete_id
 
     def task_handler(self):
-        """Task handler for Strava ETL."""
+        """Handles the execution of ETL tasks for Strava data.
+
+        This method processes SQL queries located in the specified directory,
+        executes delete and insert operations on the target tables in the Silver
+        layer, and logs the results of each operation. It ensures that data is
+        properly transformed and loaded into the Silver layer.
+
+        Raises:
+            Exception: If any query execution fails or encounters an error.
+        """
         path = "fitnessllm_dataplatform/stream/strava/schemas/silver/sql"
         list_of_queries = os.listdir(path)
 
@@ -39,14 +67,23 @@ class SilverStravaETLInterface(ETLInterface):
             delete_job = self.client.query(delete_query)
             delete_job.result()
             if delete_job.state != "DONE" and delete_job.error is not None:
-                logger.error(
-                    f"Query {delete_query} failed with error {delete_job.error}"
+                structured_logger.error(
+                    message="Query failed with error",
+                    query=delete_query,
+                    error=delete_job.error,
+                    uid=self.athlete_id,
+                    data_source=self.data_source.value,
+                    service=self.SERVICE_NAME,
                 )
                 continue
-            logger.debug(
-                f"Query {delete_query} successfully deleted {delete_job.num_dml_affected_rows} rows."
+            structured_logger.debug(
+                message="Query successfully deleted rows",
+                query=delete_query,
+                num_deleted=delete_job.num_dml_affected_rows,
+                uid=self.uid,
+                data_source=self.data_source.value,
+                service=self.SERVICE_NAME,
             )
-
             insert_query = get_insert_query(
                 target_table=target_destination,
                 query_path=query_path,
@@ -55,10 +92,19 @@ class SilverStravaETLInterface(ETLInterface):
             insert_job = self.client.query(insert_query)
             insert_job.result()
             if insert_job.state != "DONE" and insert_job.error is not None:
-                logger.error(
-                    f"Query {insert_query} failed with error {insert_job.error}"
+                structured_logger.error(
+                    message="Query failed with error",
+                    query=insert_query,
+                    uid=self.uid,
+                    data_source=self.data_source.value,
+                    service=self.SERVICE_NAME,
                 )
                 continue
-            logger.debug(
-                f"Query {insert_query} successfully inserted {insert_job.num_dml_affected_rows} rows."
+            structured_logger.debug(
+                message="Query successfully inserted rows",
+                num_inserted=insert_job.num_dml_affected_rows,
+                uid=self.uid,
+                data_source=self.data_source.value,
+                query=insert_query,
+                service=self.SERVICE_NAME,
             )

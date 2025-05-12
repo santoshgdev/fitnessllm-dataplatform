@@ -1,26 +1,27 @@
 """Main Entry point for Token Refresh."""
+
 import json
 import traceback
 
 from firebase_admin import auth, initialize_app
 from firebase_functions import https_fn, options
-from fitnessllm_shared.logger_utils import create_structured_logger
+from fitnessllm_shared.logger_utils import structured_logger
 from fitnessllm_shared.streams.strava import strava_refresh_oauth_token
 from google.cloud import firestore
 
 from .entities.constants import CORS_HEADERS
 
-structured_logger = create_structured_logger(__name__)
-
 try:
     initialize_app()
-    structured_logger(message="Firebase Admin initialized successfully")
+    structured_logger.info(
+        message="Firebase Admin initialized successfully", service="token_refresh"
+    )
 except Exception as e:
-    structured_logger(
+    structured_logger.error(
         message="Error initializing Firebase Admin",
         error=str(e),
-        level="ERROR",
         traceback=traceback.format_exc(),
+        service="token_refresh",
     )
     raise
 
@@ -34,22 +35,25 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
     Validates the request, checks user and stream existence in Firestore, and refreshes the OAuth token (currently only for Strava). Responds with appropriate status codes and messages for authentication errors, missing parameters, unsupported data sources, or internal errors.
     """
     # Log all request details at the start
-    structured_logger(
+    structured_logger.info(
         message="Request received",
         method=request.method,
         headers=dict(request.headers),
         url=request.url,
         args=dict(request.args),
+        service="token_refresh",
     )
     try:
         body = request.get_json(silent=True)
-        structured_logger(message="Request body", body=body)
+        structured_logger.info(
+            message="Request body", body=body, service="token_refresh"
+        )
     except Exception as e:
-        structured_logger(
+        structured_logger.error(
             message="Error parsing request body",
             error=str(e),
-            level="ERROR",
             traceback=traceback.format_exc(),
+            service="token_refresh",
         )
 
     # Handle OPTIONS request for CORS preflight
@@ -62,7 +66,9 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
     # Get data_source from query parameters instead of body
     data_source = request.args.get("data_source")
     if not data_source:
-        structured_logger(message="Missing data_source parameter", level="ERROR")
+        structured_logger.error(
+            message="Missing data_source parameter", service="token_refresh"
+        )
         return https_fn.Response(
             status=400,
             response=json.dumps(
@@ -80,48 +86,56 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
     try:
         # Log all headers for debugging
         all_headers = dict(request.headers)
-        structured_logger(
+        structured_logger.info(
             message="Received headers",
             headers=all_headers,
             auth_header=request.headers.get(
                 "Authorization", "No Authorization header found"
             ),
+            service="token_refresh",
         )
 
         # Get the Authorization header
         auth_header = request.headers.get("Authorization", "")
         if not auth_header.startswith("Bearer "):
-            structured_logger(
+            structured_logger.error(
                 message="Invalid Authorization header",
                 received_header=auth_header,
-                level="ERROR",
+                service="token_refresh",
             )
             raise auth.InvalidIdTokenError("No valid authorization header found")
 
         # Extract the token from the Authorization header
         token = auth_header.split("Bearer ")[1]
         if not token:
-            structured_logger(message="Empty Bearer token", level="ERROR")
+            structured_logger.error(
+                message="Empty Bearer token", service="token_refresh"
+            )
             raise auth.InvalidIdTokenError("Empty Bearer token")
 
         # Verify the Firebase ID token and log its contents
         decoded_token = auth.verify_id_token(token)
-        structured_logger(
+        structured_logger.info(
             message="Decoded token contents",
             token_empty=decoded_token is None or decoded_token == "",
+            service="token_refresh",
         )
 
         uid = decoded_token.get("uid") or decoded_token.get("sub")
         if not uid:
             raise auth.InvalidIdTokenError("No uid or sub claim found in token")
 
-        structured_logger(message="Token verified", uid=uid)
+        structured_logger.info(
+            message="Token verified", uid=uid, service="token_refresh"
+        )
 
         db = firestore.Client()
         doc = db.collection("users").document(uid).get()
 
         if not doc.exists:
-            structured_logger(message="User not found", uid=uid, level="ERROR")
+            structured_logger.error(
+                message="User not found", uid=uid, service="token_refresh"
+            )
             return https_fn.Response(
                 status=404,
                 response=json.dumps(
@@ -162,11 +176,11 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
         stream_data = stream_doc.to_dict()
 
         if not stream_data or not stream_data.get("refreshToken"):
-            structured_logger(
+            structured_logger.error(
                 message="No refresh token found",
                 uid=uid,
                 data_source=data_source,
-                level="ERROR",
+                service="token_refresh",
             )
             return https_fn.Response(
                 status=400,
@@ -185,10 +199,11 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
         if data_source == "strava":
             try:
                 strava_refresh_oauth_token(db, uid, stream_data["refreshToken"])
-                structured_logger(
+                structured_logger.info(
                     message="Token refresh successful",
                     uid=uid,
                     data_source=data_source,
+                    service="token_refresh",
                 )
                 return https_fn.Response(
                     status=200,
@@ -202,11 +217,12 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
                 )
             except ValueError as e:
                 if "credentials not found" in str(e):
-                    structured_logger(
+                    structured_logger.error(
                         message="Strava credentials not found",
                         error=str(e),
                         level="ERROR",
                         traceback=traceback.format_exc(),
+                        service="token_refresh",
                     )
                     return https_fn.Response(
                         status=500,
@@ -223,10 +239,10 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
                     )
                 raise
         else:
-            structured_logger(
+            structured_logger.error(
                 message="Unsupported data source",
                 data_source=data_source,
-                level="ERROR",
+                service="token_refresh",
             )
             return https_fn.Response(
                 status=400,
@@ -243,11 +259,11 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
             )
 
     except auth.InvalidIdTokenError:
-        structured_logger(
+        structured_logger.error(
             message="Invalid Firebase ID Token; JWT Token Issue",
-            level="ERROR",
             auth=auth_header,
             traceback=traceback.format_exc(),
+            service="token_refresh",
         )
         return https_fn.Response(
             status=401,
@@ -263,8 +279,10 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
             },
         )
     except auth.ExpiredIdTokenError:
-        structured_logger(
-            message="Expired token", level="ERROR", traceback=traceback.format_exc()
+        structured_logger.error(
+            message="Expired token",
+            traceback=traceback.format_exc(),
+            service="token_refresh",
         )
         return https_fn.Response(
             status=401,
@@ -277,8 +295,10 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
             },
         )
     except auth.RevokedIdTokenError:
-        structured_logger(
-            message="Revoked token", level="ERROR", traceback=traceback.format_exc()
+        structured_logger.error(
+            message="Revoked token",
+            traceback=traceback.format_exc(),
+            service="token_refresh",
         )
         return https_fn.Response(
             status=401,
@@ -291,11 +311,11 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
             },
         )
     except Exception as e:
-        structured_logger(
+        structured_logger.error(
             message="Error in token refresh",
             error=str(e),
-            level="ERROR",
             traceback=traceback.format_exc(),
+            service="token_refresh",
         )
         return https_fn.Response(
             status=500,

@@ -6,6 +6,12 @@ authors = [
     { name = "Santosh G", email = "santosh@santoshg.io" }
 ]
 
+[tool.black]
+line-length = 88
+target-version = ['py312']
+skip-magic-trailing-comma = false
+include = '\.pyi?$'
+
 [tool.poetry.dependencies]
 python = "^3.12.2"
 cloudpathlib = {extras = ["gs"], version = "^0.20.0"}
@@ -31,9 +37,9 @@ flask = "^3.1.0"
 firebase-functions = "^0.4.2"
 beartype = ">=0.20.2,<0.21.0"
 pytest-cov = "^6.0.0"
-fitnessllm_shared = {git = "https://github.com/santoshgdev/fitnessllm-shared.git", rev = "main"}
 google-cloud-functions = "^1.20.3"
 freezegun = "^1.5.1"
+fitnessllm-shared = {git = "https://github.com/santoshgdev/fitnessllm-shared.git", rev = "main"}
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

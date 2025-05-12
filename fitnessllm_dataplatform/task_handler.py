@@ -1,11 +1,14 @@
 """Main entry point for the data platform."""
 
+import traceback
 from functools import partial
 from os import environ
+from typing import Optional
 
 import fire
 from beartype import beartype
 from cloudpathlib import GSClient
+from fitnessllm_shared.logger_utils import structured_logger
 from fitnessllm_shared.task_utils import decrypt_token
 
 from fitnessllm_dataplatform.entities.enums import DynamicEnum, FitnessLLMDataSource
@@ -20,21 +23,22 @@ from fitnessllm_dataplatform.stream.strava.services.silver_etl_interface import 
     SilverStravaETLInterface,
 )
 from fitnessllm_dataplatform.utils.cloud_utils import get_secret
-from fitnessllm_dataplatform.utils.logging_utils import logger
 
 
 class Startup:
     """Main entry point for the data platform."""
 
-    def _startUp(self, uid: str) -> None:
+    def _startUp(self, uid: str, firebase: Optional[FirebaseConnect] = None) -> None:
         """Resources agnostic of service."""
-        logger.info("Starting up...")
+        structured_logger.info(
+            message="Starting up data platform", uid=uid, service="task_handler"
+        )
         self.initialized = True
         GSClient().set_as_default_client()
         self.InfrastructureNames = DynamicEnum.from_dict(
             get_secret(environ["INFRASTRUCTURE_SECRET"])[environ["STAGE"]],
         )
-        self.firebase = FirebaseConnect(uid)
+        self.firebase = firebase or FirebaseConnect(uid=uid)
         self.decryptor = partial(
             decrypt_token,
             key=get_secret(environ["ENCRYPTION_SECRET"])["token"],
@@ -61,6 +65,12 @@ class Startup:
             self._startUp(uid)
 
         if data_source not in [member.value for member in FitnessLLMDataSource]:
+            structured_logger.error(
+                message="Unsupported data source",
+                data_source=data_source,
+                uid=uid,
+                service="task_handler/ingest",
+            )
             raise ValueError(f"Unsupported data source: {data_source}")
 
         if data_source == FitnessLLMDataSource.STRAVA.value:
@@ -72,9 +82,17 @@ class Startup:
                 .to_dict()
             )
             if strava_user_data is None:
+                structured_logger.error(
+                    message="User has no data",
+                    uid=uid,
+                    data_source=data_source,
+                    traceback=traceback.format_exc(),
+                    service="task_handler/ingest",
+                )
                 raise ValueError(f"User {uid} has no {data_source} data")
 
             strava_api_interface = StravaAPIInterface(
+                uid=uid,
                 infrastructure_names=self.InfrastructureNames,
                 access_token=self.decryptor(
                     encrypted_token=strava_user_data["accessToken"]
@@ -84,6 +102,14 @@ class Startup:
             try:
                 strava_api_interface.get_all_activities()
             except Exception as e:
+                structured_logger.error(
+                    message="Failed to get data from API",
+                    uid=uid,
+                    data_source=data_source,
+                    exception=str(e),
+                    traceback=traceback.format_exc(),
+                    service="task_handler/ingest",
+                )
                 raise RuntimeError(f"Failed to get data from Strava API: {e}") from e
 
     @beartype
@@ -113,22 +139,41 @@ class Startup:
             )
 
             if strava_user_data is None:
+                structured_logger.error(
+                    message="User has no data",
+                    uid=uid,
+                    data_source=data_source,
+                    service="task_handler",
+                )
                 raise ValueError(f"User {uid} has no {data_source} data")
             if (
                 "athlete" not in strava_user_data
                 or "id" not in strava_user_data["athlete"]
             ):
+                structured_logger.error(
+                    message="User has incomplete data: missing athleteId",
+                    uid=uid,
+                    data_source=data_source,
+                    service="task_handler",
+                )
                 raise ValueError(
                     f"User {uid} has incomplete {data_source} data: missing athlete ID"
                 )
 
             strava_etl_interface = BronzeStravaETLInterface(
+                uid=uid,
                 infrastructure_names=self.InfrastructureNames,
                 athlete_id=str(strava_user_data["athlete"]["id"]),
                 data_streams=data_streams,
             )
             strava_etl_interface.load_json_into_bq()
         else:
+            structured_logger.error(
+                "Unsupported data source",
+                uid=uid,
+                data_source=data_source,
+                service="task_handler",
+            )
             raise ValueError(f"Unsupported data source: {data_source}")
 
     @beartype
@@ -155,20 +200,39 @@ class Startup:
             )
 
             if strava_user_data is None:
+                structured_logger.error(
+                    message="User has no data",
+                    uid=uid,
+                    data_source=data_source,
+                    service="task_handler",
+                )
                 raise ValueError(f"User {uid} has no {data_source} data")
             if (
                 "athlete" not in strava_user_data
                 or "id" not in strava_user_data["athlete"]
             ):
+                structured_logger.error(
+                    message="User has incomplete data: missing athleteId",
+                    uid=uid,
+                    data_source=data_source,
+                    service="task_handler",
+                )
                 raise ValueError(
                     f"User {uid} has incomplete {data_source} data: missing athlete ID"
                 )
 
             strava_etl_interface = SilverStravaETLInterface(
+                uid=uid,
                 athlete_id=str(strava_user_data["athlete"]["id"]),
             )
             strava_etl_interface.task_handler()
         else:
+            structured_logger.error(
+                "Unsupported data source",
+                uid=uid,
+                data_source=data_source,
+                service="task_handler",
+            )
             raise ValueError(f"Unsupported data source: {data_source}")
 
     @beartype
@@ -194,7 +258,12 @@ class Startup:
         # Silver ETL
         self.silver_etl(uid=uid, data_source=data_source)
 
-        logger.info("Full ETL process completed successfully.")
+        structured_logger.info(
+            "Full ETL process completed successfully",
+            uid=uid,
+            data_source=data_source,
+            service="task_handler",
+        )
 
 
 if __name__ == "__main__":

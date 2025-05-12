@@ -1,8 +1,8 @@
 """Firebase connection module."""
+
 import firebase_admin
 from firebase_admin import firestore
-
-from fitnessllm_dataplatform.utils.logging_utils import logger
+from fitnessllm_shared.logger_utils import structured_logger
 
 
 class FirebaseConnect:
@@ -10,14 +10,14 @@ class FirebaseConnect:
 
     def __init__(self, uid):
         """Init function."""
+        self.uid = uid
         self.app = firebase_admin.initialize_app()
         self.open_connection()
-        self.uid = uid
 
     def open_connection(self):
         """Open Firebase connection."""
         self.interface = firestore.client()
-        logger.debug("Opened Firebase connection.")
+        structured_logger.debug("Opened Firebase connection.", uid=self.uid)
 
     def close_connection(self):
         """Close Firebase connection."""

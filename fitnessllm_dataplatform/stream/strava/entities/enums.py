@@ -1,4 +1,5 @@
 """Strava specific enums."""
+
 from enum import Enum
 
 from fitnessllm_dataplatform.entities.enums import FitnessLLMDataStream

@@ -1,4 +1,5 @@
 """Enums for the FitnessLLM Data Platform."""
+
 from enum import Enum
 
 

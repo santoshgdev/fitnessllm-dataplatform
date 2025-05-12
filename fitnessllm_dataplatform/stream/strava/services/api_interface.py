@@ -1,14 +1,17 @@
 """API Interface for Strava."""
+
 import json
 from enum import EnumType
 from functools import partial
 from os import environ
 
 from beartype import beartype
+from fitnessllm_shared.logger_utils import structured_logger
 from google.cloud import bigquery
 from stravalib import Client
 from stravalib.model import Stream, SummaryActivity
 from tqdm import tqdm
+from utils.cloud_utils import wrapped_write_json_to_storage
 
 from fitnessllm_dataplatform.entities.enums import FitnessLLMDataSource
 from fitnessllm_dataplatform.infrastructure.FirebaseConnect import FirebaseConnect
@@ -20,13 +23,22 @@ from fitnessllm_dataplatform.stream.strava.entities.queries import (
     create_get_latest_activity_date_query,
 )
 from fitnessllm_dataplatform.utils.cloud_utils import get_secret, write_json_to_storage
-from fitnessllm_dataplatform.utils.logging_utils import logger
 from fitnessllm_dataplatform.utils.task_utils import get_enum_values_from_list
 
 
 class StravaAPIInterface(APIInterface):
-    """API Interface for Strava."""
+    """Handles the execution of ETL tasks for Strava data.
 
+    This method processes SQL queries located in the specified directory,
+    executes delete and insert operations on the target tables in the Silver
+    layer, and logs the results of each operation. It ensures that data is
+    properly transformed and loaded into the Silver layer.
+
+    Raises:
+        Exception: If any query execution fails or encounters an error.
+    """
+
+    SERVICE_NAME = "ingest"
     redis: RedisConnect
     client: Client
     partial_get_strava_storage: partial
@@ -34,12 +46,25 @@ class StravaAPIInterface(APIInterface):
     # @beartype
     def __init__(
         self,
+        uid: str,
         infrastructure_names: EnumType,
         access_token: str,
         firebase: FirebaseConnect,
     ):
-        """Initializes Strava API Interface."""
+        """Initializes the Strava API Interface.
+
+        This constructor sets up the necessary attributes for interacting with the
+        Strava API, including a unique identifier, infrastructure configuration,
+        access token, and Firebase connection.
+
+        Args:
+            uid (str): A unique identifier for the API interface instance.
+            infrastructure_names (EnumType): Infrastructure configuration details.
+            access_token (str): The access token for authenticating with the Strava API.
+            firebase (FirebaseConnect): Firebase connection instance for data storage and retrieval.
+        """
         super().__init__()
+        self.uid = uid
         self.strava_client = None
         self.data_source = FitnessLLMDataSource.STRAVA
         self.ENV = environ.get("ENV", "dev")
@@ -50,6 +75,12 @@ class StravaAPIInterface(APIInterface):
             not strava_secret_token["client_id"]
             or not strava_secret_token["client_secret"]
         ):
+            structured_logger.error(
+                message="Strava client ID or secret token missing",
+                uid=self.uid,
+                data_source=self.data_source.value,
+                service=self.SERVICE_NAME,
+            )
             raise Exception(
                 "Client ID or Secret Token missing"
             )  # TODO: Perhaps implement a separate exception type?
@@ -63,29 +94,86 @@ class StravaAPIInterface(APIInterface):
         self.athlete_id = self.get_athlete_summary()
         self.bq_client = bigquery.Client()
 
-    @staticmethod
-    def write_strava_var_to_env(client_id: int, client_secret: str) -> None:
-        """Writes strava secret token to environment."""
-        logger.info("Writing strava secret token to environment")
+    @beartype
+    def write_strava_var_to_env(self, client_id: int, client_secret: str) -> None:
+        """Writes Strava client ID and secret token to the environment variables.
+
+        This method sets the `STRAVA_CLIENT_ID` and `STRAVA_CLIENT_SECRET` environment
+        variables using the provided client ID and secret token. It also logs the operation
+        for tracking purposes.
+
+        Args:
+            client_id (int): The client ID for the Strava API.
+            client_secret (str): The client secret token for the Strava API.
+
+        Returns:
+            None
+        """
+        structured_logger.info(
+            message="Writing strava secret token to environment",
+            uid=self.uid,
+            data_source=self.data_source.value,
+        )
+        structured_logger.info(
+            message="Writing strava secret token to environment",
+            service=self.SERVICE_NAME,
+        )
         environ["STRAVA_CLIENT_ID"] = str(client_id)
         environ["STRAVA_CLIENT_SECRET"] = client_secret
 
     @beartype
     def set_strava_client(self, access_token: str) -> None:
-        """Instantiate strava client."""
+        """Sets up the Strava client with the provided access token.
+
+        This method initializes the Strava client using the given access token.
+        If no access token is provided, it logs a warning and does not set up the client.
+
+        Args:
+            access_token (str): The access token for authenticating with the Strava API.
+
+        Returns:
+            None
+        """
         if not access_token:
-            logger.warning("Strava access token not found in redis")
+            structured_logger.warning(
+                message="No strava access token provided",
+                uid=self.uid,
+                data_source=self.data_source.value,
+            )
+            structured_logger.warning(
+                message="No strava access token provided",
+                uid=self.uid,
+                data_source=self.data_source,
+                service=self.SERVICE_NAME,
+            )
             return None
         self.strava_client = Client(access_token=access_token)
-        logger.info("Set strava access token")
+        structured_logger.info(
+            message="Set strava access token",
+            uid=self.uid,
+            data_source=self.data_source.value,
+        )
+        return None
 
     @beartype
     def get_athlete_summary(self) -> str:
-        """Get athlete summary.
+        """Retrieves and saves the athlete summary.
 
-        The current athlete summary is retrieved based on the applied authorization token. The summary is saved to
-        storage and the id is returned.
+        This method fetches the current athlete summary using the Strava API based on the
+        provided authorization token. The summary is saved to cloud storage, and the athlete's
+        ID is returned.
+
+        Returns:
+            str: The ID of the athlete.
+
+        Raises:
+            Any exceptions raised by the Strava API client or storage utilities will propagate.
         """
+        structured_logger.info(
+            message="Getting athlete summary",
+            uid=self.uid,
+            data_source=self.data_source.value,
+        )
         athlete = self.strava_client.get_athlete()
 
         self.partial_get_strava_storage = partial(
@@ -103,23 +191,61 @@ class StravaAPIInterface(APIInterface):
 
     @beartype
     def get_activity_summary(self, activity: SummaryActivity) -> str:
-        """Get activity summary.
+        """Retrieves and saves the summary of a specific activity.
 
-        For a particular athlete's activity, the summary is retrieved and saved to storage. The id is returned.
+        This method processes the given activity by extracting its summary and saving it
+        to cloud storage. The activity's ID is then returned for further reference.
+
+        Args:
+            activity (SummaryActivity): The activity object whose summary is to be retrieved.
+
+        Returns:
+            str: The ID of the processed activity.
+
+        Raises:
+            Any exceptions raised during the storage operation will propagate.
         """
+        structured_logger.info(
+            message="Getting activity summary",
+            uid=self.uid,
+            data_source=self.data_source.value,
+            service=self.SERVICE_NAME,
+        )
         activity_dump = activity.model_dump()
         path = self.partial_get_strava_storage(
             strava_model=StravaStreams.ACTIVITY, activity_id=str(activity_dump["id"])
         )
-        write_json_to_storage(path, json.loads(activity.model_dump_json()))
+        wrapped_write_json_to_storage(
+            uid=self.uid,
+            data_source=self.data_source.value,
+            path=path,
+            data=json.loads(activity.model_dump_json()),
+        )
         return str(activity_dump["id"])
 
     @beartype
     def get_athlete_activity_streams(self, activity: SummaryActivity) -> None:
-        """Get athlete stream.
+        """Retrieve and save activity streams for a specific athlete's activity.
 
-        For a particular athlete's activity, the streams are retrieved and saved to storage.
+        This method fetches the streams associated with a given activity for an athlete
+        using the Strava API. The retrieved streams are filtered to exclude certain types
+        (e.g., "ACTIVITY" and "ATHLETE_SUMMARY") and are saved to cloud storage.
+
+        Args:
+            activity (SummaryActivity): The activity object for which streams are to be retrieved.
+
+        Returns:
+            None: This method does not return any value. It saves the retrieved streams to storage.
+
+        Raises:
+            Any exceptions raised by the Strava API client or storage utilities will propagate.
         """
+        structured_logger.info(
+            message="Getting athlete activity streams",
+            uid=self.uid,
+            data_source=self.data_source.value,
+            service=self.SERVICE_NAME,
+        )
         activity_id = self.get_activity_summary(activity)
 
         non_activity_streams = StravaStreams.filter_streams(
@@ -134,11 +260,32 @@ class StravaAPIInterface(APIInterface):
             path = self.partial_get_strava_storage(
                 strava_model=stream, activity_id=str(activity_id)
             )
-            write_json_to_storage(path, json.loads(stream_data.model_dump_json()))
+            wrapped_write_json_to_storage(
+                path, json.loads(stream_data.model_dump_json())
+            )
 
     @beartype
     def get_all_activities(self) -> None:
-        """Get all activities."""
+        """Retrieve and process all activities for the authenticated athlete.
+
+        This method fetches all activities for the athlete from the Strava API,
+        starting from the latest activity date stored in the database. For each
+        activity, it retrieves and saves the associated activity streams.
+
+        Returns:
+            None: This method does not return any value. It processes and saves
+            the activities and their streams to cloud storage.
+
+        Raises:
+            Any exceptions raised by the Strava API client, BigQuery client, or
+            storage utilities will propagate.
+        """
+        structured_logger.info(
+            message="Getting all activities",
+            uid=self.uid,
+            data_source=self.data_source.value,
+            service=self.SERVICE_NAME,
+        )
         latest_activity_date = (
             self.bq_client.query(
                 create_get_latest_activity_date_query(

@@ -1,11 +1,12 @@
 """Redis Connection Module."""
+
 import json
 
 import redis
 from beartype import beartype
+from fitnessllm_shared.logger_utils import structured_logger
 
 from fitnessllm_dataplatform.utils.cloud_utils import get_secret
-from fitnessllm_dataplatform.utils.logging_utils import logger
 
 
 class RedisConnect:
@@ -23,12 +24,12 @@ class RedisConnect:
             username=redis_info["user"],
             password=redis_info["pw"],
         )
-        logger.debug("Opened Redis connection.")
+        structured_logger.debug(message="Opened Redis connection.")
 
     def close_connection(self):
         """Close Redis connection."""
         self.interface.close()
-        logger.debug("Closed redis connection.")
+        structured_logger.debug(message="Closed redis connection.")
 
     @beartype
     def write_redis(self, key: str, value: dict, ttl: None | int = None) -> None:
@@ -47,13 +48,15 @@ class RedisConnect:
             self.interface.set(name=key, value=json.dumps(value))
             if ttl:
                 self.interface.setex(name=key, value=json.dumps(value), time=ttl)
-                logger.debug(f"Wrote key with ttl {ttl}")
-            logger.debug(f"Set {key} to redis")
+                structured_logger.debug(message=f"Wrote key with ttl {ttl}")
+            structured_logger.debug(message=f"Set {key} to redis")
         except redis.exceptions.AuthenticationError as exc:
-            logger.error(f"Failed to authenticate to Redis: {exc}")
+            structured_logger.error(
+                message="Failed to authenticate to Redis", exception=exc
+            )
             raise
         except redis.RedisError as exc:
-            logger.error(f"Failed to set key '{key}': {exc}")
+            structured_logger.error(f"Failed to set key '{key}': {exc}")
         finally:
             if hasattr(self, "interface"):
                 self.close_connection()
@@ -79,10 +82,10 @@ class RedisConnect:
                 return value
             return json.loads(value)
         except redis.exceptions.AuthenticationError as exc:
-            logger.error(f"Failed to authenticate to Redis: {exc}")
+            structured_logger.error(f"Failed to authenticate to Redis: {exc}")
             raise
         except redis.RedisError:
-            logger.debug(f"Failed to get key '{key}'; does not exist")
+            structured_logger.debug(f"Failed to get key '{key}'; does not exist")
             return None
         finally:
             self.close_connection()
@@ -104,10 +107,10 @@ class RedisConnect:
         try:
             return self.interface.ttl(key)
         except redis.exceptions.AuthenticationError as exc:
-            logger.error(f"Failed to authenticate to Redis: {exc}")
+            structured_logger.error(f"Failed to authenticate to Redis: {exc}")
             raise
         except redis.RedisError as exc:
-            logger.error(f"Failed to get key '{key}' ttl: {exc}")
+            structured_logger.error(f"Failed to get key '{key}' ttl: {exc}")
             raise
         finally:
             self.close_connection()

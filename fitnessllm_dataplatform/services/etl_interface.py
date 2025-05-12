@@ -1,4 +1,5 @@
 """ETL Interface for Fitness LLM Data Platform."""
+
 from os import environ
 
 from google.cloud import bigquery

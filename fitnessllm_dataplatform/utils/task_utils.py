@@ -6,6 +6,7 @@ from datetime import datetime
 from enum import Enum
 from json.decoder import JSONDecodeError
 
+from fitnessllm_shared.logger_utils import structured_logger
 from google.cloud import bigquery
 
 from fitnessllm_dataplatform.entities.enums import (
@@ -13,7 +14,6 @@ from fitnessllm_dataplatform.entities.enums import (
     FitnessLLMDataStream,
 )
 from fitnessllm_dataplatform.stream.strava.entities.enums import StravaStreams
-from fitnessllm_dataplatform.utils.logging_utils import logger
 
 
 def load_into_env_vars(options: dict):
@@ -61,7 +61,7 @@ def get_schema_path(
 
 
 def load_schema_from_json(
-    data_source: FitnessLLMDataSource | None, data_stream: FitnessLLMDataStream | None
+    data_source: FitnessLLMDataSource, data_stream: FitnessLLMDataStream
 ) -> list[bigquery.SchemaField]:
     """Loads schema from JSON file."""
     schema_path = get_schema_path(data_source, data_stream)
@@ -69,10 +69,20 @@ def load_schema_from_json(
         with open(schema_path) as f:
             schema_json = json.load(f)
     except FileNotFoundError:
-        logger.error(f"Schema file not found: {schema_path}")
+        structured_logger.error(
+            message="File not found",
+            file=schema_path,
+            data_source=data_source.value,
+            data_stream=data_stream.value,
+        )
         raise
     except JSONDecodeError:
-        logger.error(f"Invalid JSON in schema file: {schema_path}")
+        structured_logger.error(
+            message="Invalid JSON in schema file",
+            file=schema_path,
+            data_source=data_source.value,
+            data_stream=data_stream.value,
+        )
         raise
 
     required_fields = {"name", "type"}

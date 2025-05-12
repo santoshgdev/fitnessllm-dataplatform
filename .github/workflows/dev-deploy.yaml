@@ -170,10 +170,10 @@ jobs:
             - name: Clean up old image digests
               run: |
                   echo "DEBUG: Listing all image digests in repo: $REPO_PATH"
-                  gcloud artifacts docker images list "$APP_IMAGE_NAME" --include-tags --sort-by=~CREATE_TIME --format="get(name,digest)"
+                  APP_IMAGE_NAME="us-west1-docker.pkg.dev/${{ env.PROJECT_ID }}/fitnessllm-dp/fitnessllm-dp"
+                  gcloud artifacts docker images list "$APP_IMAGE_NAME"
 
                   # Clean up app image - keep only the latest version
-                  APP_IMAGE_NAME="us-west1-docker.pkg.dev/${{ env.PROJECT_ID }}/fitnessllm-dp/fitnessllm-dp"
                   if gcloud artifacts docker images list "$APP_IMAGE_NAME" --include-tags --sort-by=~CREATE_TIME --format="get(name,digest)" | grep "$APP_IMAGE_NAME" | grep -q .; then
                     echo "Found app images, cleaning up old versions..."
                     gcloud artifacts docker images list "$APP_IMAGE_NAME" --include-tags --sort-by=~CREATE_TIME --format="get(name,digest)" | \
@@ -191,6 +191,8 @@ jobs:
 
                   # Clean up base image - keep only the latest version
                   BASE_IMAGE_NAME="us-west1-docker.pkg.dev/${{ env.PROJECT_ID }}/fitnessllm-dp/base"
+                  gcloud artifacts docker images list "$BASE_IMAGE_NAME"
+
                   if gcloud artifacts docker images list "$BASE_IMAGE_NAME" --include-tags --sort-by=~CREATE_TIME --format="get(name,digest)" | grep "$BASE_IMAGE_NAME" | grep -q .; then
                     echo "Found base images, cleaning up old versions..."
                     gcloud artifacts docker images list "$BASE_IMAGE_NAME" --include-tags --sort-by=~CREATE_TIME --format="get(name,digest)" | \

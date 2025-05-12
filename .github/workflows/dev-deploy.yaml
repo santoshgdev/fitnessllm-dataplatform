@@ -195,26 +195,38 @@ jobs:
                   echo "Cleaning up old image digests..."
 
                   # Clean up app image - keep only the latest version
-                  gcloud artifacts docker images list \
-                    "${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}" \
-                    --include-tags --sort-by=~CREATE_TIME --format="get(digest)" | \
-                    tail -n +2 | \
-                    while read digest; do
-                      gcloud artifacts docker images delete \
-                        "${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}@$digest" \
-                        --quiet || true
-                    done
+                  if gcloud artifacts docker images list \
+                    "$IMAGE_TAG" \
+                    --include-tags --sort-by=~CREATE_TIME --format="get(digest)" 2>/dev/null | grep -q .; then
+                    gcloud artifacts docker images list \
+                      "$IMAGE_TAG" \
+                      --include-tags --sort-by=~CREATE_TIME --format="get(digest)" | \
+                      tail -n +2 | \
+                      while read digest; do
+                        gcloud artifacts docker images delete \
+                          "$IMAGE_TAG@$digest" \
+                          --quiet || true
+                      done
+                  else
+                    echo "No app images found to clean up"
+                  fi
 
                   # Clean up base image - keep only the latest version
-                  gcloud artifacts docker images list \
-                    "${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/base" \
-                    --include-tags --sort-by=~CREATE_TIME --format="get(digest)" | \
-                    tail -n +2 | \
-                    while read digest; do
-                      gcloud artifacts docker images delete \
-                        "${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/base@$digest" \
-                        --quiet || true
-                    done
+                  if gcloud artifacts docker images list \
+                    "$BASE_IMAGE_TAG_REMOTE" \
+                    --include-tags --sort-by=~CREATE_TIME --format="get(digest)" 2>/dev/null | grep -q .; then
+                    gcloud artifacts docker images list \
+                      "$BASE_IMAGE_TAG_REMOTE" \
+                      --include-tags --sort-by=~CREATE_TIME --format="get(digest)" | \
+                      tail -n +2 | \
+                      while read digest; do
+                        gcloud artifacts docker images delete \
+                          "$BASE_IMAGE_TAG_REMOTE@$digest" \
+                          --quiet || true
+                      done
+                  else
+                    echo "No base images found to clean up"
+                  fi
 
             - name: Debug deployment configuration
               run: |

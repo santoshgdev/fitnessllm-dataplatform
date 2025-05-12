@@ -13,7 +13,12 @@ clean:
 	poetry install --sync
 
 build:
-	docker build . -t fitnessllm-dp
+	docker build -f Dockerfile.base . -t base:latest
+	docker build -f Dockerfile.app . --build-arg BASE_IMAGE=base:latest --build-arg CACHEBUST=$(date +%s) -t fitnessllm-dp
+
+clean-build:
+	docker rmi base:latest fitnessllm-dp:latest || true
+	make build
 
 test:
 	docker run -it \

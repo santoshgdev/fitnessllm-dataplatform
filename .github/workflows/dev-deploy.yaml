@@ -169,41 +169,33 @@ jobs:
 
             - name: Clean up old image digests
               run: |
+                  REPO_PATH="us-west1-docker.pkg.dev/PROJECT_ID/fitnessllm-dp"
+                  APP_IMAGE_NAME="us-west1-docker.pkg.dev/PROJECT_ID/fitnessllm-dp/fitnessllm-dp"
+                  BASE_IMAGE_NAME="us-west1-docker.pkg.dev/PROJECT_ID/fitnessllm-dp/base"
+
                   echo "DEBUG: Listing all image digests in repo: $REPO_PATH"
-                  APP_IMAGE_NAME="us-west1-docker.pkg.dev/${{ env.PROJECT_ID }}/fitnessllm-dp/fitnessllm-dp"
-                  gcloud artifacts docker images list "$APP_IMAGE_NAME"
+                  gcloud artifacts docker images list "$REPO_PATH" --include-tags --sort-by=~CREATE_TIME --format="get(name,digest)"
 
                   # Clean up app image - keep only the latest version
-                  if gcloud artifacts docker images list "$APP_IMAGE_NAME" --include-tags --sort-by=~CREATE_TIME --format="get(name,digest)" | grep "$APP_IMAGE_NAME" | grep -q .; then
+                  APP_DIGESTS=$(gcloud artifacts docker images list "$REPO_PATH" --include-tags --sort-by=~CREATE_TIME --format="get(name,digest)" | grep "$APP_IMAGE_NAME" | awk '{print $2}')
+                  if [[ -n "$APP_DIGESTS" ]]; then
                     echo "Found app images, cleaning up old versions..."
-                    gcloud artifacts docker images list "$APP_IMAGE_NAME" --include-tags --sort-by=~CREATE_TIME --format="get(name,digest)" | \
-                      grep "$APP_IMAGE_NAME" | \
-                      tail -n +2 | \
-                      while read name_digest; do
-                        IMAGE_NAME=$(echo "$name_digest" | awk '{print $1}')
-                        DIGEST=$(echo "$name_digest" | awk '{print $2}')
-                        echo "DEBUG: Deleting app digest: $DIGEST"
-                        gcloud artifacts docker images delete "$IMAGE_NAME@$DIGEST" --quiet || true
-                      done
+                    echo "$APP_DIGESTS" | tail -n +2 | while read digest; do
+                      echo "DEBUG: Deleting app digest: $digest"
+                      gcloud artifacts docker images delete "$APP_IMAGE_NAME@$digest" --quiet || true
+                    done
                   else
                     echo "No app images found to clean up"
                   fi
 
                   # Clean up base image - keep only the latest version
-                  BASE_IMAGE_NAME="us-west1-docker.pkg.dev/${{ env.PROJECT_ID }}/fitnessllm-dp/base"
-                  gcloud artifacts docker images list "$BASE_IMAGE_NAME"
-
-                  if gcloud artifacts docker images list "$BASE_IMAGE_NAME" --include-tags --sort-by=~CREATE_TIME --format="get(name,digest)" | grep "$BASE_IMAGE_NAME" | grep -q .; then
+                  BASE_DIGESTS=$(gcloud artifacts docker images list "$REPO_PATH" --include-tags --sort-by=~CREATE_TIME --format="get(name,digest)" | grep "$BASE_IMAGE_NAME" | awk '{print $2}')
+                  if [[ -n "$BASE_DIGESTS" ]]; then
                     echo "Found base images, cleaning up old versions..."
-                    gcloud artifacts docker images list "$BASE_IMAGE_NAME" --include-tags --sort-by=~CREATE_TIME --format="get(name,digest)" | \
-                      grep "$BASE_IMAGE_NAME" | \
-                      tail -n +2 | \
-                      while read name_digest; do
-                        IMAGE_NAME=$(echo "$name_digest" | awk '{print $1}')
-                        DIGEST=$(echo "$name_digest" | awk '{print $2}')
-                        echo "DEBUG: Deleting base digest: $DIGEST"
-                        gcloud artifacts docker images delete "$IMAGE_NAME@$DIGEST" --quiet || true
-                      done
+                    echo "$BASE_DIGESTS" | tail -n +2 | while read digest; do
+                      echo "DEBUG: Deleting base digest: $digest"
+                      gcloud artifacts docker images delete "$BASE_IMAGE_NAME@$digest" --quiet || true
+                    done
                   else
                     echo "No base images found to clean up"
                   fi

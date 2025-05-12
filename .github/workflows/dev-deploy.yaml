@@ -169,9 +169,9 @@ jobs:
 
             - name: Clean up old image digests
               run: |
-                  REPO_PATH="us-west1-docker.pkg.dev/PROJECT_ID/fitnessllm-dp"
-                  APP_IMAGE_NAME="us-west1-docker.pkg.dev/PROJECT_ID/fitnessllm-dp/fitnessllm-dp"
-                  BASE_IMAGE_NAME="us-west1-docker.pkg.dev/PROJECT_ID/fitnessllm-dp/base"
+                  REPO_PATH="us-west1-docker.pkg.dev/${{ env.PROJECT_ID }}/fitnessllm-dp"
+                  APP_IMAGE_NAME="us-west1-docker.pkg.dev/${{ env.PROJECT_ID }}/fitnessllm-dp/fitnessllm-dp"
+                  BASE_IMAGE_NAME="us-west1-docker.pkg.dev/${{ env.PROJECT_ID }}/fitnessllm-dp/base"
 
                   echo "DEBUG: Listing all image digests in repo: $REPO_PATH"
                   gcloud artifacts docker images list "$REPO_PATH" --include-tags --sort-by=~CREATE_TIME --format="get(name,digest)"

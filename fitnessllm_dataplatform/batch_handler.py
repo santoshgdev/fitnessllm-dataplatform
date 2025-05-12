@@ -14,10 +14,20 @@ from fitnessllm_dataplatform.task_handler import Startup
 
 
 class BatchHandler:
-    """Handler for batch processing users."""
+    """Handler for batch processing users.
+
+    This class provides methods to process user data in batches, including
+    retrieving user information, processing individual users, and handling
+    data from various sources. It interacts with Firestore for data storage
+    and retrieval and uses a startup handler for ETL operations.
+    """
 
     def __init__(self) -> None:
-        """Initialize the batch handler."""
+        """Initializes the BatchHandler instance.
+
+        This constructor sets up the Firestore client and the Startup handler
+        required for batch processing operations.
+        """
         self.db = firestore.Client()
         self.startup = Startup()
 
@@ -25,8 +35,11 @@ class BatchHandler:
     def get_all_users(self) -> List[Dict[str, Any]]:
         """Retrieves all user documents from the Firestore "users" collection.
 
+        This method queries the "users" collection in the Firestore database and
+        returns a list of dictionaries, where each dictionary represents a user's data.
+
         Returns:
-            A list of dictionaries representing each user's data.
+            List[Dict[str, Any]]: A list of dictionaries containing user data.
         """
         users_ref = self.db.collection("users")
         users = users_ref.stream()
@@ -38,8 +51,16 @@ class BatchHandler:
     ) -> Optional[dict[str, Any]]:
         """Retrieves stream data for a specific user and data source.
 
+        This method fetches the stream data for a given user ID and data source
+        from the Firestore database. If no data is found, it returns None.
+
+        Args:
+            uid (str): The unique identifier of the user.
+            data_source (FitnessLLMDataSource): The data source for which the stream data is retrieved.
+
         Returns:
-            A dictionary containing the user's stream data, or None if not found.
+            Optional[dict[str, Any]]: A dictionary containing the user's stream data if found,
+            otherwise None.
         """
         user_stream = (
             self.db.collection("users")
@@ -55,11 +76,26 @@ class BatchHandler:
         user_id: str,
         data_source: FitnessLLMDataSource = FitnessLLMDataSource.STRAVA,
     ) -> None:
-        """Process a single user.
+        """Processes a single user's data for a specified data source.
+
+        This method retrieves the user's stream data, refreshes the data using the
+        appropriate function from the refresh function mapping, and performs a full
+        ETL (Extract, Transform, Load) process for the user. Logs are generated to
+        track the progress and handle errors.
 
         Args:
-            user_id: User ID from Firestore.
-            data_source: Data source to process (default: strava).
+            user_id (str): The unique identifier of the user in Firestore.
+            data_source (FitnessLLMDataSource): The data source to process for the user.
+                Defaults to FitnessLLMDataSource.STRAVA.
+
+        Returns:
+            None
+
+        Raises:
+            KeyError: If the refresh token is missing in the user's stream data.
+            ValueError: If an invalid value is encountered during processing.
+            firestore.exceptions.NotFound: If the user or stream data is not found in Firestore.
+            Exception: For any other unexpected errors during processing.
         """
         try:
             structured_logger.info(
@@ -81,24 +117,45 @@ class BatchHandler:
                 data_source=data_source.value,
                 service="batch_handler",
             )
-        except Exception as e:
+        except (KeyError, ValueError, firestore.exceptions.NotFound) as e:
             structured_logger.error(
                 message="Failed to process user",
                 uid=user_id,
                 exception=str(e),
+                exception_type=type(e).__name__,
                 data_source=data_source.value,
                 service="batch_handler",
             )
             raise
+        except Exception as e:
+            structured_logger.error(
+                message="Unexpected error while processing user",
+                uid=user_id,
+                exception=str(e),
+                exception_type=type(e).__name__,
+                data_source=data_source.value,
+                service="batch_handler",
+            )
+
+        raise
 
     @beartype
     def process_all_users(
         self, data_source: FitnessLLMDataSource = FitnessLLMDataSource.STRAVA
     ) -> None:
-        """Process all users in the database.
+        """Processes all users in the database for a specified data source.
+
+        This method retrieves all user documents from the Firestore database,
+        iterates through each user, and processes their data using the specified
+        data source. Logs are generated to track the progress and handle any
+        issues encountered during processing.
 
         Args:
-            data_source: Data source to process (default: strava).
+            data_source (FitnessLLMDataSource): The data source to process for all users.
+                Defaults to FitnessLLMDataSource.STRAVA.
+
+        Returns:
+            None
         """
         users = self.get_all_users()
         structured_logger.info(

@@ -272,9 +272,6 @@ class StravaAPIInterface(APIInterface):
         starting from the latest activity date stored in the database. For each
         activity, it retrieves and saves the associated activity streams.
 
-        Args:
-            None
-
         Returns:
             None: This method does not return any value. It processes and saves
             the activities and their streams to cloud storage.

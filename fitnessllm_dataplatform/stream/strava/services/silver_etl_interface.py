@@ -81,7 +81,7 @@ class SilverStravaETLInterface(ETLInterface):
                 query=delete_query,
                 num_deleted=delete_job.num_dml_affected_rows,
                 uid=self.uid,
-                data_source=self.data_source.value.lower(),
+                data_source=self.data_source.value,
                 service=self.SERVICE_NAME,
             )
             insert_query = get_insert_query(

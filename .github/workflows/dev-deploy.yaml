@@ -172,40 +172,34 @@ jobs:
                   echo "Cleaning up old image digests..."
 
                   # Clean up app image - keep only the latest version
-                  IMAGE_TAG="${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}"
-                  if gcloud artifacts docker images list \
-                    "$IMAGE_TAG" \
-                    --include-tags --sort-by=~CREATE_TIME --format="get(digest)" 2>/dev/null | grep -q .; then
+                  IMAGE_PATH="us-west1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}"
+                  echo "DEBUG: Listing app image digests for: $IMAGE_PATH"
+                  gcloud artifacts docker images list "$IMAGE_PATH" --include-tags --sort-by=~CREATE_TIME --format="get(digest)"
+
+                  if gcloud artifacts docker images list "$IMAGE_PATH" --include-tags --sort-by=~CREATE_TIME --format="get(digest)" 2>/dev/null | grep -q .; then
                     echo "Found app images, cleaning up old versions..."
-                    gcloud artifacts docker images list \
-                      "$IMAGE_TAG" \
-                      --include-tags --sort-by=~CREATE_TIME --format="get(digest)" | \
+                    gcloud artifacts docker images list "$IMAGE_PATH" --include-tags --sort-by=~CREATE_TIME --format="get(digest)" | \
                       tail -n +2 | \
                       while read digest; do
-                        echo "Deleting digest: $digest"
-                        gcloud artifacts docker images delete \
-                          "$IMAGE_TAG@$digest" \
-                          --quiet || true
+                        echo "DEBUG: Deleting app digest: $digest"
+                        gcloud artifacts docker images delete "$IMAGE_PATH@$digest" --quiet || true
                       done
                   else
                     echo "No app images found to clean up"
                   fi
 
                   # Clean up base image - keep only the latest version
-                  BASE_IMAGE_TAG_REMOTE="${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/base"
-                  if gcloud artifacts docker images list \
-                    "$BASE_IMAGE_TAG_REMOTE" \
-                    --include-tags --sort-by=~CREATE_TIME --format="get(digest)" 2>/dev/null | grep -q .; then
+                  BASE_IMAGE_PATH="us-west1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/base"
+                  echo "DEBUG: Listing base image digests for: $BASE_IMAGE_PATH"
+                  gcloud artifacts docker images list "$BASE_IMAGE_PATH" --include-tags --sort-by=~CREATE_TIME --format="get(digest)"
+
+                  if gcloud artifacts docker images list "$BASE_IMAGE_PATH" --include-tags --sort-by=~CREATE_TIME --format="get(digest)" 2>/dev/null | grep -q .; then
                     echo "Found base images, cleaning up old versions..."
-                    gcloud artifacts docker images list \
-                      "$BASE_IMAGE_TAG_REMOTE" \
-                      --include-tags --sort-by=~CREATE_TIME --format="get(digest)" | \
+                    gcloud artifacts docker images list "$BASE_IMAGE_PATH" --include-tags --sort-by=~CREATE_TIME --format="get(digest)" | \
                       tail -n +2 | \
                       while read digest; do
-                        echo "Deleting digest: $digest"
-                        gcloud artifacts docker images delete \
-                          "$BASE_IMAGE_TAG_REMOTE@$digest" \
-                          --quiet || true
+                        echo "DEBUG: Deleting base digest: $digest"
+                        gcloud artifacts docker images delete "$BASE_IMAGE_PATH@$digest" --quiet || true
                       done
                   else
                     echo "No base images found to clean up"

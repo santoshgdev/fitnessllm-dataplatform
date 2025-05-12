@@ -48,10 +48,10 @@ jobs:
                   echo "DEBUG: Listing all app images as JSON..."
                   APP_IMAGES_JSON=$(gcloud artifacts docker images list "$APP_IMAGE_PATH" --include-tags --format="json")
                   echo "$APP_IMAGES_JSON"
-                  echo "$APP_IMAGES_JSON" | jq -r '.[] | select((.tags == null or (.tags | length) == 0) and .digest != null) | .digest' | while read digest; do
-                    if [[ -n "$digest" && "$digest" != "null" ]]; then
-                      echo "Deleting untagged app digest: $digest"
-                      gcloud artifacts docker images delete "$APP_IMAGE_PATH@$digest" --quiet || true
+                  echo "$APP_IMAGES_JSON" | jq -r '.[] | select((.tags == null or (.tags | length) == 0) and .version != null) | .version' | while read version; do
+                    if [[ -n "$version" && "$version" != "null" ]]; then
+                      echo "Deleting untagged app digest: $version"
+                      gcloud artifacts docker images delete "$APP_IMAGE_PATH@$version" --quiet || true
                     fi
                   done
 
@@ -60,10 +60,10 @@ jobs:
                     echo "DEBUG: Listing all base images as JSON..."
                     BASE_IMAGES_JSON=$(gcloud artifacts docker images list "$BASE_IMAGE_PATH" --include-tags --format="json")
                     echo "BASE_IMAGES_JSON"
-                    echo "$BASE_IMAGES_JSON" | jq -r '.[] | select((.tags == null or (.tags | length) == 0) and .digest != null) | .digest' | while read digest; do
-                      if [[ -n "$digest" && "$digest" != "null" ]]; then
-                        echo "Deleting untagged base digest: $digest"
-                        gcloud artifacts docker images delete "$BASE_IMAGE_PATH@$digest" --quiet || true
+                    echo "$BASE_IMAGES_JSON" | jq -r '.[] | select((.tags == null or (.tags | length) == 0) and .version != null) | .version' | while read version; do
+                      if [[ -n "$version" && "$version" != "null" ]]; then
+                        echo "Deleting untagged base digest: $version"
+                        gcloud artifacts docker images delete "$BASE_IMAGE_PATH@$version" --quiet || true
                       fi
                     done
                   fi

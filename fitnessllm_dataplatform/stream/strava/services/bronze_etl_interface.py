@@ -356,25 +356,28 @@ class BronzeStravaETLInterface(ETLInterface):
     ) -> None:
         """Upserts DataFrames into BigQuery.
 
-        This method combines multiple DataFrames into one, adds a metadata timestamp,
-        and inserts the resulting DataFrame into a BigQuery table. It also logs metrics
-        about the operation. If the insertion fails, an error is logged, and the metrics
-        are updated with a failure status.
-
         Args:
-            stream (StravaStreams): The data stream being processed (e.g., activity or athlete summary).
-            dataframes (list[DataFrame]): A list of DataFrames to be upserted into BigQuery.
-            metrics (list[Metrics]): A list of metrics associated with the data being upserted.
+            stream (StravaStreams): The data stream to upsert.
+            dataframes (list[DataFrame]): List of DataFrames to upsert.
+            metrics (list[Metrics]): List of metrics to insert.
 
-        Raises:
-            Exception: If the BigQuery insertion job does not complete successfully or
-                       if any other error occurs during the process.
+        Returns:
+            None
         """
         timestamp = datetime.now()
-        df = pd.concat(dataframes)
-        df["metadata_insert_timestamp"] = pd.to_datetime(timestamp)
+        df = pd.concat(dataframes, ignore_index=True)
+        if df.empty:
+            structured_logger.info(
+                message=f"No data to upsert for {stream.value}",
+                uid=self.uid,
+                data_source=self.data_source.value,
+                service=self.SERVICE_NAME,
+            )
+            return
+
         try:
-            with tempfile.TemporaryDirectory():
+            temp_dir = tempfile.TemporaryDirectory()
+            try:
                 job = self.client.load_table_from_dataframe(
                     dataframe=df,
                     destination=f"{self.client.project}.{self.ENV}_bronze_{self.data_source.value.lower()}.{stream.value}",
@@ -386,15 +389,17 @@ class BronzeStravaETLInterface(ETLInterface):
                     ),
                 )
                 result = job.result()
-            if result.state == "DONE":
-                self.insert_metrics(
-                    metrics_list=metrics,
-                    destination=f"{self.client.project}.{self.ENV}_metrics.metrics",
-                    timestamp=timestamp,
-                    status=Status.SUCCESS,
-                )
-                return
-            raise Exception("Job did not complete successfully")
+                if result.state == "DONE":
+                    self.insert_metrics(
+                        metrics_list=metrics,
+                        destination=f"{self.client.project}.{self.ENV}_metrics.metrics",
+                        timestamp=timestamp,
+                        status=Status.SUCCESS,
+                    )
+                    return
+                raise Exception("Job did not complete successfully")
+            finally:
+                temp_dir.cleanup()
         except Exception as e:
             structured_logger.error(
                 message=f"Error while inserting {stream.value} into BigQuery for {self.athlete_id}",
@@ -421,19 +426,14 @@ class BronzeStravaETLInterface(ETLInterface):
     ):
         """Inserts metrics into BigQuery.
 
-        This method takes a list of metrics, updates them with a timestamp and status,
-        and inserts them into a specified BigQuery table. If the insertion fails,
-        an error is logged and the exception is raised.
-
         Args:
-            metrics_list (list[Metrics]): A list of metrics to be inserted into BigQuery.
-            destination (str): The BigQuery table where the metrics will be inserted.
-            timestamp (datetime): The timestamp to associate with the metrics.
-            status (Status): The status to assign to the metrics (e.g., SUCCESS or FAILURE).
+            metrics_list (list[Metrics]): List of metrics to insert.
+            destination (str): The destination table in BigQuery.
+            timestamp (datetime): The timestamp for the metrics.
+            status (Status): The status of the metrics.
 
-        Raises:
-            Exception: If the metrics insertion job does not complete successfully or
-                       if any other error occurs during the process.
+        Returns:
+            None
         """
         try:
             metrics_list_converted = [
@@ -446,7 +446,8 @@ class BronzeStravaETLInterface(ETLInterface):
             dataframe["bq_insert_timestamp"] = pd.to_datetime(
                 dataframe["bq_insert_timestamp"]
             )
-            with tempfile.TemporaryDirectory():
+            temp_dir = tempfile.TemporaryDirectory()
+            try:
                 job = self.client.load_table_from_dataframe(
                     dataframe=dataframe,
                     destination=destination,
@@ -455,15 +456,19 @@ class BronzeStravaETLInterface(ETLInterface):
                     ),
                 )
                 result = job.result()
-            if result.state != "DONE":
-                structured_logger.error(
-                    message="Unable to insert metrics into BigQuery.",
-                    athlete_id=self.athlete_id,
-                    uid=self.uid,
-                    data_source=self.data_source.value,
-                    service=self.SERVICE_NAME,
-                )
-                raise Exception("Metrics insertion job did not complete successfully")
+                if result.state != "DONE":
+                    structured_logger.error(
+                        message="Unable to insert metrics into BigQuery.",
+                        athlete_id=self.athlete_id,
+                        uid=self.uid,
+                        data_source=self.data_source.value,
+                        service=self.SERVICE_NAME,
+                    )
+                    raise Exception(
+                        "Metrics insertion job did not complete successfully"
+                    )
+            finally:
+                temp_dir.cleanup()
         except Exception as e:
             structured_logger.error(
                 message="Unable to write metrics to BigQuery",

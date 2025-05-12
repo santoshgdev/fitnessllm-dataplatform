@@ -683,7 +683,7 @@ stravalib = ">=2.3,<3.0"
 type = "git"
 url = "https://github.com/santoshgdev/fitnessllm-shared.git"
 reference = "main"
-resolved_reference = "8a7d959d93a0a4c049848e969a7093866407580d"
+resolved_reference = "caf9b7d17119561068bd6c758b8b3d0623535ac1"
 
 [[package]]
 name = "flask"
@@ -2869,4 +2869,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12.2"
-content-hash = "e4aac42290ec2782de8c3a8075c0dbdf3bf04887a5e9da8ed614fe71c0d0f552"
+content-hash = "61585e174404c9de81dde072691a8515613cfb38c884039e34b860e515489c79"

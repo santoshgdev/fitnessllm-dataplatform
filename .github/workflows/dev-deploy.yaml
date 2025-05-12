@@ -169,36 +169,41 @@ jobs:
 
             - name: Clean up old image digests
               run: |
-                  REPO_PATH="us-west1-docker.pkg.dev/${{ env.PROJECT_ID }}/fitnessllm-dp"
-                  APP_IMAGE_NAME="us-west1-docker.pkg.dev/${{ env.PROJECT_ID }}/fitnessllm-dp/fitnessllm-dp"
-                  BASE_IMAGE_NAME="us-west1-docker.pkg.dev/${{ env.PROJECT_ID }}/fitnessllm-dp/base"
+                  # REPO_PATH="us-west1-docker.pkg.dev/${{ env.PROJECT_ID }}/fitnessllm-dp"
+                  # APP_IMAGE_NAME="us-west1-docker.pkg.dev/${{ env.PROJECT_ID }}/fitnessllm-dp/fitnessllm-dp"
+                  # BASE_IMAGE_NAME="us-west1-docker.pkg.dev/${{ env.PROJECT_ID }}/fitnessllm-dp/base"
 
-                  echo "DEBUG: Listing all image digests in repo: $REPO_PATH"
-                  gcloud artifacts docker images list "$REPO_PATH" --include-tags --sort-by=~CREATE_TIME --format="get(name,digest)"
+                  # # Clean up app image - keep only the latest version
+                  # APP_IMAGE_PATH="us-west1-docker.pkg.dev/${{ env.PROJECT_ID }}/fitnessllm-dp/fitnessllm-dp"
+                  # APP_DIGESTS=$(gcloud artifacts docker images list "$APP_IMAGE_PATH" --include-tags --sort-by=~CREATE_TIME --format="get(digest,tags)")
+                  # echo "DEBUG: Listing all app image digests: $APP_DIGESTS"
+                  # if [[ -n "$APP_DIGESTS" ]]; then
+                  #   echo "Found app images, cleaning up old versions..."
+                  #   echo "$APP_DIGESTS" | tail -n +2 | while read digest tags; do
+                  #     if [[ -z "$tags" ]]; then
+                  #       echo "Deleting untagged app digest: $digest"
+                  #       gcloud artifacts docker images delete "$APP_IMAGE_PATH@$digest" --quiet || true
+                  #     fi
+                  #   done
+                  # else
+                  #   echo "No app images found to clean up"
+                  # fi
 
-                  # Clean up app image - keep only the latest version
-                  APP_DIGESTS=$(gcloud artifacts docker images list "$REPO_PATH" --include-tags --sort-by=~CREATE_TIME --format="get(name,digest)" | grep "$APP_IMAGE_NAME" | awk '{print $2}')
-                  if [[ -n "$APP_DIGESTS" ]]; then
-                    echo "Found app images, cleaning up old versions..."
-                    echo "$APP_DIGESTS" | tail -n +2 | while read digest; do
-                      echo "DEBUG: Deleting app digest: $digest"
-                      gcloud artifacts docker images delete "$APP_IMAGE_NAME@$digest" --quiet || true
-                    done
-                  else
-                    echo "No app images found to clean up"
-                  fi
-
-                  # Clean up base image - keep only the latest version
-                  BASE_DIGESTS=$(gcloud artifacts docker images list "$REPO_PATH" --include-tags --sort-by=~CREATE_TIME --format="get(name,digest)" | grep "$BASE_IMAGE_NAME" | awk '{print $2}')
-                  if [[ -n "$BASE_DIGESTS" ]]; then
-                    echo "Found base images, cleaning up old versions..."
-                    echo "$BASE_DIGESTS" | tail -n +2 | while read digest; do
-                      echo "DEBUG: Deleting base digest: $digest"
-                      gcloud artifacts docker images delete "$BASE_IMAGE_NAME@$digest" --quiet || true
-                    done
-                  else
-                    echo "No base images found to clean up"
-                  fi
+                  # # Clean up base image - keep only the latest version
+                  # BASE_IMAGE_PATH="us-west1-docker.pkg.dev/${{ env.PROJECT_ID }}/fitnessllm-dp/base"
+                  # BASE_DIGESTS=$(gcloud artifacts docker images list "$BASE_IMAGE_PATH" --include-tags --sort-by=~CREATE_TIME --format="get(digest,tags)")
+                  # echo "DEBUG: Listing all base image digests: $BASE_DIGESTS"
+                  # if [[ -n "$BASE_DIGESTS" ]]; then
+                  #   echo "Found base images, cleaning up old versions..."
+                  #   echo "$BASE_DIGESTS" | tail -n +2 | while read digest tags; do
+                  #     if [[ -z "$tags" ]]; then
+                  #       echo "Deleting untagged base digest: $digest"
+                  #       gcloud artifacts docker images delete "$BASE_IMAGE_PATH@$digest" --quiet || true
+                  #     fi
+                  #   done
+                  # else
+                  #   echo "No base images found to clean up"
+                  # fi
 
             - name: Build and Push Base Docker image to Artifact Registry
               run: |

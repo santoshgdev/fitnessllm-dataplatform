@@ -1,0 +1,32 @@
+---
+name: Artifact Cleanup
+
+on:
+    workflow_dispatch:
+        inputs:
+            image_path:
+                description: Full Artifact Registry image path (e.g. us-west1-docker.pkg.dev/PROJECT_ID/REPO/IMAGE)
+                required: true
+    push:
+        branches:
+            - '**FIT**'
+
+jobs:
+    list-digests:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Set up gcloud
+              uses: google-github-actions/setup-gcloud@v2
+              with:
+                  project_id: ${{ secrets.PROJECT_ID }}
+                  service_account_key: ${{ secrets.GCP_SA_KEY }}
+
+            - name: List all digests for the image
+              run: |
+                  IMAGE_PATH="${{ github.event.inputs.image_path }}"
+                  if [ -z "$IMAGE_PATH" ]; then
+                    # Default image path for push events
+                    IMAGE_PATH="us-west1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/fitnessllm-dp/fitnessllm-dp"
+                  fi
+                  echo "Listing all digests for image: $IMAGE_PATH"
+                  gcloud artifacts docker images list "$IMAGE_PATH" --include-tags --format="get(digest)"

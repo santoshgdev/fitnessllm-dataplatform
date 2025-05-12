@@ -220,6 +220,7 @@ jobs:
                   gcloud run jobs deploy ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }} \
                     --image ${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }} \
                     --region ${{ env.REGION }} \
+                    --max-retries=0 \
                     --service-account=${{ secrets.GCP_DP_SA_EMAIL }} \
                     --set-env-vars "$ENV_VARS"
 

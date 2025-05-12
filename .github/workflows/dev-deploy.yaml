@@ -172,7 +172,7 @@ jobs:
                   echo "Cleaning up old image digests..."
 
                   # Clean up app image - keep only the latest version
-                  IMAGE_PATH="us-west1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}"
+                  IMAGE_PATH="us-west1-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}"
                   echo "DEBUG: Listing app image digests for: $IMAGE_PATH"
                   gcloud artifacts docker images list "$IMAGE_PATH" --include-tags --sort-by=~CREATE_TIME --format="get(digest)"
 
@@ -189,7 +189,7 @@ jobs:
                   fi
 
                   # Clean up base image - keep only the latest version
-                  BASE_IMAGE_PATH="us-west1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/base"
+                  BASE_IMAGE_PATH="us-west1-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}/base"
                   echo "DEBUG: Listing base image digests for: $BASE_IMAGE_PATH"
                   gcloud artifacts docker images list "$BASE_IMAGE_PATH" --include-tags --sort-by=~CREATE_TIME --format="get(digest)"
 

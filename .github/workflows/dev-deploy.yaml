@@ -198,11 +198,13 @@ jobs:
                   if gcloud artifacts docker images list \
                     "$IMAGE_TAG" \
                     --include-tags --sort-by=~CREATE_TIME --format="get(digest)" 2>/dev/null | grep -q .; then
+                    echo "Found app images, cleaning up old versions..."
                     gcloud artifacts docker images list \
                       "$IMAGE_TAG" \
                       --include-tags --sort-by=~CREATE_TIME --format="get(digest)" | \
                       tail -n +2 | \
                       while read digest; do
+                        echo "Deleting digest: $digest"
                         gcloud artifacts docker images delete \
                           "$IMAGE_TAG@$digest" \
                           --quiet || true
@@ -215,11 +217,13 @@ jobs:
                   if gcloud artifacts docker images list \
                     "$BASE_IMAGE_TAG_REMOTE" \
                     --include-tags --sort-by=~CREATE_TIME --format="get(digest)" 2>/dev/null | grep -q .; then
+                    echo "Found base images, cleaning up old versions..."
                     gcloud artifacts docker images list \
                       "$BASE_IMAGE_TAG_REMOTE" \
                       --include-tags --sort-by=~CREATE_TIME --format="get(digest)" | \
                       tail -n +2 | \
                       while read digest; do
+                        echo "Deleting digest: $digest"
                         gcloud artifacts docker images delete \
                           "$BASE_IMAGE_TAG_REMOTE@$digest" \
                           --quiet || true

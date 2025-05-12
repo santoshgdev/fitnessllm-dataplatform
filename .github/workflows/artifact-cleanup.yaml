@@ -55,8 +55,8 @@ jobs:
                     # Process all images, looking for untagged ones
                     echo "$APP_IMAGES" | tail -n +2 | while read -r line; do
                       if [[ -n "$line" ]]; then
-                        digest=$(echo "$line" | awk '{print $2}')
-                        tags=$(echo "$line" | awk '{print $3}')
+                        digest=$(echo "$line" | awk '{print $3}')
+                        tags=$(echo "$line" | awk '{print $4}')
                         if [[ -z "$tags" || "$tags" == "-" ]]; then
                           echo "Deleting untagged app digest: $digest"
                           gcloud artifacts docker images delete "$APP_IMAGE_PATH@$digest" --quiet || true
@@ -79,8 +79,8 @@ jobs:
                       # Process all images, looking for untagged ones
                       echo "$BASE_IMAGES" | tail -n +2 | while read -r line; do
                         if [[ -n "$line" ]]; then
-                          digest=$(echo "$line" | awk '{print $2}')
-                          tags=$(echo "$line" | awk '{print $3}')
+                          digest=$(echo "$line" | awk '{print $3}')
+                          tags=$(echo "$line" | awk '{print $4}')
                           if [[ -z "$tags" || "$tags" == "-" ]]; then
                             echo "Deleting untagged base digest: $digest"
                             gcloud artifacts docker images delete "$BASE_IMAGE_PATH@$digest" --quiet || true

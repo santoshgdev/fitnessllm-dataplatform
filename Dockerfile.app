@@ -28,14 +28,15 @@ COPY tests fitnessllm-dataplatform/tests
 WORKDIR /app/fitnessllm-dataplatform
 
 # Get and set the commit hash as an environment variable
-ARG FITNESSLLM_SHARED_COMMIT_HASH
-RUN FITNESSLLM_SHARED_COMMIT_HASH=$(cd /tmp/fitnessllm-shared && git rev-parse HEAD | cut -c1-5)
-ENV FITNESSLLM_SHARED_COMMIT_HASH=${FITNESSLLM_SHARED_COMMIT_HASH}
+RUN cd /tmp/fitnessllm-shared && \
+    echo "Setting commit hash to: $(git rev-parse HEAD | cut -c1-5)" && \
+    echo "$(git rev-parse HEAD | cut -c1-5)" > /app/commit_hash.txt
 
-# Verify the shared package is installed and accessible
-RUN poetry run python -c "import fitnessllm_shared; print(fitnessllm_shared.__file__)"
+# Create entrypoint script
+RUN echo '#!/bin/bash\n\
+export FITNESSLLM_SHARED_COMMIT_HASH=$(cat /app/commit_hash.txt)\n\
+exec "$@"' > /app/entrypoint.sh && \
+    chmod +x /app/entrypoint.sh
 
-#ENV PORT=8080
-
-# Run the HTTP server
-#ENTRYPOINT ["poetry", "run", "python", "-m", "fitnessllm_dataplatform.task_handler"]
+ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["poetry", "run", "python", "-m", "fitnessllm_dataplatform.task_handler"]

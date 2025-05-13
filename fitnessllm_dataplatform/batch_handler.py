@@ -1,5 +1,8 @@
 """Batch handler for processing all users."""
 
+import atexit
+import shutil
+import tempfile
 from os import environ
 from typing import Optional
 
@@ -30,6 +33,21 @@ class BatchHandler:
         """
         self.db = firestore.Client()
         self.startup = Startup()
+        # Create a temporary directory that will be cleaned up on exit
+        self.temp_dir = tempfile.mkdtemp()
+        atexit.register(self._cleanup_temp_dir)
+
+    def _cleanup_temp_dir(self) -> None:
+        """Clean up the temporary directory."""
+        try:
+            shutil.rmtree(self.temp_dir)
+        except Exception as e:
+            structured_logger.error(
+                message="Failed to clean up temporary directory",
+                exception=str(e),
+                exception_type=type(e).__name__,
+                service="batch_handler",
+            )
 
     @beartype
     def get_all_users(self) -> List[Dict[str, Any]]:
@@ -137,8 +155,6 @@ class BatchHandler:
                 service="batch_handler",
             )
 
-        raise
-
     @beartype
     def process_all_users(
         self, data_source: FitnessLLMDataSource = FitnessLLMDataSource.STRAVA
@@ -188,15 +204,23 @@ class BatchHandler:
 
 
 if __name__ == "__main__":
-    structured_logger.info("Starting batch handler", service="batch_handler")
-    # TODO: Possibly reduce the number of environment variables.
-    structured_logger.info(
-        "Cloud run job name",
-        CLOUD_RUN_JOB=environ["CLOUD_RUN_JOB"],
-        CLOUD_RUN_EXECUTION_ID=environ["CLOUD_RUN_EXECUTION"],
-        CLOUD_RUN_TASK_INDEX=environ["CLOUD_RUN_TASK_INDEX"],
-        CLOUD_RUN_TASK_ATTEMPT=environ["CLOUD_RUN_TASK_ATTEMPT"],
-        CLOUD_RUN_TASK_COUNT=environ["CLOUD_RUN_TASK_COUNT"],
-    )
-    handler = BatchHandler()
-    handler.process_all_users()
+    try:
+        structured_logger.info("Starting batch handler", service="batch_handler")
+        # TODO: Possibly reduce the number of environment variables.
+        structured_logger.info(
+            "Cloud run job name",
+            CLOUD_RUN_JOB=environ.get("CLOUD_RUN_JOB"),
+            CLOUD_RUN_EXECUTION_ID=environ.get("CLOUD_RUN_EXECUTION"),
+            CLOUD_RUN_TASK_INDEX=environ.get("CLOUD_RUN_TASK_INDEX"),
+            CLOUD_RUN_TASK_ATTEMPT=environ.get("CLOUD_RUN_TASK_ATTEMPT"),
+            CLOUD_RUN_TASK_COUNT=environ.get("CLOUD_RUN_TASK_COUNT"),
+        )
+        handler = BatchHandler()
+        handler.process_all_users()
+    finally:
+        # Log completion before closing handlers
+        structured_logger.info("Batch handler completed", service="batch_handler")
+        # Ensure all logs are flushed and handlers are closed
+        for handler in structured_logger.logger.handlers:
+            handler.flush()
+            handler.close()

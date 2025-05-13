@@ -39,7 +39,6 @@ beartype = ">=0.20.2,<0.21.0"
 pytest-cov = "^6.0.0"
 google-cloud-functions = "^1.20.3"
 freezegun = "^1.5.1"
-fitnessllm-shared = {git = "https://github.com/santoshgdev/fitnessllm-shared.git", rev = "main"}
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

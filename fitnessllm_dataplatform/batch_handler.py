@@ -135,7 +135,7 @@ class BatchHandler:
                 data_source=data_source.value,
                 service="batch_handler",
             )
-        except (KeyError, ValueError, firestore.exceptions.NotFound) as e:
+        except (KeyError, ValueError) as e:
             structured_logger.error(
                 message="Failed to process user",
                 uid=user_id,

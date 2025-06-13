@@ -5,7 +5,9 @@ import os
 from datetime import datetime
 from enum import Enum
 from json.decoder import JSONDecodeError
+from typing import Optional
 
+from beartype import beartype
 from fitnessllm_shared.logger_utils import structured_logger
 from google.cloud import bigquery
 
@@ -60,8 +62,10 @@ def get_schema_path(
     return "fitnessllm_dataplatform/schemas/metrics.json"
 
 
+@beartype
 def load_schema_from_json(
-    data_source: FitnessLLMDataSource, data_stream: FitnessLLMDataStream
+    data_source: Optional[FitnessLLMDataSource],
+    data_stream: Optional[FitnessLLMDataStream],
 ) -> list[bigquery.SchemaField]:
     """Loads schema from JSON file."""
     schema_path = get_schema_path(data_source, data_stream)
@@ -72,16 +76,16 @@ def load_schema_from_json(
         structured_logger.error(
             message="File not found",
             file=schema_path,
-            data_source=data_source.value,
-            data_stream=data_stream.value,
+            data_source=getattr(data_source, "value", None),
+            data_stream=getattr(data_stream, "value", None),
         )
         raise
     except JSONDecodeError:
         structured_logger.error(
             message="Invalid JSON in schema file",
             file=schema_path,
-            data_source=data_source.value,
-            data_stream=data_stream.value,
+            data_source=getattr(data_source, "value", None),
+            data_stream=getattr(data_stream, "value", None),
         )
         raise
 

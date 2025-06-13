@@ -27,6 +27,7 @@ env:
 jobs:
     testing:
         runs-on: ubuntu-latest
+        environment: dev
         steps:
             - uses: actions/checkout@v4
 
@@ -103,6 +104,7 @@ jobs:
     cloud_run_job_detect_changes:
         needs: testing
         runs-on: ubuntu-latest
+        environment: dev
         outputs:
             changes_detected: ${{ steps.check_changes.outputs.changes_detected }}
         steps:
@@ -284,6 +286,7 @@ jobs:
     cloud_function_detect_changes:
         needs: testing
         runs-on: ubuntu-latest
+        environment: dev
         outputs:
             token_refresh: ${{ steps.check_changes.outputs.token_refresh }}
             api_router: ${{ steps.check_changes.outputs.api_router }}

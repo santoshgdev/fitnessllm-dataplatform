@@ -3,6 +3,7 @@
 import os
 import pathlib
 
+from beartype import beartype
 from fitnessllm_shared.logger_utils import structured_logger
 from tqdm import tqdm
 
@@ -37,6 +38,12 @@ class SilverStravaETLInterface(ETLInterface):
         self.uid = uid
         self.data_source = FitnessLLMDataSource.STRAVA
         self.athlete_id = athlete_id
+
+    @beartype
+    def _get_common_fields(self) -> dict[str, str]:
+        fields = super()._get_common_fields()
+        fields.update({"athlete_id": self.athlete_id})
+        return fields
 
     def task_handler(self):
         """Handles the execution of ETL tasks for Strava data.

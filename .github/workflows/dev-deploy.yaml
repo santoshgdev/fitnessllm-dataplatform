@@ -1,401 +1,393 @@
----
 name: Dev Deploy
 
 on:
-    workflow_dispatch:  # Add manual trigger
-        inputs:
-            force_deploy:
-                description: Force deploy all functions
-                required: false
-                type: boolean
-                default: false
-    push:
-        branches:
-            - main
-            - '**FIT**'
+  workflow_dispatch:    # Add manual trigger
+    inputs:
+      force_deploy:
+        description: Force deploy all functions
+        required: false
+        type: boolean
+        default: false
+  push:
+    branches:
+    - main
+    - '**FIT**'
 
 env:
-    REGION: us-west1
-    SERVICE_NAME: fitnessllm-dp
-    ENVIRONMENT: dev
-    PROJECT_ID: ${{ secrets.PROJECT_ID }}
-    ENCRYPTION_SECRET: ${{ secrets.ENCRYPTION_SECRET }}
-    STRAVA_SECRET: ${{ secrets.STRAVA_SECRET }}
-    INFRASTRUCTURE_SECRET: ${{ secrets.INFRASTRUCTURE_SECRET }}
-    PYTHONPATH: ${{ github.workspace }}
+  REGION: us-west1
+  SERVICE_NAME: fitnessllm-dp
+  ENVIRONMENT: dev
+  PROJECT_ID: ${{ secrets.PROJECT_ID }}
+  ENCRYPTION_SECRET: ${{ secrets.ENCRYPTION_SECRET }}
+  STRAVA_SECRET: ${{ secrets.STRAVA_SECRET }}
+  INFRASTRUCTURE_SECRET: ${{ secrets.INFRASTRUCTURE_SECRET }}
+  PYTHONPATH: ${{ github.workspace }}
 
 jobs:
-    testing:
-        runs-on: ubuntu-latest
-        environment: dev
-        steps:
-            - uses: actions/checkout@v4
+  testing:
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+    - uses: actions/checkout@v4
 
-            - name: Set up Python
-              uses: actions/setup-python@v4
-              with:
-                  python-version: 3.12.2
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.12.2
 
-            - name: Install Poetry
-              uses: snok/install-poetry@v1
-              with:
-                  version: 2.0.1
-                  virtualenvs-create: true
-                  virtualenvs-in-project: true
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: 2.0.1
+        virtualenvs-create: true
+        virtualenvs-in-project: true
 
-            - name: Cache Poetry virtualenv
-              uses: actions/cache@v4
-              with:
-                  path: .venv
-                  key: venv-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
-                  restore-keys: |
-                      venv-${{ runner.os }}-
+    - name: Cache Poetry virtualenv
+      uses: actions/cache@v4
+      with:
+        path: .venv
+        key: venv-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
+        restore-keys: |
+          venv-${{ runner.os }}-
 
-            - name: Update Poetry lock file
-              run: |
-                  poetry lock
+    - name: Update Poetry lock file
+      run: |
+        poetry lock
 
-            - name: Install dependencies
-              run: |
-                  poetry install --no-interaction
-                  git clone https://github.com/santoshgdev/fitnessllm-shared.git /tmp/fitnessllm-shared
-                  poetry run pip install -e /tmp/fitnessllm-shared
+    - name: Install dependencies
+      run: |
+        poetry install --no-interaction
+        git clone https://github.com/santoshgdev/fitnessllm-shared.git /tmp/fitnessllm-shared
+        poetry run pip install -e /tmp/fitnessllm-shared
 
-            - name: Cache pre-commit
-              uses: actions/cache@v4
-              with:
-                  path: |
-                      ~/.cache/pre-commit
-                      ~/.cache/pip
-                  key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}-${{ hashFiles('**/poetry.lock') }}
-                  restore-keys: |
-                      ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}-
+    - name: Cache pre-commit
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/pre-commit
+          ~/.cache/pip
+        key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}-
 
-            - name: Install pre-commit
-              run: pip install pre-commit==3.5.0
+    - name: Install pre-commit
+      run: pip install pre-commit==3.5.0
 
-            - name: Run pre-commit checks
-              run: pre-commit run --all-files
+    - name: Run pre-commit checks
+      run: pre-commit run --all-files
 
-            - name: Run tests with coverage
-              run: |
-                  PYTHONPATH=$PWD poetry run pytest tests/ \
-                    --cov-branch \
-                    --cov=cloud_functions \
-                    --cov-report=xml \
-                    --cov-report=term \
-                    --junitxml=junit.xml \
-                    --import-mode=importlib \
-                    -o junit_family=legacy
+    - name: Run tests with coverage
+      run: |
+        PYTHONPATH=$PWD poetry run pytest tests/ \
+          --cov-branch \
+          --cov=cloud_functions \
+          --cov-report=xml \
+          --cov-report=term \
+          --junitxml=junit.xml \
+          --import-mode=importlib \
+          -o junit_family=legacy
 
-            - name: Upload coverage to Codecov
-              uses: codecov/codecov-action@v4
-              with:
-                  files: ./coverage.xml
-                  fail_ci_if_error: false
-                  token: ${{ secrets.CODECOV_TOKEN }}
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        files: ./coverage.xml
+        fail_ci_if_error: false
 
-            - name: Upload test results to Codecov
-              if: ${{ !cancelled() }}
-              uses: codecov/test-results-action@v1
-              with:
-                  token: ${{ secrets.CODECOV_TOKEN }}
+    - name: Upload test results to Codecov
+      if: ${{ !cancelled() }}
+      uses: codecov/test-results-action@v1
 
-    cloud_run_job_detect_changes:
-        needs: testing
-        runs-on: ubuntu-latest
-        environment: dev
-        outputs:
-            changes_detected: ${{ steps.check_changes.outputs.changes_detected }}
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v4
-              with:
-                  fetch-depth: 0  # We need full history to compare against the commit before the push
+  cloud_run_job_detect_changes:
+    needs: testing
+    runs-on: ubuntu-latest
+    environment: dev
+    outputs:
+      changes_detected: ${{ steps.check_changes.outputs.changes_detected }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0            # We need full history to compare against the commit before the push
 
-            - name: Check for relevant file changes
-              id: check_changes
-              run: |
-                  echo "=== Debug: Checking for changes in push ==="
-                  echo "Commit before push: ${{ github.event.before }}"
-                  echo "Latest commit in push: ${{ github.sha }}"
+    - name: Check for relevant file changes
+      id: check_changes
+      run: |
+        echo "=== Debug: Checking for changes in push ==="
+        echo "Commit before push: ${{ github.event.before }}"
+        echo "Latest commit in push: ${{ github.sha }}"
 
-                  echo "=== Debug: All changed files ==="
-                  if [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ]; then
-                    echo "First commit or new branch, showing all files:"
-                    git ls-files
-                  else
-                    git diff --name-only ${{ github.event.before }} ${{ github.sha }}
-                  fi
+        echo "=== Debug: All changed files ==="
+        if [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ]; then
+          echo "First commit or new branch, showing all files:"
+          git ls-files
+        else
+          git diff --name-only ${{ github.event.before }} ${{ github.sha }}
+        fi
 
-                  if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -q -E '^(fitnessllm_dataplatform/|Dockerfile|pyproject.toml|poetry.lock|\.github/workflows/dev-deploy.yaml)'; then
-                    echo "changes_detected=true" >> $GITHUB_OUTPUT
-                  else
-                    echo "changes_detected=false" >> $GITHUB_OUTPUT
-                  fi
+        if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -q -E '^(fitnessllm_dataplatform/|Dockerfile|pyproject.toml|poetry.lock|\.github/workflows/dev-deploy.yaml)'; then
+          echo "changes_detected=true" >> $GITHUB_OUTPUT
+        else
+          echo "changes_detected=false" >> $GITHUB_OUTPUT
+        fi
 
-    cloud_run_job_deploy:
-        needs: cloud_run_job_detect_changes
-        if: needs.cloud_run_job_detect_changes.outputs.changes_detected == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
-            == 'true')
-        runs-on: ubuntu-latest
-        environment: dev
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v4
-              with:
-                  fetch-depth: 3
+  cloud_run_job_deploy:
+    needs: cloud_run_job_detect_changes
+    if: needs.cloud_run_job_detect_changes.outputs.changes_detected == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy == 'true')
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 3
 
-            - name: Authenticate to Google Cloud
-              uses: google-github-actions/auth@v2
-              with:
-                  credentials_json: ${{ secrets.GCP_SA_KEY }}
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-            - name: Set up Cloud SDK
-              uses: google-github-actions/setup-gcloud@v2
-              with:
-                  project_id: ${{ secrets.PROJECT_ID }}
-                  version: latest
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ secrets.PROJECT_ID }}
+        version: latest
 
-            - name: Configure Docker for Artifact Registry
-              run: gcloud auth configure-docker us-west1-docker.pkg.dev --quiet
+    - name: Configure Docker for Artifact Registry
+      run: gcloud auth configure-docker us-west1-docker.pkg.dev --quiet
 
-            - name: Set up Docker Buildx
-              uses: docker/setup-buildx-action@v3
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
 
-            - name: Cache Docker layers
-              uses: actions/cache@v4
-              with:
-                  path: /tmp/.buildx-cache
-                  key: ${{ runner.os }}-buildx-${{ github.sha }}
-                  restore-keys: |
-                      ${{ runner.os }}-buildx-
+    - name: Cache Docker layers
+      uses: actions/cache@v4
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-
 
-            - name: Build and Push Base Docker image to Artifact Registry
-              run: |
-                  BASE_IMAGE_TAG_REMOTE="${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/base:latest"
-                  BASE_IMAGE_TAG_LOCAL="base:latest"
-                  docker buildx build -f Dockerfile.base . \
-                    --cache-from type=local,src=/tmp/.buildx-cache \
-                    --cache-to type=local,dest=/tmp/.buildx-cache \
-                    -t $BASE_IMAGE_TAG_REMOTE \
-                    --push
-                  docker pull $BASE_IMAGE_TAG_REMOTE
-                  docker tag $BASE_IMAGE_TAG_REMOTE base:latest
+    - name: Build and Push Base Docker image to Artifact Registry
+      run: |
+        BASE_IMAGE_TAG_REMOTE="${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/base:latest"
+        BASE_IMAGE_TAG_LOCAL="base:latest"
+        docker buildx build -f Dockerfile.base . \
+          --cache-from type=local,src=/tmp/.buildx-cache \
+          --cache-to type=local,dest=/tmp/.buildx-cache \
+          -t $BASE_IMAGE_TAG_REMOTE \
+          --push
+        docker pull $BASE_IMAGE_TAG_REMOTE
+        docker tag $BASE_IMAGE_TAG_REMOTE base:latest
 
-            - name: Build and Push App Docker image to Artifact Registry
-              run: |
-                  IMAGE_TAG="${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }}"
-                  BASE_IMAGE_TAG_REMOTE="${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/base:latest"
-                  docker buildx build -f Dockerfile.app . \
-                    --no-cache \
-                    --build-arg BASE_IMAGE=$BASE_IMAGE_TAG_REMOTE \
-                    --build-arg CACHEBUST=$(date +%s) \
-                    -t $IMAGE_TAG \
-                    --push
+    - name: Build and Push App Docker image to Artifact Registry
+      run: |
+        IMAGE_TAG="${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }}"
+        BASE_IMAGE_TAG_REMOTE="${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/base:latest"
+        docker buildx build -f Dockerfile.app . \
+          --no-cache \
+          --build-arg BASE_IMAGE=$BASE_IMAGE_TAG_REMOTE \
+          --build-arg CACHEBUST=$(date +%s) \
+          -t $IMAGE_TAG \
+          --push
 
 
-            - name: Debug deployment configuration
-              run: |
-                  echo "=== Debug: Deployment Configuration ==="
-                  echo "Service Account Email is set: ${{ secrets.GCP_DP_SA_EMAIL != '' }}"
-                  echo "Project ID: ${{ secrets.PROJECT_ID }}"
-                  echo "Environment: ${{ env.ENVIRONMENT }}"
-                  echo "Service Name: ${{ env.SERVICE_NAME }}"
-                  echo "Region: ${{ env.REGION }}"
-                  echo "Full deployment command (with masked secrets):"
-                  echo "gcloud run jobs deploy ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }} \
-                    --image $IMAGE_TAG \
-                    --region ${{ env.REGION }} \
-                    --service-account=[MASKED] \
-                    --set-env-vars PROJECT_ID=${{ secrets.PROJECT_ID }},ENVIRONMENT=${{ env.ENVIRONMENT }},ENCRYPTION_SECRET=$${{ env.ENCRYPTION_SECRET }},STRAVA_SECRET=${{ env.STRAVA_SECRET }},REGION=${{ env.REGION }},INFRASTRUCTURE_SECRET=${{ env.INFRASTRUCTURE_SECRET }},STAGE=dev"
+    - name: Debug deployment configuration
+      run: |
+        echo "=== Debug: Deployment Configuration ==="
+        echo "Service Account Email is set: ${{ secrets.GCP_DP_SA_EMAIL != '' }}"
+        echo "Project ID: ${{ secrets.PROJECT_ID }}"
+        echo "Environment: ${{ env.ENVIRONMENT }}"
+        echo "Service Name: ${{ env.SERVICE_NAME }}"
+        echo "Region: ${{ env.REGION }}"
+        echo "Full deployment command (with masked secrets):"
+        echo "gcloud run jobs deploy ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }} \
+          --image $IMAGE_TAG \
+          --region ${{ env.REGION }} \
+          --service-account=[MASKED] \
+          --set-env-vars PROJECT_ID=${{ secrets.PROJECT_ID }},ENVIRONMENT=${{ env.ENVIRONMENT }},ENCRYPTION_SECRET=$${{ env.ENCRYPTION_SECRET }},STRAVA_SECRET=${{ env.STRAVA_SECRET }},REGION=${{ env.REGION }},INFRASTRUCTURE_SECRET=${{ env.INFRASTRUCTURE_SECRET }},STAGE=dev"
 
-            - name: Deploy to Cloud Run Jobs
-              run: |-
-                  ENV_VARS="\
-                    PROJECT_ID=${{ secrets.PROJECT_ID }},\
-                    ENVIRONMENT=${{ env.ENVIRONMENT }},\
-                    ENCRYPTION_SECRET=${{ secrets.ENCRYPTION_SECRET }},\
-                    STRAVA_SECRET=${{ secrets.STRAVA_SECRET }},\
-                    REGION=${{ env.REGION }},\
-                    INFRASTRUCTURE_SECRET=${{ env.INFRASTRUCTURE_SECRET }},\
-                    STAGE=${{ env.ENVIRONMENT }},\
-                    PYTHONPATH=/app/fitnessllm-dataplatform"
-                  gcloud run jobs deploy ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }} \
-                    --image ${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }} \
-                    --region ${{ env.REGION }} \
-                    --max-retries=0 \
-                    --service-account=${{ secrets.GCP_DP_SA_EMAIL }} \
-                    --set-env-vars "$ENV_VARS"
+    - name: Deploy to Cloud Run Jobs
+      run: |-
+        ENV_VARS="\
+          PROJECT_ID=${{ secrets.PROJECT_ID }},\
+          ENVIRONMENT=${{ env.ENVIRONMENT }},\
+          ENCRYPTION_SECRET=${{ secrets.ENCRYPTION_SECRET }},\
+          STRAVA_SECRET=${{ secrets.STRAVA_SECRET }},\
+          REGION=${{ env.REGION }},\
+          INFRASTRUCTURE_SECRET=${{ env.INFRASTRUCTURE_SECRET }},\
+          STAGE=${{ env.ENVIRONMENT }},\
+          PYTHONPATH=/app/fitnessllm-dataplatform"
+        gcloud run jobs deploy ${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }} \
+          --image ${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ env.ENVIRONMENT }} \
+          --region ${{ env.REGION }} \
+          --max-retries=0 \
+          --service-account=${{ secrets.GCP_DP_SA_EMAIL }} \
+          --set-env-vars "$ENV_VARS"
 
-            - name: Scheduled Batch Cloud Run Job
-              run: |
-                  CLOUD_RUN_JOB_URL="https://${{ env.REGION }}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${{ env.PROJECT_ID }}/jobs/${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }}:run"
-                  PAYLOAD='{"overrides":{"taskCount":1,"containerOverrides":[{"args":["python","fitnessllm_dataplatform/batch_handler.py"]}]}}'
-                  if gcloud scheduler jobs describe batch-data-run \
-                    --project="${{ env.PROJECT_ID }}" \
-                    --location="${{ env.REGION }}"; then
-                    gcloud scheduler jobs update http batch-data-run \
-                      --project="${{ env.PROJECT_ID }}" \
-                      --location="${{ env.REGION }}" \
-                      --schedule="0 2 * * *" \
-                      --uri="$CLOUD_RUN_JOB_URL" \
-                      --http-method=POST \
-                      --oauth-service-account-email=${{ secrets.GCP_DP_SA_EMAIL }} \
-                      --time-zone="America/Los_Angeles" \
-                      --message-body="$PAYLOAD"
-                  else
-                    gcloud scheduler jobs create http batch-data-run \
-                      --project="${{ env.PROJECT_ID }}" \
-                      --location="${{ env.REGION }}" \
-                      --schedule="0 2 * * *" \
-                      --uri="$CLOUD_RUN_JOB_URL" \
-                      --http-method=POST \
-                      --oauth-service-account-email=${{ secrets.GCP_DP_SA_EMAIL }} \
-                      --time-zone="America/Los_Angeles" \
-                      --message-body="$PAYLOAD"
-                  fi
+    - name: Scheduled Batch Cloud Run Job
+      run: |
+        CLOUD_RUN_JOB_URL="https://${{ env.REGION }}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${{ env.PROJECT_ID }}/jobs/${{ env.ENVIRONMENT }}-${{ env.SERVICE_NAME }}:run"
+        PAYLOAD='{"overrides":{"taskCount":1,"containerOverrides":[{"args":["python","fitnessllm_dataplatform/batch_handler.py"]}]}}'
+        if gcloud scheduler jobs describe batch-data-run \
+          --project="${{ env.PROJECT_ID }}" \
+          --location="${{ env.REGION }}"; then
+          gcloud scheduler jobs update http batch-data-run \
+            --project="${{ env.PROJECT_ID }}" \
+            --location="${{ env.REGION }}" \
+            --schedule="0 2 * * *" \
+            --uri="$CLOUD_RUN_JOB_URL" \
+            --http-method=POST \
+            --oauth-service-account-email=${{ secrets.GCP_DP_SA_EMAIL }} \
+            --time-zone="America/Los_Angeles" \
+            --message-body="$PAYLOAD"
+        else
+          gcloud scheduler jobs create http batch-data-run \
+            --project="${{ env.PROJECT_ID }}" \
+            --location="${{ env.REGION }}" \
+            --schedule="0 2 * * *" \
+            --uri="$CLOUD_RUN_JOB_URL" \
+            --http-method=POST \
+            --oauth-service-account-email=${{ secrets.GCP_DP_SA_EMAIL }} \
+            --time-zone="America/Los_Angeles" \
+            --message-body="$PAYLOAD"
+        fi
 
-            - name: Clean up untagged images
-              run: |
-                  APP_IMAGE_PATH="us-west1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/fitnessllm-dp/fitnessllm-dp"
-                  BASE_IMAGE_PATH="us-west1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/fitnessllm-dp/base"
+    - name: Clean up untagged images
+      run: |
+        APP_IMAGE_PATH="us-west1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/fitnessllm-dp/fitnessllm-dp"
+        BASE_IMAGE_PATH="us-west1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/fitnessllm-dp/base"
 
-                  # Clean up untagged app images using JSON output and jq
-                  echo "DEBUG: Listing all app images as JSON..."
-                  APP_IMAGES_JSON=$(gcloud artifacts docker images list "$APP_IMAGE_PATH" --include-tags --format="json")
-                  echo "$APP_IMAGES_JSON" | jq -r '.[] | select((.tags == null or (.tags | length) == 0) and .version != null) | .version' | while read version; do
-                    if [[ -n "$version" && "$version" != "null" ]]; then
-                      echo "Deleting untagged app digest: $version"
-                      gcloud artifacts docker images delete "$APP_IMAGE_PATH@$version" --quiet || true
-                    fi
-                  done
+        # Clean up untagged app images using JSON output and jq
+        echo "DEBUG: Listing all app images as JSON..."
+        APP_IMAGES_JSON=$(gcloud artifacts docker images list "$APP_IMAGE_PATH" --include-tags --format="json")
+        echo "$APP_IMAGES_JSON" | jq -r '.[] | select((.tags == null or (.tags | length) == 0) and .version != null) | .version' | while read version; do
+          if [[ -n "$version" && "$version" != "null" ]]; then
+            echo "Deleting untagged app digest: $version"
+            gcloud artifacts docker images delete "$APP_IMAGE_PATH@$version" --quiet || true
+          fi
+        done
 
-                  # Only clean up base images if we're in push event mode
-                  if [[ -n "$BASE_IMAGE_PATH" ]]; then
-                    echo "DEBUG: Listing all base images as JSON..."
-                    BASE_IMAGES_JSON=$(gcloud artifacts docker images list "$BASE_IMAGE_PATH" --include-tags --format="json")
-                    echo "$BASE_IMAGES_JSON" | jq -r '.[] | select((.tags == null or (.tags | length) == 0) and .version != null) | .version' | while read version; do
-                      if [[ -n "$version" && "$version" != "null" ]]; then
-                        echo "Deleting untagged base digest: $version"
-                        gcloud artifacts docker images delete "$BASE_IMAGE_PATH@$version" --quiet || true
-                      fi
-                    done
-                  fi
+        # Only clean up base images if we're in push event mode
+        if [[ -n "$BASE_IMAGE_PATH" ]]; then
+          echo "DEBUG: Listing all base images as JSON..."
+          BASE_IMAGES_JSON=$(gcloud artifacts docker images list "$BASE_IMAGE_PATH" --include-tags --format="json")
+          echo "$BASE_IMAGES_JSON" | jq -r '.[] | select((.tags == null or (.tags | length) == 0) and .version != null) | .version' | while read version; do
+            if [[ -n "$version" && "$version" != "null" ]]; then
+              echo "Deleting untagged base digest: $version"
+              gcloud artifacts docker images delete "$BASE_IMAGE_PATH@$version" --quiet || true
+            fi
+          done
+        fi
 
-    cloud_function_detect_changes:
-        needs: testing
-        runs-on: ubuntu-latest
-        environment: dev
-        outputs:
-            token_refresh: ${{ steps.check_changes.outputs.token_refresh }}
-            api_router: ${{ steps.check_changes.outputs.api_router }}
-            strava_auth_initiate: ${{ steps.check_changes.outputs.strava_auth_initiate }}
-            has_changes: ${{ steps.check_changes.outputs.has_changes }}
-        steps:
-            - uses: actions/checkout@v4
-              with:
-                  fetch-depth: 0  # We need the last 2 commits to compare HEAD and HEAD^
+  cloud_function_detect_changes:
+    needs: testing
+    runs-on: ubuntu-latest
+    environment: dev
+    outputs:
+      token_refresh: ${{ steps.check_changes.outputs.token_refresh }}
+      api_router: ${{ steps.check_changes.outputs.api_router }}
+      strava_auth_initiate: ${{ steps.check_changes.outputs.strava_auth_initiate }}
+      has_changes: ${{ steps.check_changes.outputs.has_changes }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0            # We need the last 2 commits to compare HEAD and HEAD^
 
-            - name: Check for function changes
-              id: check_changes
-              run: |
-                  echo "=== Debug: Checking for changes between HEAD^ and HEAD ==="
-                  echo "Current commit: $(git rev-parse HEAD)"
-                  echo "Previous commit: $(git rev-parse HEAD^)"
+    - name: Check for function changes
+      id: check_changes
+      run: |
+        echo "=== Debug: Checking for changes between HEAD^ and HEAD ==="
+        echo "Current commit: $(git rev-parse HEAD)"
+        echo "Previous commit: $(git rev-parse HEAD^)"
 
-                  echo "=== Debug: All changed files ==="
-                  git diff --name-only HEAD^ HEAD
+        echo "=== Debug: All changed files ==="
+        git diff --name-only HEAD^ HEAD
 
-                  HAS_CHANGES=false
+        HAS_CHANGES=false
 
-                  # If workflow file changes, redeploy all functions
-                  if git diff --name-only HEAD^ HEAD | grep -q "^.github/workflows/dev-deploy.yaml"; then
-                    echo "Workflow file changed, redeploying all functions"
-                    echo "token_refresh=true" >> $GITHUB_OUTPUT
-                    echo "api_router=true" >> $GITHUB_OUTPUT
-                    echo "strava_auth_initiate=true" >> $GITHUB_OUTPUT
-                    HAS_CHANGES=true
-                  # If shared code changes, redeploy all functions
-                  elif git diff --name-only HEAD^ HEAD | grep -q "^cloud_functions/shared/"; then
-                    echo "Shared code changed, redeploying all functions"
-                    echo "token_refresh=true" >> $GITHUB_OUTPUT
-                    echo "api_router=true" >> $GITHUB_OUTPUT
-                    echo "strava_auth_initiate=true" >> $GITHUB_OUTPUT
-                    HAS_CHANGES=true
-                  else
-                    # Check each function individually
-                    if git diff --name-only HEAD^ HEAD | grep -q "^cloud_functions/token_refresh/"; then
-                      echo "token_refresh=true" >> $GITHUB_OUTPUT
-                      HAS_CHANGES=true
-                    else
-                      echo "token_refresh=false" >> $GITHUB_OUTPUT
-                    fi
+        # If workflow file changes, redeploy all functions
+        if git diff --name-only HEAD^ HEAD | grep -q "^.github/workflows/dev-deploy.yaml"; then
+          echo "Workflow file changed, redeploying all functions"
+          echo "token_refresh=true" >> $GITHUB_OUTPUT
+          echo "api_router=true" >> $GITHUB_OUTPUT
+          echo "strava_auth_initiate=true" >> $GITHUB_OUTPUT
+          HAS_CHANGES=true
+        # If shared code changes, redeploy all functions
+        elif git diff --name-only HEAD^ HEAD | grep -q "^cloud_functions/shared/"; then
+          echo "Shared code changed, redeploying all functions"
+          echo "token_refresh=true" >> $GITHUB_OUTPUT
+          echo "api_router=true" >> $GITHUB_OUTPUT
+          echo "strava_auth_initiate=true" >> $GITHUB_OUTPUT
+          HAS_CHANGES=true
+        else
+          # Check each function individually
+          if git diff --name-only HEAD^ HEAD | grep -q "^cloud_functions/token_refresh/"; then
+            echo "token_refresh=true" >> $GITHUB_OUTPUT
+            HAS_CHANGES=true
+          else
+            echo "token_refresh=false" >> $GITHUB_OUTPUT
+          fi
 
-                    if git diff --name-only HEAD^ HEAD | grep -q "^cloud_functions/api_router/"; then
-                      echo "api_router=true" >> $GITHUB_OUTPUT
-                      HAS_CHANGES=true
-                    else
-                      echo "api_router=false" >> $GITHUB_OUTPUT
-                    fi
+          if git diff --name-only HEAD^ HEAD | grep -q "^cloud_functions/api_router/"; then
+            echo "api_router=true" >> $GITHUB_OUTPUT
+            HAS_CHANGES=true
+          else
+            echo "api_router=false" >> $GITHUB_OUTPUT
+          fi
 
-                    if git diff --name-only HEAD^ HEAD | grep -q "^cloud_functions/strava_auth_initiate/"; then
-                      echo "strava_auth_initiate=true" >> $GITHUB_OUTPUT
-                      HAS_CHANGES=true
-                    else
-                      echo "strava_auth_initiate=false" >> $GITHUB_OUTPUT
-                    fi
-                  fi
+          if git diff --name-only HEAD^ HEAD | grep -q "^cloud_functions/strava_auth_initiate/"; then
+            echo "strava_auth_initiate=true" >> $GITHUB_OUTPUT
+            HAS_CHANGES=true
+          else
+            echo "strava_auth_initiate=false" >> $GITHUB_OUTPUT
+          fi
+        fi
 
-                  echo "has_changes=$HAS_CHANGES" >> $GITHUB_OUTPUT
+        echo "has_changes=$HAS_CHANGES" >> $GITHUB_OUTPUT
 
-            - name: Debug outputs
-              run: |
-                  echo "=== Debug: Final outputs ==="
-                  echo "token_refresh: ${{ steps.check_changes.outputs.token_refresh }}"
-                  echo "api_router: ${{ steps.check_changes.outputs.api_router }}"
-                  echo "strava_auth_initiate: ${{ steps.check_changes.outputs.strava_auth_initiate }}"
-                  echo "has_changes: ${{ steps.check_changes.outputs.has_changes }}"
+    - name: Debug outputs
+      run: |
+        echo "=== Debug: Final outputs ==="
+        echo "token_refresh: ${{ steps.check_changes.outputs.token_refresh }}"
+        echo "api_router: ${{ steps.check_changes.outputs.api_router }}"
+        echo "strava_auth_initiate: ${{ steps.check_changes.outputs.strava_auth_initiate }}"
+        echo "has_changes: ${{ steps.check_changes.outputs.has_changes }}"
 
-    cloud_function_deploy:
-        needs: cloud_function_detect_changes
-        if: needs.cloud_function_detect_changes.outputs.has_changes == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
-            == 'true')
-        runs-on: ubuntu-latest
-        environment: dev
-        strategy:
-            matrix:
-                function: [token_refresh, api_router, strava_auth_initiate]
-        steps:
-            - uses: actions/checkout@v4
+  cloud_function_deploy:
+    needs: cloud_function_detect_changes
+    if: needs.cloud_function_detect_changes.outputs.has_changes == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy == 'true')
+    runs-on: ubuntu-latest
+    environment: dev
+    strategy:
+      matrix:
+        function: [token_refresh, api_router, strava_auth_initiate]
+    steps:
+    - uses: actions/checkout@v4
 
-            - name: Authenticate to Google Cloud
-              if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
-                  == 'true')
-              uses: google-github-actions/auth@v2
-              with:
-                  credentials_json: ${{ secrets.GCP_SA_KEY }}
+    - name: Authenticate to Google Cloud
+      if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy == 'true')
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-            - name: Set up gcloud CLI
-              if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy
-                  == 'true')
-              uses: google-github-actions/setup-gcloud@v2
+    - name: Set up gcloud CLI
+      if: needs.cloud_function_detect_changes.outputs[matrix.function] == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy == 'true')
+      uses: google-github-actions/setup-gcloud@v2
 
-            - name: Deploy Functions
-              run: |
-                  for function in api_router token_refresh strava_auth_initiate; do
-                      gcloud functions deploy ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') \
-                        --gen2 \
-                        --region=${{ env.REGION }} \
-                        --runtime=python312 \
-                        --source=cloud_functions/${{ matrix.function }} \
-                        --trigger-http \
-                        --entry-point=${{ matrix.function }} \
-                        --max-instances=10 \
-                        --min-instances=0 \
-                        --memory=256MB \
-                        --allow-unauthenticated \
-                        --set-env-vars=PROJECT_ID=${{ env.PROJECT_ID }},ENVIRONMENT=${{ env.ENVIRONMENT }},ENCRYPTION_SECRET=${{ env.ENCRYPTION_SECRET }},STRAVA_SECRET=${{ env.STRAVA_SECRET }},REGION=${{ env.REGION }},INFRASTRUCTURE_SECRET=${{ env.INFRASTRUCTURE_SECRET }} \
-                        --service-account=${{ secrets.GCP_DP_SA_EMAIL }}
-                    gcloud run services update ${{ env.ENVIRONMENT}}-$(echo $function | tr '_' '-') --region=${{ env.REGION }} --add-custom-audiences=${{ env.PROJECT_ID }}
-                  done
+    - name: Deploy Functions
+      run: |
+        for function in api_router token_refresh strava_auth_initiate; do
+            gcloud functions deploy ${{ env.ENVIRONMENT}}-$(echo ${{ matrix.function }} | tr '_' '-') \
+              --gen2 \
+              --region=${{ env.REGION }} \
+              --runtime=python312 \
+              --source=cloud_functions/${{ matrix.function }} \
+              --trigger-http \
+              --entry-point=${{ matrix.function }} \
+              --max-instances=10 \
+              --min-instances=0 \
+              --memory=256MB \
+              --allow-unauthenticated \
+              --set-env-vars=PROJECT_ID=${{ env.PROJECT_ID }},ENVIRONMENT=${{ env.ENVIRONMENT }},ENCRYPTION_SECRET=${{ env.ENCRYPTION_SECRET }},STRAVA_SECRET=${{ env.STRAVA_SECRET }},REGION=${{ env.REGION }},INFRASTRUCTURE_SECRET=${{ env.INFRASTRUCTURE_SECRET }} \
+              --service-account=${{ secrets.GCP_DP_SA_EMAIL }}
+          gcloud run services update ${{ env.ENVIRONMENT}}-$(echo $function | tr '_' '-') --region=${{ env.REGION }} --add-custom-audiences=${{ env.PROJECT_ID }}
+        done

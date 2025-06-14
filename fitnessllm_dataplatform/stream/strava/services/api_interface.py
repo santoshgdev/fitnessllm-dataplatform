@@ -93,7 +93,7 @@ class StravaAPIInterface(APIInterface):
         self.bq_client = bigquery.Client()
 
     @beartype
-    def _get_common_field(self) -> dict[str, str]:
+    def _get_common_fields(self) -> dict[str, str]:
         fields = super()._get_common_fields()
         fields.update({"athlete_id": self.athlete_id})
         return fields

@@ -126,14 +126,14 @@ class ProcessUser:
             self._strava_ingest_etl()
 
     @beartype
-    def bronze_etl(self) -> None:
+    def bronze_etl(self, data_streams: Optional[list[str]] = None) -> None:
         """Entry point for loading JSONs into bronze layer.
 
         Raises:
             KeyError: If required data_source is not supported.
         """
         if self.data_source == FitnessLLMDataSource.STRAVA.value:
-            self._strava_bronze_etl()
+            self._strava_bronze_etl(data_streams=data_streams)
         else:
             structured_logger.error(
                 "Unsupported data source", **self._get_common_fields()

@@ -1,69 +1,68 @@
----
 repos:
       # Basic pre-commit hooks for general file hygiene
-    - repo: https://github.com/pre-commit/pre-commit-hooks
-      rev: v5.0.0
-      hooks:
-          - id: trailing-whitespace
-          - id: end-of-file-fixer
-          - id: check-yaml
-          - id: check-added-large-files
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v5.0.0
+  hooks:
+  - id: trailing-whitespace
+  - id: end-of-file-fixer
+  - id: check-yaml
+  - id: check-added-large-files
 
       # Black for code formatting
-    - repo: https://github.com/psf/black
-      rev: 25.1.0
-      hooks:
-          - id: black
-            language_version: python3.12
+- repo: https://github.com/psf/black
+  rev: 25.1.0
+  hooks:
+  - id: black
+    language_version: python3.12
 
       # isort for sorting imports
-    - repo: https://github.com/pre-commit/mirrors-isort
-      rev: v5.10.1
-      hooks:
-          - id: isort
-            args:
-                - --profile=black  # Match Black's formatting style
+- repo: https://github.com/pre-commit/mirrors-isort
+  rev: v5.10.1
+  hooks:
+  - id: isort
+    args:
+    - --profile=black              # Match Black's formatting style
 
       # Ruff for linting and static analysis
-    - repo: https://github.com/charliermarsh/ruff-pre-commit
-      rev: v0.11.9
-      hooks:
-          - id: ruff
-            args:
-                - --fix
+- repo: https://github.com/charliermarsh/ruff-pre-commit
+  rev: v0.11.13
+  hooks:
+  - id: ruff
+    args:
+    - --fix
 
-    - repo: https://github.com/PyCQA/pydocstyle
-      rev: 6.3.0
-      hooks:
-          - id: pydocstyle
-            args: [--convention=google]
+- repo: https://github.com/PyCQA/pydocstyle
+  rev: 6.3.0
+  hooks:
+  - id: pydocstyle
+    args: [--convention=google]
 
 
       # Mypy for type checking
-    - repo: https://github.com/pre-commit/mirrors-mypy
-      rev: v1.15.0
-      hooks:
-          - id: mypy
-            additional_dependencies:
-                - types-requests
-                - types-redis
-                - types-pytz
+- repo: https://github.com/pre-commit/mirrors-mypy
+  rev: v1.16.0
+  hooks:
+  - id: mypy
+    additional_dependencies:
+    - types-requests
+    - types-pytz
 
       # Pyupgrade for modernizing Python syntax (e.g., f-strings)
-    - repo: https://github.com/asottile/pyupgrade
-      rev: v3.19.1
-      hooks:
-          - id: pyupgrade
-            args:
-                - --py38-plus
+- repo: https://github.com/asottile/pyupgrade
+  rev: v3.20.0
+  hooks:
+  - id: pyupgrade
+    args:
+    - --py38-plus
 
       # Detect secrets to prevent sensitive data from being committed
-    - repo: https://github.com/Yelp/detect-secrets
-      rev: v1.5.0
-      hooks:
-          - id: detect-secrets
+- repo: https://github.com/Yelp/detect-secrets
+  rev: v1.5.0
+  hooks:
+  - id: detect-secrets
 
-    - repo: https://github.com/jumanjihouse/pre-commit-hook-yamlfmt
-      rev: 0.2.3
-      hooks:
-          - id: yamlfmt
+- repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
+  rev: v2.14.0
+  hooks:
+  - id: pretty-format-yaml
+    args: [--autofix, --indent=2]

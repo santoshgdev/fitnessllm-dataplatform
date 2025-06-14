@@ -3,6 +3,7 @@
 import atexit
 import shutil
 import tempfile
+import traceback
 from os import environ
 from typing import Optional
 
@@ -13,7 +14,7 @@ from entities.mapping import REFRESH_FUNCTION_MAPPING
 from fitnessllm_shared.logger_utils import structured_logger
 from google.cloud import firestore
 
-from fitnessllm_dataplatform.task_handler import Startup
+from fitnessllm_dataplatform.task_handler import ProcessUser
 
 
 class BatchHandler:
@@ -32,7 +33,7 @@ class BatchHandler:
         required for batch processing operations.
         """
         self.db = firestore.Client()
-        self.startup = Startup()
+        self.startup = ProcessUser()
         # Create a temporary directory that will be cleaned up on exit
         self.temp_dir = tempfile.mkdtemp()
         atexit.register(self._cleanup_temp_dir)
@@ -44,10 +45,30 @@ class BatchHandler:
         except Exception as e:
             structured_logger.error(
                 message="Failed to clean up temporary directory",
-                exception=str(e),
-                exception_type=type(e).__name__,
-                service="batch_handler",
+                **self._get_common_fields(),
+                **self._get_exception_fields(e),
             )
+
+    @beartype
+    def _get_common_fields(self) -> dict:
+        fields = {
+            "service": "batch_handler",
+        }
+        return fields
+
+    @staticmethod
+    def _get_exception_fields(e: Exception) -> dict:
+        """Get a logger with exception fields.
+
+        Returns:
+            Dict of exception logging fields
+        """
+        fields = {
+            "exception": str(e),
+            "exception_type": type(e).__name__,
+            "traceback": traceback.format_exc(),
+        }
+        return fields
 
     @beartype
     def get_all_users(self) -> List[Dict[str, Any]]:
@@ -91,7 +112,7 @@ class BatchHandler:
     @beartype
     def process_user(
         self,
-        user_id: str,
+        uid: str,
         data_source: FitnessLLMDataSource = FitnessLLMDataSource.STRAVA,
     ) -> None:
         """Processes a single user's data for a specified data source.
@@ -102,7 +123,7 @@ class BatchHandler:
         track the progress and handle errors.
 
         Args:
-            user_id (str): The unique identifier of the user in Firestore.
+            uid (str): The unique identifier of the user in Firestore.
             data_source (FitnessLLMDataSource): The data source to process for the user.
                 Defaults to FitnessLLMDataSource.STRAVA.
 
@@ -118,29 +139,26 @@ class BatchHandler:
         try:
             structured_logger.info(
                 message="Processing user",
-                uid=user_id,
+                uid=uid,
                 data_source=data_source.value,
                 service="batch_handler",
             )
             refresh_function = REFRESH_FUNCTION_MAPPING[data_source.value]
-            strava_data = self.get_user_stream_data(
-                uid=user_id, data_source=data_source
-            )
-            refresh_function(self.db, user_id, strava_data["refreshToken"])
+            strava_data = self.get_user_stream_data(uid=uid, data_source=data_source)
+            refresh_function(self.db, uid, strava_data["refreshToken"])
 
-            self.startup.full_etl(uid=user_id, data_source=data_source.value)
+            self.startup.full_etl(uid=uid, data_source=data_source.value)
             structured_logger.info(
                 message="Successfully processed user",
-                uid=user_id,
+                uid=uid,
                 data_source=data_source.value,
                 service="batch_handler",
             )
         except (KeyError, ValueError) as e:
             structured_logger.error(
                 message="Failed to process user",
-                uid=user_id,
-                exception=str(e),
-                exception_type=type(e).__name__,
+                **self._get_exception_fields(e),
+                uid=uid,
                 data_source=data_source.value,
                 service="batch_handler",
             )
@@ -148,9 +166,8 @@ class BatchHandler:
         except Exception as e:
             structured_logger.error(
                 message="Unexpected error while processing user",
-                uid=user_id,
-                exception=str(e),
-                exception_type=type(e).__name__,
+                **self._get_exception_fields(e),
+                uid=uid,
                 data_source=data_source.value,
                 service="batch_handler",
             )
@@ -184,16 +201,16 @@ class BatchHandler:
         )
         # TODO: Need to add that if nothing is given to datasource, that for each user we run for all their datasources.
         for user in users:
-            user_id = user.get("uid")
-            if not user_id:
+            uid = user.get("uid")
+            if not uid:
                 structured_logger.warning(
                     message="Skipping user without uid",
-                    uid=user_id,
+                    uid=uid,
                     service="batch_handler",
                 )
                 continue
 
-            self.process_user(user_id, data_source)
+            self.process_user(uid=uid, data_source=data_source)
         structured_logger.info(
             message="Finished processing all users",
             data_source=data_source.value,

@@ -29,7 +29,9 @@ from fitnessllm_dataplatform.utils.cloud_utils import get_secret
 class ProcessUser:
     """Main entry point for the data platform."""
 
-    def __init__(self, uid: str, data_source: str) -> None:
+    def __init__(
+        self, uid: Optional[str] = None, data_source: Optional[str] = None
+    ) -> None:
         """Initializes the data platform.
 
         Args:
@@ -107,10 +109,6 @@ class ProcessUser:
     @beartype
     def ingest(self) -> None:
         """Entry point for downloading JSONs from API.
-
-        Args:
-            uid: Uid for user found in firebase.
-            data_source: Data source to download from.
 
         Raises:
             KeyError: If required options or environment variables are missing.
@@ -190,6 +188,10 @@ class ProcessUser:
             )
             raise ValueError(f"User {self.uid} has no {self.data_source} data")
 
+        if self.uid is None:
+            structured_logger.error("UID is not provided", **self._get_common_fields())
+            raise ValueError("UID not provided")
+
         strava_api_interface = StravaAPIInterface(
             uid=self.uid,
             infrastructure_names=self.InfrastructureNames,
@@ -217,6 +219,10 @@ class ProcessUser:
 
         check_firebase_strava_data(strava_user_data, **self._get_common_fields())
 
+        if self.uid is None:
+            structured_logger.error("UID is not provided", **self._get_common_fields())
+            raise ValueError("UID not provided")
+
         strava_etl_interface = BronzeStravaETLInterface(
             uid=self.uid,
             infrastructure_names=self.InfrastructureNames,
@@ -233,6 +239,10 @@ class ProcessUser:
         )
 
         check_firebase_strava_data(strava_user_data, **self._get_common_fields())
+
+        if self.uid is None:
+            structured_logger.error("UID is not provided", **self._get_common_fields())
+            raise ValueError("UID not provided")
 
         strava_etl_interface = SilverStravaETLInterface(
             uid=self.uid,

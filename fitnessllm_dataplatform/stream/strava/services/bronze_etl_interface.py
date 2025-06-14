@@ -3,7 +3,6 @@
 import itertools
 import json
 import tempfile
-import traceback
 from datetime import datetime
 from enum import EnumType
 from functools import partial
@@ -55,7 +54,7 @@ class BronzeStravaETLInterface(ETLInterface):
         partial_strava_storage (Callable): A partial function to get the storage path for Strava data.
     """
 
-    SERVICE_NAME = "bronze_etl"
+    service_name = "bronze_etl"
 
     def __init__(
         self,
@@ -89,6 +88,12 @@ class BronzeStravaETLInterface(ETLInterface):
         )
 
     @beartype
+    def _get_common_field(self) -> dict[str, str]:
+        fields = super()._get_common_fields()
+        fields.update({"athlete_id": self.athlete_id})
+        return fields
+
+    @beartype
     def load_json_into_bq(self) -> None:
         """Loads JSON files into BigQuery.
 
@@ -104,16 +109,13 @@ class BronzeStravaETLInterface(ETLInterface):
                 StravaStreams[element.name.upper()]
                 for element in self.partial_strava_storage(strava_model=None).iterdir()
             ]
-        except KeyError as exc:
+        except KeyError as e:
             structured_logger.error(
                 message="User defined data_streams not found",
-                uid=self.uid,
-                data_source=self.data_source.value,
-                exception=exc,
-                traceback=traceback.format_exc(),
-                service=self.SERVICE_NAME,
+                **self._get_common_fields(),
+                **self._get_exception_fields(e),
             )
-            raise exc
+            raise e
 
         if self.data_streams:
             streams = [
@@ -123,11 +125,8 @@ class BronzeStravaETLInterface(ETLInterface):
         for stream in streams:
             structured_logger.info(
                 message="Loading stream for athlete_id",
-                athlete_id=self.athlete_id,
                 stream=stream.value,
-                uid=self.uid,
-                data_source=self.data_source.value,
-                service=self.SERVICE_NAME,
+                **self._get_common_fields(),
             )
             dataframes, metrics = self.convert_stream_json_to_dataframe(stream=stream)
             if dataframes and metrics:
@@ -139,9 +138,8 @@ class BronzeStravaETLInterface(ETLInterface):
             else:
                 structured_logger.warning(
                     message="No new data",
-                    uid=self.uid,
-                    data_source=self.data_source.value,
-                    service=self.SERVICE_NAME,
+                    stream=stream.value,
+                    **self._get_common_fields(),
                 )
 
     @beartype
@@ -181,9 +179,7 @@ class BronzeStravaETLInterface(ETLInterface):
             message="Extracted activity ids for stream",
             activity_id_count=len(activity_ids),
             stream=stream.value,
-            uid=self.uid,
-            data_source=self.data_source.value,
-            service=self.SERVICE_NAME,
+            **self._get_common_fields(),
         )
 
         module_strava_json_list = (
@@ -199,9 +195,7 @@ class BronzeStravaETLInterface(ETLInterface):
         if sample:
             structured_logger.debug(
                 message=f"Sampling has been turned on {sample}",
-                uid=self.uid,
-                data_source=self.data_source.value,
-                service=self.SERVICE_NAME,
+                **self._get_common_fields(),
             )
 
         filtered_module_strava_json_list = [
@@ -309,8 +303,7 @@ class BronzeStravaETLInterface(ETLInterface):
         """
         structured_logger.debug(
             message=f"Starting to process {file}",
-            uid=self.uid,
-            data_source=self.data_source.value,
+            **self._get_common_fields(),
         )
         data_dict = json.loads(file.read_text())
         if isinstance(data_dict, str):
@@ -370,9 +363,7 @@ class BronzeStravaETLInterface(ETLInterface):
         if df.empty:
             structured_logger.info(
                 message=f"No data to upsert for {stream.value}",
-                uid=self.uid,
-                data_source=self.data_source.value,
-                service=self.SERVICE_NAME,
+                **self._get_common_fields(),
             )
             return
 
@@ -404,11 +395,8 @@ class BronzeStravaETLInterface(ETLInterface):
         except Exception as e:
             structured_logger.error(
                 message=f"Error while inserting {stream.value} into BigQuery for {self.athlete_id}",
-                uid=self.uid,
-                data_source=self.data_source.value,
-                exception=str(e),
-                traceback=traceback.format_exc(),
-                service=self.SERVICE_NAME,
+                **self._get_common_fields(),
+                **self._get_exception_fields(e),
             )
             self.insert_metrics(
                 metrics_list=metrics,
@@ -460,10 +448,7 @@ class BronzeStravaETLInterface(ETLInterface):
                 if result.state != "DONE":
                     structured_logger.error(
                         message="Unable to insert metrics into BigQuery.",
-                        athlete_id=self.athlete_id,
-                        uid=self.uid,
-                        data_source=self.data_source.value,
-                        service=self.SERVICE_NAME,
+                        **self._get_common_fields(),
                     )
                     raise Exception(
                         "Metrics insertion job did not complete successfully"
@@ -473,10 +458,7 @@ class BronzeStravaETLInterface(ETLInterface):
         except Exception as e:
             structured_logger.error(
                 message="Unable to write metrics to BigQuery",
-                uid=self.uid,
-                data_source=self.data_source.value,
-                exception=str(e),
-                traceback=traceback.format_exc(),
-                service=self.SERVICE_NAME,
+                **self._get_common_fields(),
+                **self._get_exception_fields(e),
             )
             raise e

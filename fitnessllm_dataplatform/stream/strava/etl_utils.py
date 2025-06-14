@@ -4,6 +4,7 @@ from beartype import beartype
 from beartype.typing import Callable
 from pandas import DataFrame
 
+from fitnessllm_dataplatform.entities.enums import FitnessLLMDataStream
 from fitnessllm_dataplatform.stream.strava.entities.enums import StravaStreams
 
 
@@ -27,13 +28,13 @@ def activity_etl(df: DataFrame) -> DataFrame:
     return df
 
 
-def get_etl_func(stream: StravaStreams) -> list[Callable]:
+def get_etl_func(stream: FitnessLLMDataStream) -> list[Callable]:
     """Returns the ETL function for a given stream."""
     return ETL_MAP.get(stream, [])
 
 
 @beartype
-def execute_etl_func(stream: StravaStreams, df: DataFrame) -> DataFrame:
+def execute_etl_func(stream: FitnessLLMDataStream, df: DataFrame) -> DataFrame:
     """Executes the ETL functions for a given stream."""
     etl_funcs = get_etl_func(stream)
     for etl_func in etl_funcs:

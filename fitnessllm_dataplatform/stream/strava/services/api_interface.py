@@ -38,10 +38,10 @@ class StravaAPIInterface(APIInterface):
         Exception: If any query execution fails or encounters an error.
     """
 
-    SERVICE_NAME = "ingest"
     redis: RedisConnect
     client: Client
     partial_get_strava_storage: partial
+    service_name = "strava_ingest"
 
     # @beartype
     def __init__(
@@ -77,9 +77,7 @@ class StravaAPIInterface(APIInterface):
         ):
             structured_logger.error(
                 message="Strava client ID or secret token missing",
-                uid=self.uid,
-                data_source=self.data_source.value,
-                service=self.SERVICE_NAME,
+                **self._get_common_fields(),
             )
             raise Exception(
                 "Client ID or Secret Token missing"
@@ -93,6 +91,12 @@ class StravaAPIInterface(APIInterface):
         self.InfrastructureNames = infrastructure_names
         self.athlete_id = self.get_athlete_summary()
         self.bq_client = bigquery.Client()
+
+    @beartype
+    def _get_common_field(self) -> dict[str, str]:
+        fields = super()._get_common_fields()
+        fields.update({"athlete_id": self.athlete_id})
+        return fields
 
     @beartype
     def write_strava_var_to_env(self, client_id: int, client_secret: str) -> None:
@@ -111,12 +115,11 @@ class StravaAPIInterface(APIInterface):
         """
         structured_logger.info(
             message="Writing strava secret token to environment",
-            uid=self.uid,
-            data_source=self.data_source.value,
+            **self._get_common_fields(),
         )
         structured_logger.info(
             message="Writing strava secret token to environment",
-            service=self.SERVICE_NAME,
+            **self._get_common_fields(),
         )
         environ["STRAVA_CLIENT_ID"] = str(client_id)
         environ["STRAVA_CLIENT_SECRET"] = client_secret
@@ -136,22 +139,15 @@ class StravaAPIInterface(APIInterface):
         """
         if not access_token:
             structured_logger.warning(
-                message="No strava access token provided",
-                uid=self.uid,
-                data_source=self.data_source.value,
+                message="No strava access token provided", **self._get_common_fields()
             )
             structured_logger.warning(
-                message="No strava access token provided",
-                uid=self.uid,
-                data_source=self.data_source,
-                service=self.SERVICE_NAME,
+                message="No strava access token provided", **self._get_common_fields()
             )
             return None
         self.strava_client = Client(access_token=access_token)
         structured_logger.info(
-            message="Set strava access token",
-            uid=self.uid,
-            data_source=self.data_source.value,
+            message="Set strava access token", **self._get_common_fields()
         )
         return None
 
@@ -170,9 +166,7 @@ class StravaAPIInterface(APIInterface):
             Any exceptions raised by the Strava API client or storage utilities will propagate.
         """
         structured_logger.info(
-            message="Getting athlete summary",
-            uid=self.uid,
-            data_source=self.data_source.value,
+            message="Getting athlete summary", **self._get_common_fields()
         )
         athlete = self.strava_client.get_athlete()
 
@@ -206,10 +200,7 @@ class StravaAPIInterface(APIInterface):
             Any exceptions raised during the storage operation will propagate.
         """
         structured_logger.info(
-            message="Getting activity summary",
-            uid=self.uid,
-            data_source=self.data_source.value,
-            service=self.SERVICE_NAME,
+            message="Getting activity summary", **self._get_common_fields()
         )
         activity_dump = activity.model_dump()
         path = self.partial_get_strava_storage(
@@ -241,10 +232,7 @@ class StravaAPIInterface(APIInterface):
             Any exceptions raised by the Strava API client or storage utilities will propagate.
         """
         structured_logger.info(
-            message="Getting athlete activity streams",
-            uid=self.uid,
-            data_source=self.data_source.value,
-            service=self.SERVICE_NAME,
+            message="Getting athlete activity streams", **self._get_common_fields()
         )
         activity_id = self.get_activity_summary(activity)
 
@@ -284,10 +272,7 @@ class StravaAPIInterface(APIInterface):
             storage utilities will propagate.
         """
         structured_logger.info(
-            message="Getting all activities",
-            uid=self.uid,
-            data_source=self.data_source.value,
-            service=self.SERVICE_NAME,
+            message="Getting all activities", **self._get_common_fields()
         )
         latest_activity_date = (
             self.bq_client.query(

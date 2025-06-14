@@ -17,9 +17,7 @@ from fitnessllm_dataplatform.stream.strava.qc_utils import check_firebase_strava
 from fitnessllm_dataplatform.stream.strava.services.api_interface import (
     StravaAPIInterface,
 )
-from fitnessllm_dataplatform.stream.strava.services.bronze_etl_interface import (
-    BronzeStravaETLInterface,
-)
+from fitnessllm_dataplatform.stream.strava.services.bronze_etl_interface import BronzeStravaETLInterface
 from fitnessllm_dataplatform.stream.strava.services.silver_etl_interface import (
     SilverStravaETLInterface,
 )
@@ -34,6 +32,7 @@ class ProcessUser:
 
         Args:
             uid: User ID for the current operation
+            data_source: Data source to process
         """
         self.uid = uid
         self.data_source = data_source
@@ -60,11 +59,12 @@ class ProcessUser:
         fields = {
             "uid": self.uid,
             "data_source": self.data_source,
-            "service": "task_handler",
+            "service_name": "task_handler",
         }
         return fields
 
-    def _get_exception_fields(self, e: Exception) -> dict:
+    @staticmethod
+    def _get_exception_fields(e: Exception) -> dict:
         """Get a logger with exception fields.
 
         Returns:
@@ -77,7 +77,9 @@ class ProcessUser:
         }
         return fields
 
-    def _get_firebase_data_source_document(self, data_source: FitnessLLMDataSource) -> dict:
+    def _get_firebase_data_source_document(
+        self, data_source: FitnessLLMDataSource
+    ) -> dict:
         """Get the firebase document for a given data source.
 
         Args:
@@ -122,9 +124,7 @@ class ProcessUser:
             self._strava_ingest_etl()
 
     @beartype
-    def bronze_etl(
-        self
-    ) -> None:
+    def bronze_etl(self) -> None:
         """Entry point for loading JSONs into bronze layer.
 
         Raises:
@@ -179,7 +179,9 @@ class ProcessUser:
     @beartype
     def _strava_ingest_etl(self) -> None:
         """Ingest ETL for Strava."""
-        strava_user_data = self._get_firebase_data_source_document(data_source=FitnessLLMDataSource.STRAVA)
+        strava_user_data = self._get_firebase_data_source_document(
+            data_source=FitnessLLMDataSource.STRAVA
+        )
         if strava_user_data is None:
             structured_logger.error(
                 message="User has no data", **self._get_common_fields()
@@ -204,24 +206,29 @@ class ProcessUser:
             )
             raise RuntimeError(f"Failed to get data from Strava API: {e}") from e
 
-
     @beartype
-    def _strava_bronze_etl(self) -> None:
+    def _strava_bronze_etl(self, data_streams: Optional[list[str]] = None) -> None:
         """Bronze ETL for Strava."""
-        strava_user_data = self._get_firebase_data_source_document(data_source=FitnessLLMDataSource.STRAVA)
+        strava_user_data = self._get_firebase_data_source_document(
+            data_source=FitnessLLMDataSource.STRAVA
+        )
 
         check_firebase_strava_data(strava_user_data, **self._get_common_fields())
 
-        strava_etl_interface = SilverStravaETLInterface(
+        strava_etl_interface = BronzeStravaETLInterface(
             uid=self.uid,
+            infrastructure_names=self.InfrastructureNames,
             athlete_id=str(strava_user_data["athlete"]["id"]),
+            data_streams=data_streams,
         )
-        strava_etl_interface.task_handler()
+        strava_etl_interface.load_json_into_bq()
 
     @beartype
     def _strava_silver_etl(self) -> None:
         """Silver ETL for Strava."""
-        strava_user_data = self._get_firebase_data_source_document(data_source=FitnessLLMDataSource.STRAVA)
+        strava_user_data = self._get_firebase_data_source_document(
+            data_source=FitnessLLMDataSource.STRAVA
+        )
 
         check_firebase_strava_data(strava_user_data, **self._get_common_fields())
 

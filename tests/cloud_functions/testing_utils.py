@@ -5,6 +5,8 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
+from google.cloud.firestore_v1.client import Client
+
 
 class InMemoryFirestoreDoc:
     """A class that simulates a Firestore document in memory.
@@ -120,7 +122,7 @@ class InMemoryFirestoreCollection:
         return self._docs.get(doc_id, InMemoryFirestoreDoc())
 
 
-class InMemoryFirestoreClient:
+class InMemoryFirestoreClient(Client):
     """A class that simulates a Firestore client in memory.
 
     Attributes:

@@ -261,7 +261,10 @@ class StravaAPIInterface(APIInterface):
                 strava_model=stream, activity_id=str(activity_id)
             )
             wrapped_write_json_to_storage(
-                path, json.loads(stream_data.model_dump_json())
+                uid=self.uid,
+                data_source=self.data_source.value,
+                path=path,
+                data=json.loads(stream_data.model_dump_json()),
             )
 
     @beartype

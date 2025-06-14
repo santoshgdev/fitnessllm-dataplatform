@@ -21,11 +21,9 @@ class FirebaseConnect:
 
     def close_connection(self):
         """Close Firebase connection."""
-        pass
 
     def write(self, data):
         """Write data to Firebase."""
-        pass
 
     def read_user(self):
         """Read user from Firebase."""

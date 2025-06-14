@@ -46,3 +46,9 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.requires-plugins]
 poetry-plugin-export = ">=1.8"
+
+[tool.pylint]
+disable = [
+    "import-error",
+    "line-too-long",
+]

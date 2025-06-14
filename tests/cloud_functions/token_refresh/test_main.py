@@ -1,3 +1,5 @@
+"""Tests for token_refresh function in main.py."""
+
 import json
 from unittest.mock import patch
 
@@ -20,6 +22,7 @@ from tests.cloud_functions.testing_utils import (
 )
 @patch("firebase_admin.auth.verify_id_token")
 def test_token_refresh_success(mock_verify, mock_request, mock_decoded_token):
+    """Test successful token refresh."""
     db, user_ids = populate_inmemory_firestore_with_users_and_streams(num_users=1)
     user_id = user_ids[0]
     mock_decoded_token["uid"] = user_id

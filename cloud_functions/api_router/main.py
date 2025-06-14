@@ -19,10 +19,10 @@ try:
     structured_logger.info(
         message="Firebase Admin initialized successfully", service="api_router"
     )
-except Exception as e:
+except Exception as exc:
     structured_logger.error(
         message="Error initializing Firebase Admin",
-        error=str(e),
+        error=str(exc),
         traceback=traceback.format_exc(),
         service="api_router",
     )

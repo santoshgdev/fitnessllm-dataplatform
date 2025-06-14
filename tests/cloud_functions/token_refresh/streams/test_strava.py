@@ -1,8 +1,11 @@
+"""Tests for token_refresh function in main.py."""
+
 from cloud_functions.token_refresh.streams.strava import strava_update_user_tokens
 from tests.cloud_functions.testing_utils import InMemoryFirestoreClient
 
 
 def test_strava_update_user_tokens() -> None:
+    """Test updating user tokens in Firestore."""
     db = InMemoryFirestoreClient()
     uid = "testuser123"
 

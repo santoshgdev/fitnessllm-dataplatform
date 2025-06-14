@@ -41,7 +41,7 @@ class BatchHandler:
         """Clean up the temporary directory."""
         try:
             shutil.rmtree(self.temp_dir)
-        except Exception as e:
+        except (FileNotFoundError, PermissionError, OSError) as e:
             structured_logger.error(
                 message="Failed to clean up temporary directory",
                 **self._get_common_fields(),
@@ -144,10 +144,12 @@ class BatchHandler:
             )
             refresh_function = REFRESH_FUNCTION_MAPPING[data_source.value]
             strava_data = self.get_user_stream_data(uid=uid, data_source=data_source)
-            refresh_function(self.db, uid, strava_data["refreshToken"])
+            refresh_function(
+                db=self.db, uid=uid, refresh_token=strava_data["refreshToken"]
+            )
 
             process_user = ProcessUser(uid=uid, data_source=data_source.value)
-            process_user.full_etl(uid=uid, data_source=data_source.value)
+            process_user.full_etl()
             structured_logger.info(
                 message="Successfully processed user",
                 uid=uid,
@@ -171,6 +173,7 @@ class BatchHandler:
                 data_source=data_source.value,
                 service="batch_handler",
             )
+            raise
 
     @beartype
     def process_all_users(
@@ -210,7 +213,17 @@ class BatchHandler:
                 )
                 continue
 
-            self.process_user(uid=uid, data_source=data_source)
+            try:
+                self.process_user(uid=uid, data_source=data_source)
+            except Exception as e:
+                structured_logger.error(
+                    message="Error processing user",
+                    **self._get_exception_fields(e),
+                    uid=uid,
+                    data_source=data_source.value,
+                    service="batch_handler",
+                )
+                continue
         structured_logger.info(
             message="Finished processing all users",
             data_source=data_source.value,
@@ -235,9 +248,7 @@ if __name__ == "__main__":
         handler = BatchHandler()
         handler.process_all_users()
     finally:
-        # Log completion before closing handlers
         structured_logger.info("Batch handler completed", service="batch_handler")
-        # Ensure all logs are flushed and handlers are closed
         for handler in structured_logger.logger.handlers:
             handler.flush()
             handler.close()

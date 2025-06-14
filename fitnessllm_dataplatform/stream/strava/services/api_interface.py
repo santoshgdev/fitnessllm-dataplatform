@@ -15,7 +15,6 @@ from utils.cloud_utils import wrapped_write_json_to_storage
 
 from fitnessllm_dataplatform.entities.enums import FitnessLLMDataSource
 from fitnessllm_dataplatform.infrastructure.FirebaseConnect import FirebaseConnect
-from fitnessllm_dataplatform.infrastructure.RedisConnect import RedisConnect
 from fitnessllm_dataplatform.services.api_interface import APIInterface
 from fitnessllm_dataplatform.stream.strava.cloud_utils import get_strava_storage_path
 from fitnessllm_dataplatform.stream.strava.entities.enums import StravaStreams
@@ -38,7 +37,6 @@ class StravaAPIInterface(APIInterface):
         Exception: If any query execution fails or encounters an error.
     """
 
-    redis: RedisConnect
     client: Client
     partial_get_strava_storage: partial
     service_name = "strava_ingest"

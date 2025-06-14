@@ -39,6 +39,10 @@ class ProcessUser:
         self.uid = uid
         self.data_source = data_source
 
+        if self.uid is None:
+            structured_logger.error("UID is not provided", **self._get_common_fields())
+            raise ValueError("UID not provided")
+
         structured_logger.info(
             message="Starting up data platform", **self._get_common_fields()
         )
@@ -107,10 +111,6 @@ class ProcessUser:
     @beartype
     def ingest(self) -> None:
         """Entry point for downloading JSONs from API.
-
-        Args:
-            uid: Uid for user found in firebase.
-            data_source: Data source to download from.
 
         Raises:
             KeyError: If required options or environment variables are missing.

@@ -65,53 +65,52 @@ class SilverStravaETLInterface(ETLInterface):
         }
 
         for query in tqdm(list_of_queries):
-            target_destination = f"{self.ENV}_silver_{self.data_source.value.lower()}.{query.split('.')[0]}"
-            query_path = pathlib.Path(path, query)
+            self.silver_etl(path=path, parameters=parameters, query=query)
 
-            delete_query = get_delete_query(
-                target_table=target_destination, parameters=parameters
-            )
-            delete_job = self.client.query(delete_query)
-            delete_job.result()
-            if delete_job.state != "DONE" and delete_job.error is not None:
-                structured_logger.error(
-                    message="Query failed with error",
-                    query=delete_query,
-                    error=delete_job.error,
-                    uid=self.athlete_id,
-                    data_source=self.data_source.value,
-                    service=self.SERVICE_NAME,
-                )
-                continue
-            structured_logger.debug(
-                message="Query successfully deleted rows",
+    @beartype
+    def silver_etl(self, path: str, parameters: dict, query: str) -> None:
+        """Executes the Silver ETL process for Strava data."""
+        target_destination = (
+            f"{self.ENV}_silver_{self.data_source.value.lower()}.{query.split('.')[0]}"
+        )
+        query_path = pathlib.Path(path, query)
+
+        delete_query = get_delete_query(
+            target_table=target_destination, parameters=parameters
+        )
+        delete_job = self.client.query(delete_query)
+        delete_job.result()
+        if delete_job.state != "DONE" and delete_job.error is not None:
+            structured_logger.error(
+                message="Query failed with error",
                 query=delete_query,
-                num_deleted=delete_job.num_dml_affected_rows,
-                uid=self.uid,
-                data_source=self.data_source.value,
-                service=self.SERVICE_NAME,
+                error=delete_job.error,
+                **self._get_common_fields(),
             )
-            insert_query = get_insert_query(
-                target_table=target_destination,
-                query_path=query_path,
-                parameters=parameters,
-            )
-            insert_job = self.client.query(insert_query)
-            insert_job.result()
-            if insert_job.state != "DONE" and insert_job.error is not None:
-                structured_logger.error(
-                    message="Query failed with error",
-                    query=insert_query,
-                    uid=self.uid,
-                    data_source=self.data_source.value,
-                    service=self.SERVICE_NAME,
-                )
-                continue
-            structured_logger.debug(
-                message="Query successfully inserted rows",
-                num_inserted=insert_job.num_dml_affected_rows,
-                uid=self.uid,
-                data_source=self.data_source.value,
+            return
+        structured_logger.debug(
+            message="Query successfully deleted rows",
+            query=delete_query,
+            num_deleted=delete_job.num_dml_affected_rows,
+            **self._get_common_fields(),
+        )
+        insert_query = get_insert_query(
+            target_table=target_destination,
+            query_path=query_path,
+            parameters=parameters,
+        )
+        insert_job = self.client.query(insert_query)
+        insert_job.result()
+        if insert_job.state != "DONE" and insert_job.error is not None:
+            structured_logger.error(
+                message="Query failed with error",
                 query=insert_query,
-                service=self.SERVICE_NAME,
+                **self._get_common_fields(),
             )
+            return
+        structured_logger.debug(
+            message="Query successfully inserted rows",
+            num_inserted=insert_job.num_dml_affected_rows,
+            query=insert_query,
+            **self._get_common_fields(),
+        )

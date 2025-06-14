@@ -8,6 +8,11 @@ repos:
   - id: check-yaml
   - id: check-added-large-files
 
+#- repo: https://github.com/pycqa/pylint
+#  rev: v3.2.5   # Use a specific, recent tag for stability
+#  hooks:
+#  - id: pylint
+
       # Black for code formatting
 - repo: https://github.com/psf/black
   rev: 25.1.0

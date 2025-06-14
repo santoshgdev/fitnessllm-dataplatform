@@ -1,9 +1,10 @@
 """Conftest for token refresh tests."""
 
 import pytest
+from firebase_functions import https_fn
 
 
-class MockRequest:
+class MockRequest(https_fn.Request):
     """Mock request for testing."""
 
     method = "POST"
@@ -11,15 +12,16 @@ class MockRequest:
     url = "fake_url"
     args = {"data_source": "strava"}
 
-    def get_json(self) -> dict:
+    @staticmethod
+    def get_json(*args, **kwargs) -> dict:
         """Returns a blank JSON object."""
         return {}
 
 
 @pytest.fixture
-def mock_request() -> MockRequest:
+def mock_request() -> "MockRequest":
     """Mock request for testing."""
-    return MockRequest()
+    return MockRequest(environ={})
 
 
 @pytest.fixture

@@ -6,8 +6,6 @@ from enum import Enum
 class DynamicEnum(Enum):
     """A blank enum that adds members via initialization function."""
 
-    pass
-
     @classmethod
     def from_dict(cls, data):
         """Dynamically add members to the Enum from a dictionary."""
@@ -16,8 +14,6 @@ class DynamicEnum(Enum):
 
 class FitnessLLMDataStream(Enum):
     """Data streams for the FitnessLLM Data Platform."""
-
-    pass
 
 
 class FitnessLLMDataSource(Enum):

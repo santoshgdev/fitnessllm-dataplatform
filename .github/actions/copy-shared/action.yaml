@@ -1,15 +1,14 @@
----
 name: Copy Shared Code
 description: Copies shared code into each function directory
 runs:
-    using: composite
-    steps:
-        - run: |
-              for fn in cloud_functions/*; do
-                if [ -d "$fn" ] && [ "$(basename $fn)" != "shared" ]; then
-                  rm -rf "$fn/shared"
-                  mkdir -p "$fn/shared"
-                  cp -r cloud_functions/shared/. "$fn/shared/"
-                fi
-              done
-          shell: bash
+  using: composite
+  steps:
+  - run: |
+      for fn in cloud_functions/*; do
+        if [ -d "$fn" ] && [ "$(basename $fn)" != "shared" ]; then
+          rm -rf "$fn/shared"
+          mkdir -p "$fn/shared"
+          cp -r cloud_functions/shared/. "$fn/shared/"
+        fi
+      done
+    shell: bash

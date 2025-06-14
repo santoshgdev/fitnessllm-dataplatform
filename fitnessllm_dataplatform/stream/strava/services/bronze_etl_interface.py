@@ -24,7 +24,6 @@ from tqdm_joblib import tqdm_joblib
 from fitnessllm_dataplatform.entities.dataclasses import Metrics
 from fitnessllm_dataplatform.entities.enums import (
     FitnessLLMDataSource,
-    FitnessLLMDataStream,
     Status,
 )
 from fitnessllm_dataplatform.services.etl_interface import ETLInterface
@@ -280,7 +279,7 @@ class BronzeStravaETLInterface(ETLInterface):
 
     @beartype
     def load_json_into_dataframe(
-        self, file: GSPath, data_stream: FitnessLLMDataStream
+        self, file: GSPath, data_stream: StravaStreams
     ) -> dict[str, DataFrame | Metrics]:
         """Loads a JSON file into a DataFrame and generates associated metrics.
 

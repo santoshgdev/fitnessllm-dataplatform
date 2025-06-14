@@ -17,7 +17,9 @@ from fitnessllm_dataplatform.stream.strava.qc_utils import check_firebase_strava
 from fitnessllm_dataplatform.stream.strava.services.api_interface import (
     StravaAPIInterface,
 )
-from fitnessllm_dataplatform.stream.strava.services.bronze_etl_interface import BronzeStravaETLInterface
+from fitnessllm_dataplatform.stream.strava.services.bronze_etl_interface import (
+    BronzeStravaETLInterface,
+)
 from fitnessllm_dataplatform.stream.strava.services.silver_etl_interface import (
     SilverStravaETLInterface,
 )

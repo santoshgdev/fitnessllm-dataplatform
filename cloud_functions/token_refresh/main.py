@@ -99,13 +99,13 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
 
     try:
         # Log all headers for debugging
-        all_headers = dict(request.headers)
+        redacted_headers = {
+            k: ("<REDACTED>" if k.lower() == "authorization" else v)
+            for k, v in request.headers.items()
+        }
         structured_logger.info(
             message="Received headers",
-            headers=all_headers,
-            auth_header=request.headers.get(
-                "Authorization", "No Authorization header found"
-            ),
+            headers=redacted_headers,
             service_name=service_name,
         )
 

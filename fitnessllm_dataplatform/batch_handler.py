@@ -33,7 +33,6 @@ class BatchHandler:
         required for batch processing operations.
         """
         self.db = firestore.Client()
-        self.startup = ProcessUser()
         # Create a temporary directory that will be cleaned up on exit
         self.temp_dir = tempfile.mkdtemp()
         atexit.register(self._cleanup_temp_dir)
@@ -147,7 +146,8 @@ class BatchHandler:
             strava_data = self.get_user_stream_data(uid=uid, data_source=data_source)
             refresh_function(self.db, uid, strava_data["refreshToken"])
 
-            self.startup.full_etl(uid=uid, data_source=data_source.value)
+            process_user = ProcessUser(uid=uid, data_source=data_source.value)
+            process_user.full_etl(uid=uid, data_source=data_source.value)
             structured_logger.info(
                 message="Successfully processed user",
                 uid=uid,

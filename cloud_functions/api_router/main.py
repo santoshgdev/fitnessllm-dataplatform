@@ -14,19 +14,20 @@ from google.cloud import functions_v2
 
 from .utils.cloud_utils import get_oauth_token
 
-try:
-    firebase_admin.initialize_app()
-    structured_logger.info(
-        message="Firebase Admin initialized successfully", service="api_router"
-    )
-except Exception as exc:
-    structured_logger.error(
-        message="Error initializing Firebase Admin",
-        error=str(exc),
-        traceback=traceback.format_exc(),
-        service="api_router",
-    )
-    raise
+if not firebase_admin._apps:
+    try:
+        firebase_admin.initialize_app(name="api_router")
+        structured_logger.info(
+            message="Firebase Admin initialized successfully", service="api_router"
+        )
+    except Exception as exc:
+        structured_logger.error(
+            message="Error initializing Firebase Admin",
+            error=str(exc),
+            traceback=traceback.format_exc(),
+            service="api_router",
+        )
+        raise
 
 
 def invoke_cloud_function(
@@ -155,7 +156,6 @@ def invoke_cloud_run_job(service_name: str, payload: Dict) -> https_fn.Response:
     Args:
         service_name: Full resource name of the service
         payload: The JSON payload to send
-        auth_header: Authorization header from original request
 
     Returns:
         https_fn.Response object with the service's response

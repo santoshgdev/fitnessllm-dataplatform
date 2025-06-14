@@ -3,7 +3,8 @@
 import json
 import traceback
 
-from firebase_admin import auth, initialize_app
+import firebase_admin
+from firebase_admin import auth
 from firebase_functions import https_fn, options
 from fitnessllm_shared.logger_utils import structured_logger
 from fitnessllm_shared.streams.strava import strava_refresh_oauth_token
@@ -11,19 +12,32 @@ from google.cloud import firestore
 
 from .entities.constants import CORS_HEADERS
 
-try:
-    initialize_app()
+service_name = "token_refresh"
+
+
+def firebase_init(service_name: str = "default"):
+    """Initialize Firebase Admin SDK."""
     structured_logger.info(
-        message="Firebase Admin initialized successfully", service="token_refresh"
+        message="Initializing Firebase Admin", service_name=service_name
     )
-except Exception as e:
-    structured_logger.error(
-        message="Error initializing Firebase Admin",
-        error=str(e),
-        traceback=traceback.format_exc(),
-        service="token_refresh",
-    )
-    raise
+    if not firebase_admin._apps:
+        try:
+            firebase_admin.initialize_app(name=service_name)
+            structured_logger.info(
+                message="Firebase Admin initialized successfully",
+                service_name=service_name,
+            )
+        except Exception as exc:
+            structured_logger.error(
+                message="Error initializing Firebase Admin",
+                error=str(exc),
+                traceback=traceback.format_exc(),
+                service_name=service_name,
+            )
+            raise
+
+
+firebase_init(service_name=service_name)
 
 
 @https_fn.on_request(
@@ -41,19 +55,19 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
         headers=dict(request.headers),
         url=request.url,
         args=dict(request.args),
-        service="token_refresh",
+        service_name=service_name,
     )
     try:
         body = request.get_json(silent=True)
         structured_logger.info(
-            message="Request body", body=body, service="token_refresh"
+            message="Request body", body=body, service_name=service_name
         )
     except Exception as e:
         structured_logger.error(
             message="Error parsing request body",
             error=str(e),
             traceback=traceback.format_exc(),
-            service="token_refresh",
+            service_name=service_name,
         )
 
     # Handle OPTIONS request for CORS preflight
@@ -67,7 +81,7 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
     data_source = request.args.get("data_source")
     if not data_source:
         structured_logger.error(
-            message="Missing data_source parameter", service="token_refresh"
+            message="Missing data_source parameter", service_name=service_name
         )
         return https_fn.Response(
             status=400,
@@ -92,7 +106,7 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
             auth_header=request.headers.get(
                 "Authorization", "No Authorization header found"
             ),
-            service="token_refresh",
+            service_name=service_name,
         )
 
         # Get the Authorization header
@@ -101,7 +115,7 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
             structured_logger.error(
                 message="Invalid Authorization header",
                 received_header=auth_header,
-                service="token_refresh",
+                service_name=service_name,
             )
             raise auth.InvalidIdTokenError("No valid authorization header found")
 
@@ -109,7 +123,7 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
         token = auth_header.split("Bearer ")[1]
         if not token:
             structured_logger.error(
-                message="Empty Bearer token", service="token_refresh"
+                message="Empty Bearer token", service_name=service_name
             )
             raise auth.InvalidIdTokenError("Empty Bearer token")
 
@@ -118,7 +132,7 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
         structured_logger.info(
             message="Decoded token contents",
             token_empty=decoded_token is None or decoded_token == "",
-            service="token_refresh",
+            service_name=service_name,
         )
 
         uid = decoded_token.get("uid") or decoded_token.get("sub")
@@ -126,7 +140,7 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
             raise auth.InvalidIdTokenError("No uid or sub claim found in token")
 
         structured_logger.info(
-            message="Token verified", uid=uid, service="token_refresh"
+            message="Token verified", uid=uid, service_name=service_name
         )
 
         db = firestore.Client()
@@ -134,7 +148,7 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
 
         if not doc.exists:
             structured_logger.error(
-                message="User not found", uid=uid, service="token_refresh"
+                message="User not found", uid=uid, service_name=service_name
             )
             return https_fn.Response(
                 status=404,
@@ -180,7 +194,7 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
                 message="No refresh token found",
                 uid=uid,
                 data_source=data_source,
-                service="token_refresh",
+                service_name=service_name,
             )
             return https_fn.Response(
                 status=400,
@@ -203,7 +217,7 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
                     message="Token refresh successful",
                     uid=uid,
                     data_source=data_source,
-                    service="token_refresh",
+                    service_name=service_name,
                 )
                 return https_fn.Response(
                     status=200,
@@ -222,7 +236,7 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
                         error=str(e),
                         level="ERROR",
                         traceback=traceback.format_exc(),
-                        service="token_refresh",
+                        service_name=service_name,
                     )
                     return https_fn.Response(
                         status=500,
@@ -242,7 +256,7 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
             structured_logger.error(
                 message="Unsupported data source",
                 data_source=data_source,
-                service="token_refresh",
+                service_name=service_name,
             )
             return https_fn.Response(
                 status=400,
@@ -263,7 +277,7 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
             message="Invalid Firebase ID Token; JWT Token Issue",
             auth=auth_header,
             traceback=traceback.format_exc(),
-            service="token_refresh",
+            service_name=service_name,
         )
         return https_fn.Response(
             status=401,
@@ -282,7 +296,7 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
         structured_logger.error(
             message="Expired token",
             traceback=traceback.format_exc(),
-            service="token_refresh",
+            service_name=service_name,
         )
         return https_fn.Response(
             status=401,
@@ -298,7 +312,7 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
         structured_logger.error(
             message="Revoked token",
             traceback=traceback.format_exc(),
-            service="token_refresh",
+            service_name=service_name,
         )
         return https_fn.Response(
             status=401,
@@ -315,7 +329,7 @@ def token_refresh(request: https_fn.Request) -> https_fn.Response:
             message="Error in token refresh",
             error=str(e),
             traceback=traceback.format_exc(),
-            service="token_refresh",
+            service_name=service_name,
         )
         return https_fn.Response(
             status=500,

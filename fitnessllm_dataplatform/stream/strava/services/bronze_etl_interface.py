@@ -358,7 +358,7 @@ class BronzeStravaETLInterface(ETLInterface):
         """
         timestamp = datetime.now()
         df = pd.concat(dataframes, ignore_index=True)
-        df["metadata_insert_timestamp"] = timestamp
+        df["metadata_insert_timestamp"] = pd.to_datetime(timestamp)
         if df.empty:
             structured_logger.info(
                 message=f"No data to upsert for {stream.value}",

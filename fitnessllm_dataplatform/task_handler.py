@@ -13,6 +13,7 @@ from fitnessllm_shared.task_utils import decrypt_token
 
 from fitnessllm_dataplatform.entities.enums import DynamicEnum, FitnessLLMDataSource
 from fitnessllm_dataplatform.infrastructure.FirebaseConnect import FirebaseConnect
+from fitnessllm_dataplatform.stream.strava.qc_utils import check_firebase_strava_data
 from fitnessllm_dataplatform.stream.strava.services.api_interface import (
     StravaAPIInterface,
 )
@@ -40,7 +41,6 @@ class ProcessUser:
         structured_logger.info(
             message="Starting up data platform", **self._get_common_fields()
         )
-        self.initialized = True
         GSClient().set_as_default_client()
         self.InfrastructureNames = DynamicEnum.from_dict(
             get_secret(environ["INFRASTRUCTURE_SECRET"])[environ["STAGE"]],
@@ -50,7 +50,6 @@ class ProcessUser:
             decrypt_token,
             key=get_secret(environ["ENCRYPTION_SECRET"])["token"],
         )
-        self.user_data = self.firebase.read_user().get().to_dict()
 
     def _get_common_fields(self) -> dict:
         """Get a logger with common fields.
@@ -78,6 +77,29 @@ class ProcessUser:
         }
         return fields
 
+    def _get_firebase_data_source_document(self, data_source: FitnessLLMDataSource) -> dict:
+        """Get the firebase document for a given data source.
+
+        Args:
+            data_source: Data source to get document for.
+
+        Returns:
+            Dict of firebase document
+        """
+        document = (
+            self.firebase.read_user()
+            .collection("stream")
+            .document(data_source.value.lower())
+            .get()
+            .to_dict()
+        )
+        if document is None:
+            structured_logger.error(
+                message="User has no data", **self._get_common_fields()
+            )
+            raise ValueError(f"User {self.uid} has no {data_source.value} data")
+        return document
+
     @beartype
     def ingest(self) -> None:
         """Entry point for downloading JSONs from API.
@@ -92,71 +114,33 @@ class ProcessUser:
         """
         if self.data_source not in [member.value for member in FitnessLLMDataSource]:
             structured_logger.error(
-                message="Unsupported data source", **self._get_logger()
+                message="Unsupported data source", **self._get_common_fields()
             )
             raise ValueError(f"Unsupported data source: {self.data_source}")
 
         if self.data_source == FitnessLLMDataSource.STRAVA.value:
-            strava_user_data = (
-                self.firebase.read_user()
-                .collection("stream")
-                .document(self.data_source.lower())
-                .get()
-                .to_dict()
-            )
-            if strava_user_data is None:
-                structured_logger.error(
-                    message="User has no data", **self._get_common_fields()
-                )
-                raise ValueError(f"User {self.uid} has no {self.data_source} data")
-
-            strava_api_interface = StravaAPIInterface(
-                uid=self.uid,
-                infrastructure_names=self.InfrastructureNames,
-                access_token=self.decryptor(
-                    encrypted_token=strava_user_data["accessToken"]
-                ),
-                firebase=self.firebase,
-            )
-            try:
-                strava_api_interface.get_all_activities()
-            except Exception as e:
-                structured_logger.error(
-                    message="Failed to get data from API",
-                    **self._get_exception_fields(e),
-                    **self._get_common_fields(),
-                )
-                raise RuntimeError(f"Failed to get data from Strava API: {e}") from e
+            self._strava_ingest_etl()
 
     @beartype
     def bronze_etl(
-        self, uid: str, data_source: str, data_streams: Optional[list[str]] = None
+        self
     ) -> None:
         """Entry point for loading JSONs into bronze layer.
-
-        Args:
-            uid: Uid for user found in firebase.
-            data_source: Data source to download from (e.g. Strava).
-            data_streams: List of data streams to load.
 
         Raises:
             KeyError: If required data_source is not supported.
         """
-        if data_source == FitnessLLMDataSource.STRAVA.value:
+        if self.data_source == FitnessLLMDataSource.STRAVA.value:
             self._strava_bronze_etl()
         else:
             structured_logger.error(
                 "Unsupported data source", **self._get_common_fields()
             )
-            raise ValueError(f"Unsupported data source: {data_source}")
+            raise ValueError(f"Unsupported data source: {self.data_source}")
 
     @beartype
     def silver_etl(self) -> None:
         """Entry point for loading data from bronze to silver.
-
-        Args:
-            uid: Uid for user found in firebase.
-            data_source: Data source to download from (e.g. Strava)
 
         Raises:
             KeyError: If required data_source is not supported.
@@ -174,8 +158,6 @@ class ProcessUser:
         """Entry point for full ETL process.
 
         Args:
-            uid: Uid for user found in firebase.
-            data_source: Data source to download from (e.g. Strava)
             data_streams: List of data streams to load for bronze ETL. If None, all streams will be loaded.
 
         Raises:
@@ -195,29 +177,40 @@ class ProcessUser:
         )
 
     @beartype
-    def _strava_bronze_etl(self) -> None:
-        """Bronze ETL for Strava."""
-        strava_user_data = (
-            self.firebase.read_user()
-            .collection("stream")
-            .document(self.data_source.lower())
-            .get()
-            .to_dict()
-        )
-
+    def _strava_ingest_etl(self) -> None:
+        """Ingest ETL for Strava."""
+        strava_user_data = self._get_firebase_data_source_document(data_source=FitnessLLMDataSource.STRAVA)
         if strava_user_data is None:
             structured_logger.error(
                 message="User has no data", **self._get_common_fields()
             )
             raise ValueError(f"User {self.uid} has no {self.data_source} data")
-        if "athlete" not in strava_user_data or "id" not in strava_user_data["athlete"]:
+
+        strava_api_interface = StravaAPIInterface(
+            uid=self.uid,
+            infrastructure_names=self.InfrastructureNames,
+            access_token=self.decryptor(
+                encrypted_token=strava_user_data["accessToken"]
+            ),
+            firebase=self.firebase,
+        )
+        try:
+            strava_api_interface.get_all_activities()
+        except Exception as e:
             structured_logger.error(
-                message="User has incomplete data: missing athleteId",
+                message="Failed to get data from API",
+                **self._get_exception_fields(e),
                 **self._get_common_fields(),
             )
-            raise ValueError(
-                f"User {self.uid} has incomplete {self.data_source} data: missing athlete ID"
-            )
+            raise RuntimeError(f"Failed to get data from Strava API: {e}") from e
+
+
+    @beartype
+    def _strava_bronze_etl(self) -> None:
+        """Bronze ETL for Strava."""
+        strava_user_data = self._get_firebase_data_source_document(data_source=FitnessLLMDataSource.STRAVA)
+
+        check_firebase_strava_data(strava_user_data, **self._get_common_fields())
 
         strava_etl_interface = SilverStravaETLInterface(
             uid=self.uid,
@@ -228,27 +221,9 @@ class ProcessUser:
     @beartype
     def _strava_silver_etl(self) -> None:
         """Silver ETL for Strava."""
-        strava_user_data = (
-            self.firebase.read_user()
-            .collection("stream")
-            .document(self.data_source.lower())
-            .get()
-            .to_dict()
-        )
+        strava_user_data = self._get_firebase_data_source_document(data_source=FitnessLLMDataSource.STRAVA)
 
-        if strava_user_data is None:
-            structured_logger.error(
-                message="User has no data", **self._get_common_fields()
-            )
-            raise ValueError(f"User {self.uid} has no {self.data_source} data")
-        if "athlete" not in strava_user_data or "id" not in strava_user_data["athlete"]:
-            structured_logger.error(
-                message="User has incomplete data: missing athleteId",
-                **self._get_common_fields(),
-            )
-            raise ValueError(
-                f"User {self.uid} has incomplete {self.data_source} data: missing athlete ID"
-            )
+        check_firebase_strava_data(strava_user_data, **self._get_common_fields())
 
         strava_etl_interface = SilverStravaETLInterface(
             uid=self.uid,

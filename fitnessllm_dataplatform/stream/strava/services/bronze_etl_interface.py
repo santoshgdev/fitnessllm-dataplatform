@@ -22,10 +22,7 @@ from tqdm import tqdm
 from tqdm_joblib import tqdm_joblib
 
 from fitnessllm_dataplatform.entities.dataclasses import Metrics
-from fitnessllm_dataplatform.entities.enums import (
-    FitnessLLMDataSource,
-    Status,
-)
+from fitnessllm_dataplatform.entities.enums import FitnessLLMDataSource, Status
 from fitnessllm_dataplatform.services.etl_interface import ETLInterface
 from fitnessllm_dataplatform.stream.strava.cloud_utils import get_strava_storage_path
 from fitnessllm_dataplatform.stream.strava.entities.enums import StravaStreams
